@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthenticatedBalanceSheetRouteImport } from './routes/_authenticated/balance-sheet'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedMoneyInRouteImport } from './routes/_authenticated/money-in'
 import { Route as AuthenticatedMoneyOutRouteImport } from './routes/_authenticated/money-out'
@@ -24,6 +25,12 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedBalanceSheetRoute =
+  AuthenticatedBalanceSheetRouteImport.update({
+    id: '/balance-sheet',
+    path: '/balance-sheet',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -42,12 +49,14 @@ const AuthenticatedMoneyOutRoute = AuthenticatedMoneyOutRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/balance-sheet': typeof AuthenticatedBalanceSheetRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/money-in': typeof AuthenticatedMoneyInRoute
   '/money-out': typeof AuthenticatedMoneyOutRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/balance-sheet': typeof AuthenticatedBalanceSheetRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/money-in': typeof AuthenticatedMoneyInRoute
   '/money-out': typeof AuthenticatedMoneyOutRoute
@@ -56,19 +65,21 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/_authenticated/balance-sheet': typeof AuthenticatedBalanceSheetRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/money-in': typeof AuthenticatedMoneyInRoute
   '/_authenticated/money-out': typeof AuthenticatedMoneyOutRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/dashboard' | '/money-in' | '/money-out'
+  fullPaths: '/' | '/balance-sheet' | '/dashboard' | '/money-in' | '/money-out'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/dashboard' | '/money-in' | '/money-out'
+  to: '/' | '/balance-sheet' | '/dashboard' | '/money-in' | '/money-out'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/_authenticated/balance-sheet'
     | '/_authenticated/dashboard'
     | '/_authenticated/money-in'
     | '/_authenticated/money-out'
@@ -95,6 +106,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/balance-sheet': {
+      id: '/_authenticated/balance-sheet'
+      path: '/balance-sheet'
+      fullPath: '/balance-sheet'
+      preLoaderRoute: typeof AuthenticatedBalanceSheetRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -120,12 +138,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBalanceSheetRoute: typeof AuthenticatedBalanceSheetRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedMoneyInRoute: typeof AuthenticatedMoneyInRoute
   AuthenticatedMoneyOutRoute: typeof AuthenticatedMoneyOutRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBalanceSheetRoute: AuthenticatedBalanceSheetRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedMoneyInRoute: AuthenticatedMoneyInRoute,
   AuthenticatedMoneyOutRoute: AuthenticatedMoneyOutRoute,
