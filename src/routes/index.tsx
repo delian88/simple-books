@@ -223,7 +223,7 @@ function Landing() {
           </div>
 
           {/* Pie Chart */}
-          <div className="absolute top-32 right-20 opacity-5 animate-float" style={{ animationDelay: '1s' }}>
+          <div className="absolute top-32 right-20 opacity-5 animate-float-delay-1000">
             <svg width="150" height="150" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-emerald-600">
               <circle cx="12" cy="12" r="10" />
               <path d="M12 2 L12 12 L21.5 8.5" />
@@ -232,7 +232,7 @@ function Landing() {
           </div>
 
           {/* Dollar Sign */}
-          <div className="absolute bottom-20 left-20 opacity-5 animate-float" style={{ animationDelay: '0.5s' }}>
+          <div className="absolute bottom-20 left-20 opacity-5 animate-float-delay-500">
             <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-emerald-600">
               <line x1="12" y1="1" x2="12" y2="23" />
               <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
@@ -240,7 +240,7 @@ function Landing() {
           </div>
 
           {/* Receipt Icon */}
-          <div className="absolute bottom-32 right-16 opacity-5 animate-float" style={{ animationDelay: '1.5s' }}>
+          <div className="absolute bottom-32 right-16 opacity-5 animate-float-delay-1500">
             <svg width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-emerald-600">
               <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z" />
               <line x1="8" y1="8" x2="16" y2="8" />
@@ -250,7 +250,7 @@ function Landing() {
           </div>
 
           {/* Coins Stack */}
-          <div className="absolute top-1/2 left-5 opacity-5 animate-float" style={{ animationDelay: '2s' }}>
+          <div className="absolute top-1/2 left-5 opacity-5 animate-float-delay-2000">
             <svg width="90" height="90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-emerald-600">
               <ellipse cx="12" cy="5" rx="7" ry="3" />
               <path d="M5 5v8c0 1.66 3.13 3 7 3s7-1.34 7-3V5" />
@@ -259,7 +259,7 @@ function Landing() {
           </div>
 
           {/* Bar Chart */}
-          <div className="absolute top-20 right-1/4 opacity-5 animate-float" style={{ animationDelay: '0.8s' }}>
+          <div className="absolute top-20 right-1/4 opacity-5 animate-float-delay-800">
             <svg width="130" height="130" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-emerald-600">
               <line x1="18" y1="20" x2="18" y2="10" />
               <line x1="12" y1="20" x2="12" y2="4" />
@@ -268,7 +268,7 @@ function Landing() {
           </div>
 
           {/* Invoice/Document */}
-          <div className="absolute bottom-10 left-1/3 opacity-5 animate-float" style={{ animationDelay: '1.2s' }}>
+          <div className="absolute bottom-10 left-1/3 opacity-5 animate-float-delay-1200">
             <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-emerald-600">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
@@ -278,7 +278,7 @@ function Landing() {
           </div>
 
           {/* Trend Line Arrow */}
-          <div className="absolute top-40 left-1/4 opacity-5 animate-float" style={{ animationDelay: '1.8s' }}>
+          <div className="absolute top-40 left-1/4 opacity-5 animate-float-delay-1800">
             <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-emerald-600">
               <polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />
               <polyline points="17 6 23 6 23 12" />
@@ -286,7 +286,7 @@ function Landing() {
           </div>
 
           {/* Credit Card */}
-          <div className="absolute bottom-40 right-1/3 opacity-5 animate-float" style={{ animationDelay: '2.5s' }}>
+          <div className="absolute bottom-40 right-1/3 opacity-5 animate-float-delay-2500">
             <svg width="110" height="110" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-emerald-600">
               <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
               <line x1="1" y1="10" x2="23" y2="10" />
@@ -294,7 +294,7 @@ function Landing() {
           </div>
 
           {/* Percentage Sign */}
-          <div className="absolute top-2/3 right-10 opacity-5 animate-float" style={{ animationDelay: '0.3s' }}>
+          <div className="absolute top-2/3 right-10 opacity-5 animate-float-delay-300">
             <svg width="95" height="95" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-emerald-600">
               <line x1="19" y1="5" x2="5" y2="19" />
               <circle cx="6.5" cy="6.5" r="2.5" />
@@ -303,7 +303,7 @@ function Landing() {
           </div>
 
           {/* Balance Scale */}
-          <div className="hidden lg:block absolute top-1/3 right-5 opacity-5 animate-float" style={{ animationDelay: '1.3s' }}>
+          <div className="hidden lg:block absolute top-1/3 right-5 opacity-5 animate-float-delay-1300">
             <svg width="140" height="140" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-emerald-600">
               <line x1="12" y1="2" x2="12" y2="22" />
               <path d="M3 10h6l-3-6z" />
@@ -557,15 +557,17 @@ function Landing() {
               <div className="mb-3 sm:mb-4 inline-flex w-fit items-center gap-2 rounded-full bg-emerald-50 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-emerald-600 animate-in fade-in slide-in-from-left duration-500">
                 <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 animate-in zoom-in duration-300" />
                 <span className="font-medium tracking-wide">
-                  {"Accounting for Small Business".split("").map((char, i) => (
-                    <span
-                      key={i}
-                      className="inline-block animate-in fade-in duration-200"
-                      style={{ animationDelay: `${i * 10}ms` }}
-                    >
-                      {char === " " ? "\u00A0" : char}
-                    </span>
-                  ))}
+                  {"Accounting for Small Business".split("").map((char, i) => {
+                    const delayClass = `fade-in-delay-${((i % 10) + 1) * 10}`;
+                    return (
+                      <span
+                        key={i}
+                        className={`inline-block ${delayClass}`}
+                      >
+                        {char === " " ? "\u00A0" : char}
+                      </span>
+                    );
+                  })}
                 </span>
               </div>
               <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight text-gray-900 lg:text-6xl">
@@ -694,16 +696,20 @@ function Landing() {
                       { name: "Invoice from Acme Corp", amount: "+$1,250", color: "text-emerald-600" },
                       { name: "Office Supplies", amount: "-$129.99", color: "text-red-600" },
                       { name: "Payment to Jane Smith", amount: "-$850.00", color: "text-red-600" },
-                    ].map((tx, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 p-3 transition-all duration-300 hover:scale-[1.02] hover:border-gray-200 hover:shadow-md cursor-pointer animate-in slide-in-from-right duration-500"
-                        style={{ animationDelay: `${1200 + i * 100}ms` }}
-                      >
-                        <span className="text-sm text-gray-700">{tx.name}</span>
-                        <span className={`text-sm font-semibold ${tx.color}`}>{tx.amount}</span>
-                      </div>
-                    ))}
+                    ].map((tx, i) => {
+                      const animationClass = i === 0 ? 'slide-in-from-right-delay-1200' :
+                        i === 1 ? 'slide-in-from-right-delay-1300' :
+                          'slide-in-from-right-delay-1400';
+                      return (
+                        <div
+                          key={i}
+                          className={`flex items-center justify-between rounded-lg border border-gray-100 bg-gray-50 p-3 transition-all duration-300 hover:scale-[1.02] hover:border-gray-200 hover:shadow-md cursor-pointer ${animationClass}`}
+                        >
+                          <span className="text-sm text-gray-700">{tx.name}</span>
+                          <span className={`text-sm font-semibold ${tx.color}`}>{tx.amount}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -718,15 +724,22 @@ function Landing() {
               Trusted by 10,000+ small businesses
             </p>
             <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12">
-              {TRUST_LOGOS.map((logo, i) => (
-                <div
-                  key={i}
-                  className="text-lg font-semibold text-gray-400 transition-all duration-300 hover:text-gray-600 hover:scale-110 cursor-pointer animate-in fade-in zoom-in-50 duration-500"
-                  style={{ animationDelay: `${800 + i * 100}ms` }}
-                >
-                  {logo}
-                </div>
-              ))}
+              {TRUST_LOGOS.map((logo, i) => {
+                const animationClass = i === 0 ? 'fade-in-zoom-delay-800' :
+                  i === 1 ? 'fade-in-zoom-delay-900' :
+                    i === 2 ? 'fade-in-zoom-delay-1000' :
+                      i === 3 ? 'fade-in-zoom-delay-1100' :
+                        i === 4 ? 'fade-in-zoom-delay-1200' :
+                          'fade-in-zoom-delay-1200'; // fallback
+                return (
+                  <div
+                    key={i}
+                    className={`text-lg font-semibold text-gray-400 transition-all duration-300 hover:text-gray-600 hover:scale-110 cursor-pointer ${animationClass}`}
+                  >
+                    {logo}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </section>
@@ -734,19 +747,24 @@ function Landing() {
         {/* Features Section */}
         <section className="mx-auto max-w-7xl px-6 py-20">
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-            {FEATURES.map((feature, index) => (
-              <article
-                key={feature.title}
-                className="group animate-in fade-in slide-in-from-bottom duration-700 hover:scale-105 transition-all cursor-pointer"
-                style={{ animationDelay: `${1000 + index * 150}ms` }}
-              >
-                <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 transition-all duration-500 group-hover:bg-emerald-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-emerald-200 group-hover:rotate-6">
-                  <feature.icon className="h-7 w-7 transition-transform group-hover:scale-110" />
-                </div>
-                <h3 className="mb-2 font-display text-xl font-semibold text-gray-900 transition-colors group-hover:text-emerald-600">{feature.title}</h3>
-                <p className="text-sm leading-relaxed text-gray-600">{feature.body}</p>
-              </article>
-            ))}
+            {FEATURES.map((feature, index) => {
+              const animationClass = index === 0 ? 'slide-in-from-bottom-delay-1000' :
+                index === 1 ? 'slide-in-from-bottom-delay-1150' :
+                  index === 2 ? 'slide-in-from-bottom-delay-1300' :
+                    'slide-in-from-bottom-delay-1450';
+              return (
+                <article
+                  key={feature.title}
+                  className={`group ${animationClass} hover:scale-105 transition-all cursor-pointer`}
+                >
+                  <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 transition-all duration-500 group-hover:bg-emerald-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-emerald-200 group-hover:rotate-6">
+                    <feature.icon className="h-7 w-7 transition-transform group-hover:scale-110" />
+                  </div>
+                  <h3 className="mb-2 font-display text-xl font-semibold text-gray-900 transition-colors group-hover:text-emerald-600">{feature.title}</h3>
+                  <p className="text-sm leading-relaxed text-gray-600">{feature.body}</p>
+                </article>
+              );
+            })}
           </div>
         </section>
 
@@ -815,9 +833,9 @@ function Landing() {
               <div className="flex justify-start animate-in fade-in duration-300">
                 <div className="rounded-2xl bg-gray-100 px-4 py-3">
                   <div className="flex gap-1">
-                    <div className="h-2 w-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="h-2 w-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="h-2 w-2 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    <div className="h-2 w-2 rounded-full bg-gray-400 animate-bounce-delay-0"></div>
+                    <div className="h-2 w-2 rounded-full bg-gray-400 animate-bounce-delay-150"></div>
+                    <div className="h-2 w-2 rounded-full bg-gray-400 animate-bounce-delay-300"></div>
                   </div>
                 </div>
               </div>

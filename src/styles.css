@@ -312,3 +312,258 @@
 html {
   scroll-behavior: smooth;
 }
+
+/* Custom animation delay utilities */
+@utility animation-delay-300 {
+  animation-delay: 300ms;
+}
+
+@utility animation-delay-500 {
+  animation-delay: 500ms;
+}
+
+@utility animation-delay-800 {
+  animation-delay: 800ms;
+}
+
+@utility animation-delay-1000 {
+  animation-delay: 1000ms;
+}
+
+@utility animation-delay-1200 {
+  animation-delay: 1200ms;
+}
+
+@utility animation-delay-1500 {
+  animation-delay: 1500ms;
+}
+
+@utility animation-delay-1800 {
+  animation-delay: 1800ms;
+}
+
+@utility animation-delay-2000 {
+  animation-delay: 2000ms;
+}
+
+@utility animation-delay-2500 {
+  animation-delay: 2500ms;
+}
+
+/* Float animation with delays */
+@utility animate-float-delay-300 {
+  animation: float 6s ease-in-out infinite 300ms;
+}
+
+@utility animate-float-delay-500 {
+  animation: float 6s ease-in-out infinite 500ms;
+}
+
+@utility animate-float-delay-800 {
+  animation: float 6s ease-in-out infinite 800ms;
+}
+
+@utility animate-float-delay-1000 {
+  animation: float 6s ease-in-out infinite 1000ms;
+}
+
+@utility animate-float-delay-1200 {
+  animation: float 6s ease-in-out infinite 1200ms;
+}
+
+@utility animate-float-delay-1500 {
+  animation: float 6s ease-in-out infinite 1500ms;
+}
+
+@utility animate-float-delay-1800 {
+  animation: float 6s ease-in-out infinite 1800ms;
+}
+
+@utility animate-float-delay-2000 {
+  animation: float 6s ease-in-out infinite 2000ms;
+}
+
+@utility animate-float-delay-2500 {
+  animation: float 6s ease-in-out infinite 2500ms;
+}
+
+/* Character-by-character animation classes */
+@utility character-fade-in-10 {
+  animation: fade-in 200ms ease-in-out 10ms;
+  animation-fill-mode: both;
+}
+
+@utility character-fade-in-20 {
+  animation: fade-in 200ms ease-in-out 20ms;
+  animation-fill-mode: both;
+}
+
+@utility character-fade-in-30 {
+  animation: fade-in 200ms ease-in-out 30ms;
+  animation-fill-mode: both;
+}
+
+@utility character-fade-in-40 {
+  animation: fade-in 200ms ease-in-out 40ms;
+  animation-fill-mode: both;
+}
+
+@utility character-fade-in-50 {
+  animation: fade-in 200ms ease-in-out 50ms;
+  animation-fill-mode: both;
+}
+
+@utility character-fade-in-60 {
+  animation: fade-in 200ms ease-in-out 60ms;
+  animation-fill-mode: both;
+}
+
+@utility character-fade-in-70 {
+  animation: fade-in 200ms ease-in-out 70ms;
+  animation-fill-mode: both;
+}
+
+@utility character-fade-in-80 {
+  animation: fade-in 200ms ease-in-out 80ms;
+  animation-fill-mode: both;
+}
+
+@utility character-fade-in-90 {
+  animation: fade-in 200ms ease-in-out 90ms;
+  animation-fill-mode: both;
+}
+
+@utility character-fade-in-100 {
+  animation: fade-in 200ms ease-in-out 100ms;
+  animation-fill-mode: both;
+}
+
+/* Bouncing dots with delays */
+@utility animate-bounce-delay-0 {
+  animation: bounce 1.4s ease-in-out infinite;
+  animation-delay: 0ms;
+}
+
+@utility animate-bounce-delay-150 {
+  animation: bounce 1.4s ease-in-out infinite;
+  animation-delay: 150ms;
+}
+
+@utility animate-bounce-delay-300 {
+  animation: bounce 1.4s ease-in-out infinite;
+  animation-delay: 300ms;
+}
+
+/* Custom fade-in animations with delays for staggered effects */
+@utility fade-in-delay-10 {
+  animation: fade-in 200ms ease-in-out 10ms;
+  animation-fill-mode: both;
+}
+
+@utility fade-in-delay-20 {
+  animation: fade-in 200ms ease-in-out 20ms;
+  animation-fill-mode: both;
+}
+
+@utility fade-in-delay-30 {
+  animation: fade-in 200ms ease-in-out 30ms;
+  animation-fill-mode: both;
+}
+
+@utility fade-in-delay-40 {
+  animation: fade-in 200ms ease-in-out 40ms;
+  animation-fill-mode: both;
+}
+
+@utility fade-in-delay-50 {
+  animation: fade-in 200ms ease-in-out 50ms;
+  animation-fill-mode: both;
+}
+
+@utility fade-in-delay-60 {
+  animation: fade-in 200ms ease-in-out 60ms;
+  animation-fill-mode: both;
+}
+
+@utility fade-in-delay-70 {
+  animation: fade-in 200ms ease-in-out 70ms;
+  animation-fill-mode: both;
+}
+
+@utility fade-in-delay-80 {
+  animation: fade-in 200ms ease-in-out 80ms;
+  animation-fill-mode: both;
+}
+
+@utility fade-in-delay-90 {
+  animation: fade-in 200ms ease-in-out 90ms;
+  animation-fill-mode: both;
+}
+
+@utility fade-in-delay-100 {
+  animation: fade-in 200ms ease-in-out 100ms;
+  animation-fill-mode: both;
+}
+
+/* Slide-in-from-right animations with delays */
+@utility slide-in-from-right-delay-1200 {
+  animation: slide-in-from-right 500ms ease-out 1200ms;
+  animation-fill-mode: both;
+}
+
+@utility slide-in-from-right-delay-1300 {
+  animation: slide-in-from-right 500ms ease-out 1300ms;
+  animation-fill-mode: both;
+}
+
+@utility slide-in-from-right-delay-1400 {
+  animation: slide-in-from-right 500ms ease-out 1400ms;
+  animation-fill-mode: both;
+}
+
+/* Fade-in zoom animations with delays */
+@utility fade-in-zoom-delay-800 {
+  animation: fade-in 500ms ease-out 800ms, zoom-in-50 500ms ease-out 800ms;
+  animation-fill-mode: both;
+}
+
+@utility fade-in-zoom-delay-900 {
+  animation: fade-in 500ms ease-out 900ms, zoom-in-50 500ms ease-out 900ms;
+  animation-fill-mode: both;
+}
+
+@utility fade-in-zoom-delay-1000 {
+  animation: fade-in 500ms ease-out 1000ms, zoom-in-50 500ms ease-out 1000ms;
+  animation-fill-mode: both;
+}
+
+@utility fade-in-zoom-delay-1100 {
+  animation: fade-in 500ms ease-out 1100ms, zoom-in-50 500ms ease-out 1100ms;
+  animation-fill-mode: both;
+}
+
+@utility fade-in-zoom-delay-1200 {
+  animation: fade-in 500ms ease-out 1200ms, zoom-in-50 500ms ease-out 1200ms;
+  animation-fill-mode: both;
+}
+
+/* Slide-in-from-bottom animations with delays */
+@utility slide-in-from-bottom-delay-1000 {
+  animation: slide-in-from-bottom 700ms ease-out 1000ms;
+  animation-fill-mode: both;
+}
+
+@utility slide-in-from-bottom-delay-1150 {
+  animation: slide-in-from-bottom 700ms ease-out 1150ms;
+  animation-fill-mode: both;
+}
+
+@utility slide-in-from-bottom-delay-1300 {
+  animation: slide-in-from-bottom 700ms ease-out 1300ms;
+  animation-fill-mode: both;
+}
+
+@utility slide-in-from-bottom-delay-1450 {
+  animation: slide-in-from-bottom 700ms ease-out 1450ms;
+  animation-fill-mode: both;
+}
