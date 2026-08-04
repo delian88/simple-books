@@ -174,3 +174,21 @@
     color-mix(in oklab, var(--color-border) 70%, transparent) 32px
   );
 }
+
+@utility ledger-grid {
+  background-color: var(--color-background);
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 31px,
+      color-mix(in oklab, var(--color-border) 55%, transparent) 32px
+    ),
+    repeating-linear-gradient(
+      to right,
+      transparent,
+      transparent 31px,
+      color-mix(in oklab, var(--color-border) 30%, transparent) 32px
+    );
+}
+
