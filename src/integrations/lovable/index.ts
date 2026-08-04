@@ -16,7 +16,7 @@ export const lovable = {
         redirect_uri:
           opts?.redirect_uri ??
           (typeof window !== "undefined" ? window.location.origin : ""),
-        redirect_uri: opts?.redirect_uri,
+        
         extraParams: {
           ...opts?.extraParams,
         },
