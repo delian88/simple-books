@@ -12,4 +12,11 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    server: {
+      // Allow all hosts (for Render deployment and other hosting providers)
+      allowedHosts: ['simple-books-06hs.onrender.com', '.onrender.com'],
+      host: true,
+    },
+  },
 });
