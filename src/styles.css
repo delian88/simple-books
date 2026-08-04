@@ -167,28 +167,148 @@
 }
 
 @utility rule-grid {
-  background-image: repeating-linear-gradient(
-    to bottom,
-    transparent,
-    transparent 31px,
-    color-mix(in oklab, var(--color-border) 70%, transparent) 32px
-  );
+  background-image: repeating-linear-gradient(to bottom,
+      transparent,
+      transparent 31px,
+      color-mix(in oklab, var(--color-border) 70%, transparent) 32px);
 }
 
 @utility ledger-grid {
   background-color: var(--color-background);
   background-image:
-    repeating-linear-gradient(
-      to bottom,
+    repeating-linear-gradient(to bottom,
       transparent,
       transparent 31px,
-      color-mix(in oklab, var(--color-border) 55%, transparent) 32px
-    ),
-    repeating-linear-gradient(
-      to right,
+      color-mix(in oklab, var(--color-border) 55%, transparent) 32px),
+    repeating-linear-gradient(to right,
       transparent,
       transparent 31px,
-      color-mix(in oklab, var(--color-border) 30%, transparent) 32px
-    );
+      color-mix(in oklab, var(--color-border) 30%, transparent) 32px);
 }
 
+/* Custom Animations */
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes pulse-slow {
+
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes bounce-subtle {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes scroll-right {
+  0% {
+    transform: translateX(-50%);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+@utility animate-blob {
+  animation: blob 7s infinite;
+}
+
+@utility animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+@utility animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+@utility animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@utility animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+@utility animate-scroll-left {
+  animation: scroll-left 40s linear infinite;
+}
+
+@utility animate-scroll-right {
+  animation: scroll-right 40s linear infinite;
+}
+
+/* Hover shadow utilities */
+@utility shadow-3xl {
+  box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
