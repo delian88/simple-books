@@ -14,7 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      balance_items: {
+        Row: {
+          amount: number
+          as_of: string
+          category: string
+          created_at: string
+          id: string
+          name: string
+          side: Database["public"]["Enums"]["bs_side"]
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          as_of?: string
+          category?: string
+          created_at?: string
+          id?: string
+          name: string
+          side: Database["public"]["Enums"]["bs_side"]
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          as_of?: string
+          category?: string
+          created_at?: string
+          id?: string
+          name?: string
+          side?: Database["public"]["Enums"]["bs_side"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          business_name: string
+          created_at: string
+          currency: string
+          id: string
+        }
+        Insert: {
+          business_name?: string
+          created_at?: string
+          currency?: string
+          id: string
+        }
+        Update: {
+          business_name?: string
+          created_at?: string
+          currency?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          category: Database["public"]["Enums"]["txn_category"]
+          counterparty: string | null
+          created_at: string
+          direction: Database["public"]["Enums"]["flow_direction"]
+          id: string
+          note: string | null
+          occurred_on: string
+          source: Database["public"]["Enums"]["capture_source"]
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          category: Database["public"]["Enums"]["txn_category"]
+          counterparty?: string | null
+          created_at?: string
+          direction: Database["public"]["Enums"]["flow_direction"]
+          id?: string
+          note?: string | null
+          occurred_on?: string
+          source?: Database["public"]["Enums"]["capture_source"]
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          category?: Database["public"]["Enums"]["txn_category"]
+          counterparty?: string | null
+          created_at?: string
+          direction?: Database["public"]["Enums"]["flow_direction"]
+          id?: string
+          note?: string | null
+          occurred_on?: string
+          source?: Database["public"]["Enums"]["capture_source"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +115,18 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      bs_side: "asset" | "liability"
+      capture_source: "manual" | "bank_statement" | "receipt_scan"
+      flow_direction: "inflow" | "outflow"
+      txn_category:
+        | "capital"
+        | "sales"
+        | "loan"
+        | "debtor_payment"
+        | "asset_purchase"
+        | "expense"
+        | "vendor_payment"
+        | "loan_repayment"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +253,20 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      bs_side: ["asset", "liability"],
+      capture_source: ["manual", "bank_statement", "receipt_scan"],
+      flow_direction: ["inflow", "outflow"],
+      txn_category: [
+        "capital",
+        "sales",
+        "loan",
+        "debtor_payment",
+        "asset_purchase",
+        "expense",
+        "vendor_payment",
+        "loan_repayment",
+      ],
+    },
   },
 } as const
