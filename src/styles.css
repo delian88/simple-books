@@ -58,8 +58,8 @@
   --font-display: "Newsreader", ui-serif, Georgia, serif;
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
-  --shadow-ledger: var(--shadow-ledger);
-  --shadow-raised: var(--shadow-raised);
+  --shadow-ledger: var(--ledger-shadow);
+  --shadow-raised: var(--raised-shadow);
 }
 
 :root {
