@@ -16,8 +16,8 @@ const txnInput = z.object({
   ]),
   amount: z.number().positive().max(1_000_000_000_00),
   occurred_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  counterparty: z.string().trim().max(120).optional().nullable(),
-  note: z.string().trim().max(400).optional().nullable(),
+  counterparty: z.string().trim().max(120).nullable().default(null),
+  note: z.string().trim().max(400).nullable().default(null),
   source: z.enum(["manual", "bank_statement", "receipt_scan"]).default("manual"),
 });
 
