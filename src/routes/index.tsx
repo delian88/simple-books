@@ -132,7 +132,7 @@ function Landing() {
       setChartHeights(prev => prev.map(() => Math.random() * 60 + 40));
     }, 3000);
 
-    // Typing animation for description - faster speed
+    // Typing animation for description - much faster (almost instant)
     let currentIndex = 0;
     const typingInterval = setInterval(() => {
       if (currentIndex <= fullText.length) {
@@ -141,9 +141,9 @@ function Landing() {
       } else {
         clearInterval(typingInterval);
       }
-    }, 15); // Changed from 30ms to 15ms (2x faster)
+    }, 5); // Changed from 15ms to 5ms (3x faster - almost instant)
 
-    // Word by word animation for title - faster reveals
+    // Word by word animation for title - instant reveal
     const wordInterval = setInterval(() => {
       setWordIndex(prev => {
         if (prev < heroWords.length - 1) {
@@ -152,7 +152,7 @@ function Landing() {
         clearInterval(wordInterval);
         return prev;
       });
-    }, 100); // Changed from 200ms to 100ms (2x faster)
+    }, 30); // Changed from 100ms to 30ms (instant reveal)
 
     return () => {
       clearInterval(interval);
