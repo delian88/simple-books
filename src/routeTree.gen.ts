@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedBalanceSheetRouteImport } from './routes/_authenticated/balance-sheet'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedMoneyInRouteImport } from './routes/_authenticated/money-in'
@@ -23,6 +24,11 @@ const IndexRoute = IndexRouteImport.update({
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedBalanceSheetRoute =
@@ -49,6 +55,7 @@ const AuthenticatedMoneyOutRoute = AuthenticatedMoneyOutRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/balance-sheet': typeof AuthenticatedBalanceSheetRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/money-in': typeof AuthenticatedMoneyInRoute
@@ -56,6 +63,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/balance-sheet': typeof AuthenticatedBalanceSheetRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/money-in': typeof AuthenticatedMoneyInRoute
@@ -65,6 +73,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
   '/_authenticated/balance-sheet': typeof AuthenticatedBalanceSheetRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/money-in': typeof AuthenticatedMoneyInRoute
@@ -72,13 +81,16 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/balance-sheet' | '/dashboard' | '/money-in' | '/money-out'
+  fullPaths:
+    '/' | '/auth' | '/balance-sheet' | '/dashboard' | '/money-in' | '/money-out'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/balance-sheet' | '/dashboard' | '/money-in' | '/money-out'
+  to:
+    '/' | '/auth' | '/balance-sheet' | '/dashboard' | '/money-in' | '/money-out'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/auth'
     | '/_authenticated/balance-sheet'
     | '/_authenticated/dashboard'
     | '/_authenticated/money-in'
@@ -88,6 +100,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -104,6 +117,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/balance-sheet': {
@@ -157,6 +177,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
