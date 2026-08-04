@@ -101,8 +101,8 @@
   --sidebar-accent-foreground: oklch(0.97 0.008 92);
   --sidebar-border: oklch(0.38 0.05 165);
   --sidebar-ring: oklch(0.72 0.085 85);
-  --shadow-ledger: 0 1px 0 0 color-mix(in oklab, var(--primary) 12%, transparent);
-  --shadow-raised: 0 12px 30px -18px color-mix(in oklab, var(--primary) 55%, transparent);
+  --ledger-shadow: 0 1px 0 0 color-mix(in oklab, var(--primary) 12%, transparent);
+  --raised-shadow: 0 12px 30px -18px color-mix(in oklab, var(--primary) 55%, transparent);
 }
 
 .dark {
