@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { BookOpenText } from "lucide-react";
+import { BookOpenText, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
+import { login, signup, getSession } from "@/lib/auth.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,12 +26,13 @@ function AuthPage() {
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
-    void supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard" });
+    getSession().then((user) => {
+      if (user) navigate({ to: "/dashboard" });
     });
   }, [navigate]);
 
@@ -42,23 +42,12 @@ function AuthPage() {
     setNotice("");
     try {
       if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: { business_name: businessName.trim() || "My Business" },
-          },
-        });
-        if (error) throw error;
-        if (!data.session) {
-          setNotice("Check your email to confirm your account, then sign in.");
-          return;
-        }
+        await signup({ data: { email, password, businessName: businessName.trim() || "My Business" } });
+        toast.success("Account created! 14-day free trial started.");
         navigate({ to: "/dashboard" });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+        await login({ data: { email, password } });
+        toast.success("Welcome back!");
         navigate({ to: "/dashboard" });
       }
     } catch (error) {
@@ -69,17 +58,7 @@ function AuthPage() {
   }
 
   async function onGoogle() {
-    setBusy(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (result.error) {
-      setBusy(false);
-      toast.error("Google sign-in failed. Please try again.");
-      return;
-    }
-    if (result.redirected) return;
-    navigate({ to: "/dashboard" });
+    toast.error("Google sign-in is not supported on the custom backend.");
   }
 
   return (
@@ -101,15 +80,7 @@ function AuthPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button variant="outline" className="w-full" onClick={onGoogle} disabled={busy}>
-              Continue with Google
-            </Button>
 
-            <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-muted-foreground">
-              <span className="h-px flex-1 bg-border" />
-              or
-              <span className="h-px flex-1 bg-border" />
-            </div>
 
             <form className="space-y-4" onSubmit={onSubmit}>
               {mode === "signup" ? (
@@ -139,15 +110,27 @@ function AuthPage() {
 
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  minLength={6}
-                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    minLength={6}
+                    autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    className="pr-10"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:bg-transparent"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
               </div>
 
               {notice ? <p className="text-sm text-accent-foreground">{notice}</p> : null}

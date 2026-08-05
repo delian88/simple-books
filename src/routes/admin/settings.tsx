@@ -1,0 +1,140 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getSystemSettings, updateSystemSettings } from "@/lib/admin.functions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
+import { useState, useEffect } from "react";
+import { AppShell } from "@/components/AppShell";
+
+export const Route = createFileRoute("/admin/settings")({
+  component: AdminSettings,
+});
+
+function AdminSettings() {
+  const queryClient = useQueryClient();
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ["admin_settings"],
+    queryFn: () => getSystemSettings(),
+  });
+
+  const [formData, setFormData] = useState({
+    subscriptionPrice: "",
+    smtpEnabled: false,
+    smtpHost: "",
+    smtpPort: "",
+    smtpUser: "",
+    smtpPass: "",
+  });
+
+  useEffect(() => {
+    if (settings) {
+      setFormData({
+        subscriptionPrice: settings.subscriptionPrice || "10",
+        smtpEnabled: settings.smtpEnabled === "true",
+        smtpHost: settings.smtpHost || "",
+        smtpPort: settings.smtpPort || "587",
+        smtpUser: settings.smtpUser || "",
+        smtpPass: settings.smtpPass || "",
+      });
+    }
+  }, [settings]);
+
+  const mutation = useMutation({
+    mutationFn: (data: Record<string, string>) => updateSystemSettings({ data }),
+    onSuccess: () => {
+      toast.success("Settings updated");
+      queryClient.invalidateQueries({ queryKey: ["admin_settings"] });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  if (isLoading) return <div>Loading...</div>;
+
+  return (
+    <AppShell>
+      <div className="mx-auto max-w-4xl space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Admin Settings</h1>
+          <p className="text-muted-foreground">Configure global application settings</p>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Subscription Pricing</CardTitle>
+            <CardDescription>Set the monthly subscription price (in your local currency) applied after the 14-day trial.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-2">
+              <Label htmlFor="price">Monthly Price</Label>
+              <Input
+                id="price"
+                type="number"
+                value={formData.subscriptionPrice}
+                onChange={e => setFormData({ ...formData, subscriptionPrice: e.target.value })}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>SMTP Configuration</CardTitle>
+            <CardDescription>Configure the email server for sending transactional emails.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="smtp-enabled"
+                checked={formData.smtpEnabled}
+                onCheckedChange={checked => setFormData({ ...formData, smtpEnabled: checked })}
+              />
+              <Label htmlFor="smtp-enabled">Enable SMTP Emails</Label>
+            </div>
+
+            {formData.smtpEnabled && (
+              <div className="grid gap-4 md:grid-cols-2 mt-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="host">SMTP Host</Label>
+                  <Input id="host" value={formData.smtpHost} onChange={e => setFormData({ ...formData, smtpHost: e.target.value })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="port">SMTP Port</Label>
+                  <Input id="port" value={formData.smtpPort} onChange={e => setFormData({ ...formData, smtpPort: e.target.value })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="user">SMTP User</Label>
+                  <Input id="user" value={formData.smtpUser} onChange={e => setFormData({ ...formData, smtpUser: e.target.value })} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="pass">SMTP Password</Label>
+                  <Input id="pass" type="password" value={formData.smtpPass} onChange={e => setFormData({ ...formData, smtpPass: e.target.value })} />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Button
+          onClick={() => {
+            const dataToSave = {
+              subscriptionPrice: formData.subscriptionPrice,
+              smtpEnabled: String(formData.smtpEnabled),
+              smtpHost: formData.smtpHost,
+              smtpPort: formData.smtpPort,
+              smtpUser: formData.smtpUser,
+              smtpPass: formData.smtpPass,
+            };
+            mutation.mutate(dataToSave);
+          }}
+          disabled={mutation.isPending}
+        >
+          {mutation.isPending ? "Saving..." : "Save Settings"}
+        </Button>
+      </div>
+    </AppShell>
+  );
+}

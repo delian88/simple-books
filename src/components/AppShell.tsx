@@ -1,14 +1,39 @@
-import { Link, useNavigate } from "@tanstack/react-router";
-import { BookOpenText, LayoutDashboard, ArrowDownLeft, ArrowUpRight, Scale, LogOut } from "lucide-react";
+import { Link, useNavigate, useLocation } from "@tanstack/react-router";
+import { 
+  BookOpenText, 
+  LayoutDashboard, 
+  ArrowDownLeft, 
+  ArrowUpRight, 
+  Scale, 
+  LogOut, 
+  Search, 
+  Bell,
+  Sun,
+  Moon,
+  Users,
+  Settings,
+  CreditCard,
+  FileText
+} from "lucide-react";
 import type { ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { logout, getSession } from "@/lib/auth.functions";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const NAV = [
+const MAIN_NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/money-in", label: "Money in", icon: ArrowDownLeft },
-  { to: "/money-out", label: "Money out", icon: ArrowUpRight },
-  { to: "/balance-sheet", label: "Balance sheet", icon: Scale },
+  { to: "/money-in", label: "Money In", icon: ArrowDownLeft },
+  { to: "/money-out", label: "Money Out", icon: ArrowUpRight },
+  { to: "/balance-sheet", label: "Balance Sheet", icon: Scale },
+] as const;
+
+const ADMIN_NAV = [
+  { to: "/admin/cms", label: "CMS Management", icon: FileText },
+  { to: "/admin/users", label: "Users", icon: Users },
+  { to: "/admin/payments", label: "Payments", icon: CreditCard },
+  { to: "/admin/settings", label: "Settings", icon: Settings },
 ] as const;
 
 export function AppShell({
@@ -22,53 +47,178 @@ export function AppShell({
   actions?: ReactNode;
   children: ReactNode;
 }) {
+  const { data: user } = useQuery({
+    queryKey: ["session"],
+    queryFn: () => getSession(),
+  });
+
   const navigate = useNavigate();
+  const location = useLocation();
 
   async function signOut() {
-    await supabase.auth.signOut();
+    await logout();
     navigate({ to: "/auth" });
   }
 
+  // Determine if it's the dashboard to show the custom header title instead of the page title
+  const isDashboard = location.pathname === "/dashboard" || location.pathname === "/admin";
+
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-20 border-b border-border bg-primary text-primary-foreground">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3">
-          <Link to="/dashboard" className="flex items-center gap-2 font-display text-lg">
-            <BookOpenText className="h-5 w-5 text-brass" />
-            Ledgerly
+    <div className="flex min-h-screen bg-background">
+      {/* Sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#0B3D2B] text-white">
+        <div className="flex h-20 items-center px-6">
+          <Link to="/dashboard" className="flex items-center gap-3 font-display text-xl font-bold">
+            <div className="rounded border-2 border-[#D4AF37] p-1">
+              <BookOpenText className="h-5 w-5 text-[#D4AF37]" />
+            </div>
+            <div>
+              <div className="leading-none">Ledgerly</div>
+              {user?.role === "Admin" && (
+                <div className="text-[10px] font-medium tracking-widest text-white/50 uppercase mt-1">Super Admin</div>
+              )}
+            </div>
           </Link>
-          <nav className="flex flex-1 flex-wrap items-center gap-1">
-            {NAV.map((item) => (
+        </div>
+
+        <div className="flex-1 overflow-y-auto py-4">
+          <nav className="space-y-1.5 px-3">
+            {MAIN_NAV.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
-                className="rounded-md px-3 py-1.5 text-sm opacity-75 transition-colors hover:bg-sidebar-accent hover:opacity-100"
-                activeProps={{ className: "bg-sidebar-accent opacity-100 font-medium" }}
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                activeProps={{ className: "bg-[#145C42] text-white font-semibold" }}
               >
-                <span className="flex items-center gap-2">
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </span>
+                <item.icon className="h-5 w-5" />
+                {item.label}
               </Link>
             ))}
+
+            {user?.role === "Admin" && (
+              <>
+                <div className="mx-3 my-4 border-t border-white/10"></div>
+                {ADMIN_NAV.map((item) => (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+                    activeProps={{ className: "bg-[#145C42] text-white font-semibold" }}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                  </Link>
+                ))}
+              </>
+            )}
           </nav>
-          <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 hover:bg-sidebar-accent">
+        </div>
+
+        {/* Sidebar Footer */}
+        <div className="p-4 mt-auto">
+          {user?.role === "Admin" && (
+            <div className="mb-4 rounded-xl border border-white/10 bg-white/5 p-4 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-2">
+                 <div className="text-[#D4AF37] text-xl leading-none">👑</div>
+              </div>
+              <p className="text-xs font-medium text-white pr-6">Manage with power.</p>
+              <p className="mt-1 text-[11px] text-white/60">Monitor, control and grow your business from one place.</p>
+              <Button variant="outline" size="sm" className="w-full mt-3 bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white h-8 text-xs">
+                View Reports &rarr;
+              </Button>
+            </div>
+          )}
+
+          <div className="flex items-center rounded-full bg-black/20 p-1 mb-6">
+            <button className="flex-1 rounded-full bg-[#145C42] py-1.5 text-xs font-medium flex items-center justify-center gap-1.5">
+              <Sun className="h-3.5 w-3.5" />
+              Light
+            </button>
+            <button className="flex-1 rounded-full py-1.5 text-xs font-medium text-white/60 flex items-center justify-center gap-1.5 hover:text-white">
+              <Moon className="h-3.5 w-3.5" />
+              Dark
+            </button>
+          </div>
+
+          <div className="px-2 text-[10px] text-white/40 mb-2">
+            <p>© 2025 Ledgerly</p>
+            <p>All rights reserved.</p>
+          </div>
+          
+          <Button variant="ghost" size="sm" onClick={signOut} className="w-full justify-start gap-2 text-white/60 hover:bg-white/10 hover:text-white px-2">
             <LogOut className="h-4 w-4" />
             Sign out
           </Button>
         </div>
-      </header>
+      </aside>
 
-      <main className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+      {/* Main Content */}
+      <div className="flex flex-1 flex-col pl-64">
+        {/* Main Header */}
+        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-border/40 bg-background/95 px-8 backdrop-blur">
           <div>
-            <h1 className="font-display text-3xl">{title}</h1>
-            {subtitle ? <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p> : null}
+            {isDashboard ? (
+              <>
+                <p className="text-sm font-medium text-muted-foreground">Welcome back, 👋</p>
+                <h1 className="text-2xl font-bold font-display">{user?.role === "Admin" ? "Super Admin" : "Dashboard"}</h1>
+              </>
+            ) : (
+              <>
+                <h1 className="text-2xl font-bold font-display">{title}</h1>
+                {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+              </>
+            )}
           </div>
-          {actions}
-        </div>
-        {children}
-      </main>
+
+          <div className="flex items-center gap-6">
+            <div className="relative w-64 hidden md:block">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input 
+                type="search" 
+                placeholder="Search anything..." 
+                className="pl-9 bg-muted/30 border-muted rounded-full h-9 focus-visible:ring-1" 
+              />
+              <div className="absolute right-3 top-2.5 flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
+                <kbd className="rounded border bg-muted px-1">⌘</kbd>
+                <kbd className="rounded border bg-muted px-1">K</kbd>
+              </div>
+            </div>
+
+            <button className="relative text-muted-foreground hover:text-foreground">
+              <Bell className="h-5 w-5" />
+              <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-white ring-2 ring-background">
+                8
+              </span>
+            </button>
+
+            <div className="flex items-center gap-3 border-l border-border pl-6">
+              <Avatar className="h-9 w-9 border">
+                <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`} />
+                <AvatarFallback>AD</AvatarFallback>
+              </Avatar>
+              <div className="hidden flex-col md:flex">
+                <span className="text-sm font-semibold">{user?.role === "Admin" ? "Super Admin" : "User"}</span>
+                <span className="text-xs text-muted-foreground">{user?.email}</span>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 p-8">
+          {isDashboard && (
+             <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+                <p className="text-sm text-muted-foreground mt-1">Here's a running summary of everything you have recorded.</p>
+                {actions}
+             </div>
+          )}
+          {!isDashboard && actions && (
+             <div className="mb-6 flex justify-end">
+                {actions}
+             </div>
+          )}
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { prisma } from "@/server/db";
 import { z } from "zod";
 
 const txnInput = z.object({
@@ -32,12 +33,11 @@ const balanceInput = z.object({
 export const getProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await context.supabase
-      .from("profiles")
-      .select("id, business_name, currency")
-      .eq("id", context.userId)
-      .maybeSingle();
-    return data ?? { id: context.userId, business_name: "My Business", currency: "NGN" };
+    const data = await prisma.profile.findUnique({
+      where: { id: context.userId },
+      select: { id: true, businessName: true, currency: true }
+    });
+    return data ? { id: data.id, business_name: data.businessName, currency: data.currency } : { id: context.userId, business_name: "My Business", currency: "NGN" };
   });
 
 export const updateProfile = createServerFn({ method: "POST" })
@@ -46,33 +46,41 @@ export const updateProfile = createServerFn({ method: "POST" })
     z.object({ business_name: z.string().trim().min(1).max(120), currency: z.string().trim().min(1).max(6) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("profiles")
-      .upsert({ id: context.userId, ...data });
-    if (error) throw new Error(error.message);
+    await prisma.profile.upsert({
+      where: { id: context.userId },
+      update: { businessName: data.business_name, currency: data.currency },
+      create: { id: context.userId, businessName: data.business_name, currency: data.currency }
+    });
     return { ok: true };
   });
 
 export const listTransactions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
-      .from("transactions")
-      .select("id, direction, category, amount, occurred_on, counterparty, note, source")
-      .order("occurred_on", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(500);
-    if (error) throw new Error(error.message);
-    return (data ?? []).map((row) => ({ ...row, amount: Number(row.amount) }));
+    const data = await prisma.transaction.findMany({
+      where: { userId: context.userId },
+      select: { id: true, direction: true, category: true, amount: true, occurredOn: true, counterparty: true, note: true, source: true },
+      orderBy: [{ occurredOn: 'desc' }, { createdAt: 'desc' }],
+      take: 500
+    });
+    return data.map((row) => ({ ...row, amount: Number(row.amount), occurred_on: row.occurredOn.toISOString().slice(0, 10) }));
   });
 
 export const addTransactions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ rows: z.array(txnInput).min(1).max(500) }).parse(input))
   .handler(async ({ data, context }) => {
-    const rows = data.rows.map((row) => ({ ...row, user_id: context.userId }));
-    const { error } = await context.supabase.from("transactions").insert(rows);
-    if (error) throw new Error(error.message);
+    const rows = data.rows.map((row) => ({
+      userId: context.userId,
+      direction: row.direction,
+      category: row.category,
+      amount: row.amount,
+      occurredOn: new Date(row.occurred_on),
+      counterparty: row.counterparty,
+      note: row.note,
+      source: row.source
+    }));
+    await prisma.transaction.createMany({ data: rows });
     return { inserted: rows.length };
   });
 
@@ -80,31 +88,35 @@ export const deleteTransaction = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("transactions").delete().eq("id", data.id);
-    if (error) throw new Error(error.message);
+    await prisma.transaction.deleteMany({ where: { id: data.id, userId: context.userId } });
     return { ok: true };
   });
 
 export const listBalanceItems = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data, error } = await context.supabase
-      .from("balance_items")
-      .select("id, side, name, category, amount, as_of")
-      .order("side")
-      .order("created_at", { ascending: false });
-    if (error) throw new Error(error.message);
-    return (data ?? []).map((row) => ({ ...row, amount: Number(row.amount) }));
+    const data = await prisma.balanceItem.findMany({
+      where: { userId: context.userId },
+      select: { id: true, side: true, name: true, category: true, amount: true, asOf: true },
+      orderBy: [{ side: 'asc' }, { createdAt: 'desc' }]
+    });
+    return data.map((row) => ({ ...row, amount: Number(row.amount), as_of: row.asOf.toISOString().slice(0, 10) }));
   });
 
 export const addBalanceItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => balanceInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
-      .from("balance_items")
-      .insert({ ...data, user_id: context.userId });
-    if (error) throw new Error(error.message);
+    await prisma.balanceItem.create({
+      data: {
+        userId: context.userId,
+        side: data.side,
+        name: data.name,
+        category: data.category,
+        amount: data.amount,
+        asOf: new Date(data.as_of)
+      }
+    });
     return { ok: true };
   });
 
@@ -112,8 +124,7 @@ export const deleteBalanceItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase.from("balance_items").delete().eq("id", data.id);
-    if (error) throw new Error(error.message);
+    await prisma.balanceItem.deleteMany({ where: { id: data.id, userId: context.userId } });
     return { ok: true };
   });
 
