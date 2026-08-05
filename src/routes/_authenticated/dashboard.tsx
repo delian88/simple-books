@@ -51,8 +51,10 @@ function Dashboard() {
     txns.filter((t) => predicate(t.category as TxnCategory)).reduce((acc, t) => acc + t.amount, 0);
 
   const sales = sum((c) => c === "sales");
+  const otherIncome = sum((c) => c === "other_income");
+  const totalRevenue = sales + otherIncome;
   const expenses = sum((c) => c === "expense");
-  const profit = sales - expenses;
+  const profit = totalRevenue - expenses;
   const totalIn = txns.filter((t) => t.direction === "inflow").reduce((a, t) => a + t.amount, 0);
   const totalOut = txns.filter((t) => t.direction === "outflow").reduce((a, t) => a + t.amount, 0);
 
@@ -80,7 +82,7 @@ function Dashboard() {
       iconBg: "bg-red-100 dark:bg-red-900/50"
     },
     { 
-      label: "PROFIT (SALES − EXPENSES)", 
+      label: "PROFIT (REVENUE − EXPENSES)", 
       value: profit, 
       icon: TrendingUp, 
       color: "#3b82f6",
@@ -100,9 +102,14 @@ function Dashboard() {
   ];
 
   const pieData = [
-    { name: 'Sales Revenue', value: sales || 1, color: '#10b981' },
-    { name: 'Business Expenses', value: expenses || 1, color: '#fca5a5' },
-  ];
+    { name: 'Sales Revenue', value: sales || 0, color: '#10b981' },
+    ...(otherIncome > 0 ? [{ name: 'Other Income', value: otherIncome, color: '#0ea5e9' }] : []),
+    { name: 'Business Expenses', value: expenses || 0, color: '#fca5a5' },
+  ].filter(d => d.value > 0);
+  
+  if (pieData.length === 0) {
+    pieData.push({ name: 'No Data', value: 1, color: '#e2e8f0' });
+  }
 
   return (
     <AppShell 
@@ -237,6 +244,15 @@ function Dashboard() {
                 </div>
                 <span className="font-bold">{formatMoney(sales, currency)}</span>
               </div>
+              {otherIncome > 0 && (
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-sky-500"></div>
+                    <span className="font-medium">Other Income</span>
+                  </div>
+                  <span className="font-bold">{formatMoney(otherIncome, currency)}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between text-sm">
                 <div className="flex items-center gap-2">
                   <div className="h-3 w-3 rounded-full bg-red-300"></div>

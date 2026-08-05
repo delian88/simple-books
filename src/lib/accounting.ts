@@ -5,6 +5,7 @@ export type TxnCategory =
   | "sales"
   | "loan"
   | "debtor_payment"
+  | "other_income"
   | "asset_purchase"
   | "expense"
   | "vendor_payment"
@@ -17,6 +18,7 @@ export const INFLOW_CATEGORIES: { value: TxnCategory; label: string; hint: strin
   { value: "sales", label: "Sales", hint: "Revenue earned from customers" },
   { value: "loan", label: "Loan received", hint: "Borrowed money — a liability" },
   { value: "debtor_payment", label: "Payment from debtor", hint: "Customer settling an old invoice" },
+  { value: "other_income", label: "Other income", hint: "Miscellaneous revenue like interest or dividends" },
 ];
 
 export const OUTFLOW_CATEGORIES: { value: TxnCategory; label: string; hint: string }[] = [
@@ -31,6 +33,7 @@ export const CATEGORY_LABEL: Record<TxnCategory, string> = {
   sales: "Sales",
   loan: "Loan received",
   debtor_payment: "Payment from debtor",
+  other_income: "Other income",
   asset_purchase: "Purchase of asset",
   expense: "Business expense",
   vendor_payment: "Pay vendor",
