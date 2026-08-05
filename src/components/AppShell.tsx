@@ -1,4 +1,5 @@
 import { Link, useNavigate, useLocation } from "@tanstack/react-router";
+import { useState } from "react";
 import { 
   BookOpenText, 
   LayoutDashboard, 
@@ -13,7 +14,9 @@ import {
   Users,
   Settings,
   CreditCard,
-  FileText
+  FileText,
+  Menu,
+  X
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { logout, getSession } from "@/lib/auth.functions";
@@ -54,6 +57,7 @@ export function AppShell({
 
   const navigate = useNavigate();
   const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   async function signOut() {
     await logout();
@@ -64,10 +68,18 @@ export function AppShell({
   const isDashboard = location.pathname === "/dashboard" || location.pathname === "/admin";
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-[100dvh] overflow-hidden bg-background">
+      {/* Mobile Sidebar Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden" 
+          onClick={() => setIsMobileMenuOpen(false)} 
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#0B3D2B] text-white">
-        <div className="flex h-20 items-center px-6">
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#0B3D2B] text-white transition-transform duration-200 ease-in-out lg:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="flex h-14 lg:h-20 items-center justify-between px-6">
           <Link to="/dashboard" className="flex items-center gap-3 font-display text-xl font-bold">
             <div className="rounded border-2 border-[#D4AF37] p-1">
               <BookOpenText className="h-5 w-5 text-[#D4AF37]" />
@@ -79,6 +91,12 @@ export function AppShell({
               )}
             </div>
           </Link>
+          <button 
+            className="lg:hidden text-white/70 hover:text-white" 
+            onClick={() => setIsMobileMenuOpen(false)}
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto py-4">
@@ -153,25 +171,30 @@ export function AppShell({
       </aside>
 
       {/* Main Content */}
-      <div className="flex flex-1 flex-col pl-64">
+      <div className="flex h-full flex-1 flex-col lg:pl-64">
         {/* Main Header */}
-        <header className="sticky top-0 z-20 flex h-20 items-center justify-between border-b border-border/40 bg-background/95 px-8 backdrop-blur">
-          <div>
-            {isDashboard ? (
-              <>
-                <p className="text-sm font-medium text-muted-foreground">Welcome back, 👋</p>
-                <h1 className="text-2xl font-bold font-display">{user?.role === "Admin" ? "Super Admin" : "Dashboard"}</h1>
-              </>
-            ) : (
-              <>
-                <h1 className="text-2xl font-bold font-display">{title}</h1>
-                {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
-              </>
-            )}
+        <header className="flex h-14 w-full shrink-0 items-center justify-between border-b border-border/40 bg-background/95 px-4 lg:h-20 lg:px-8">
+          <div className="flex items-center gap-3">
+            <button className="lg:hidden text-muted-foreground hover:text-foreground" onClick={() => setIsMobileMenuOpen(true)}>
+              <Menu className="h-5 w-5" />
+            </button>
+            <div>
+              {isDashboard ? (
+                <>
+                  <p className="text-xs font-medium text-muted-foreground lg:text-sm">Welcome back, 👋</p>
+                  <h1 className="font-display text-lg font-bold lg:text-2xl">{user?.role === "Admin" ? "Super Admin" : "Dashboard"}</h1>
+                </>
+              ) : (
+                <>
+                  <h1 className="font-display text-lg font-bold lg:text-2xl">{title}</h1>
+                  {subtitle && <p className="text-xs text-muted-foreground lg:text-sm">{subtitle}</p>}
+                </>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="relative w-64 hidden md:block">
+          <div className="flex items-center gap-3 lg:gap-6">
+            <div className="relative hidden w-64 md:block">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input 
                 type="search" 
@@ -191,8 +214,8 @@ export function AppShell({
               </span>
             </button>
 
-            <div className="flex items-center gap-3 border-l border-border pl-6">
-              <Avatar className="h-9 w-9 border">
+            <div className="flex items-center gap-3 border-l border-border pl-3 lg:pl-6">
+              <Avatar className="h-7 w-7 border lg:h-9 lg:w-9">
                 <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`} />
                 <AvatarFallback>AD</AvatarFallback>
               </Avatar>
@@ -204,7 +227,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="flex-1 p-8">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-8">
           {isDashboard && (
              <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
                 <p className="text-sm text-muted-foreground mt-1">Here's a running summary of everything you have recorded.</p>
