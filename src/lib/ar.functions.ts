@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { prisma } from "@/server/db";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { Prisma } from "@prisma/client";
+
 async function getActiveCompanyId(userId: string): Promise<string> {
   const companyUser = await prisma.companyUser.findFirst({
     where: { userId },
@@ -9,7 +11,6 @@ async function getActiveCompanyId(userId: string): Promise<string> {
   if (!companyUser) throw new Error("User does not belong to any company");
   return companyUser.companyId;
 }
-import { Prisma } from "@prisma/client";
 
 // ----- CUSTOMERS -----
 
@@ -63,7 +64,7 @@ export const createSalesInvoice = createServerFn({ method: "POST" })
     notes?: string;
     terms?: string;
     lines: {
-      accountId: string;
+      accountId?: string;
       description: string;
       quantity: number;
       unitPrice: number;
@@ -91,15 +92,15 @@ export const createSalesInvoice = createServerFn({ method: "POST" })
         invoiceNumber: data.invoiceNumber,
         issueDate: data.issueDate,
         dueDate: data.dueDate,
-        notes: data.notes,
-        terms: data.terms,
+        notes: data.notes ?? null,
+        terms: data.terms ?? null,
         subtotal,
         taxAmount,
         totalAmount,
         status: "DRAFT",
         lines: {
           create: data.lines.map(line => ({
-            accountId: line.accountId,
+            ...(line.accountId ? { accountId: line.accountId } : {}),
             description: line.description,
             quantity: line.quantity,
             unitPrice: line.unitPrice,
