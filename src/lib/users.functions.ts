@@ -13,7 +13,7 @@ export const listUsers = createServerFn({ method: "GET" })
   });
 
 export const listActivities = createServerFn({ method: "GET" })
-  .inputValidator((input: unknown) => z.object({ userId: z.string().optional() }).optional().parse(input))
+  .validator((input: unknown) => z.object({ userId: z.string().optional() }).optional().parse(input))
   .handler(async ({ data }) => {
     await requireAdmin();
     return prisma.activityLog.findMany({

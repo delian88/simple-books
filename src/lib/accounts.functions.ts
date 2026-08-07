@@ -37,7 +37,7 @@ export const listAccounts = createServerFn({ method: "GET" })
 
 export const addAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => accountInput.parse(input))
+  .validator((input: unknown) => accountInput.parse(input))
   .handler(async ({ data, context }) => {
     const companyId = await getActiveCompanyId(context.userId);
     
@@ -62,7 +62,7 @@ export const addAccount = createServerFn({ method: "POST" })
 
 export const updateAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid(), ...accountInput.shape }).parse(input))
+  .validator((input: unknown) => z.object({ id: z.string().uuid(), ...accountInput.shape }).parse(input))
   .handler(async ({ data, context }) => {
     const companyId = await getActiveCompanyId(context.userId);
     await prisma.account.updateMany({
@@ -80,7 +80,7 @@ export const updateAccount = createServerFn({ method: "POST" })
 
 export const deleteAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const companyId = await getActiveCompanyId(context.userId);
     

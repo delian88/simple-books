@@ -51,7 +51,7 @@ export const getProfile = createServerFn({ method: "GET" })
 
 export const updateProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({ business_name: z.string().trim().min(1).max(120), currency: z.string().trim().min(1).max(6) }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -78,7 +78,7 @@ export const listTransactions = createServerFn({ method: "GET" })
 
 export const addTransactions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ rows: z.array(txnInput).min(1).max(500) }).parse(input))
+  .validator((input: unknown) => z.object({ rows: z.array(txnInput).min(1).max(500) }).parse(input))
   .handler(async ({ data, context }) => {
     const companyId = await getActiveCompanyId(context.userId);
     
@@ -136,7 +136,7 @@ export const addTransactions = createServerFn({ method: "POST" })
 
 export const deleteTransaction = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const companyId = await getActiveCompanyId(context.userId);
     await prisma.transaction.deleteMany({ where: { id: data.id, companyId } });
@@ -157,7 +157,7 @@ export const listBalanceItems = createServerFn({ method: "GET" })
 
 export const addBalanceItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => balanceInput.parse(input))
+  .validator((input: unknown) => balanceInput.parse(input))
   .handler(async ({ data, context }) => {
     const companyId = await getActiveCompanyId(context.userId);
     await prisma.balanceItem.create({
@@ -176,7 +176,7 @@ export const addBalanceItem = createServerFn({ method: "POST" })
 
 export const deleteBalanceItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const companyId = await getActiveCompanyId(context.userId);
     await prisma.balanceItem.deleteMany({ where: { id: data.id, companyId } });
@@ -185,7 +185,7 @@ export const deleteBalanceItem = createServerFn({ method: "POST" })
 
 export const scanReceipt = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z
       .object({
         imageDataUrl: z

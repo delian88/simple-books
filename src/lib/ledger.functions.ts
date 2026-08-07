@@ -28,7 +28,7 @@ const journalEntryInput = z.object({
 
 export const createJournalEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => journalEntryInput.parse(input))
+  .validator((input: unknown) => journalEntryInput.parse(input))
   .handler(async ({ data, context }) => {
     const companyId = await getActiveCompanyId(context.userId);
 
@@ -96,7 +96,7 @@ export const listJournalEntries = createServerFn({ method: "GET" })
 
 export const approveJournalEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const companyId = await getActiveCompanyId(context.userId);
     
@@ -110,7 +110,7 @@ export const approveJournalEntry = createServerFn({ method: "POST" })
 
 export const reverseJournalEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const companyId = await getActiveCompanyId(context.userId);
     
@@ -159,7 +159,7 @@ const templateLineInput = z.object({
 
 export const createJournalTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({
+  .validator((input: unknown) => z.object({
     name: z.string().trim().min(1),
     description: z.string().trim().nullable().default(null),
     lines: z.array(templateLineInput).min(2)

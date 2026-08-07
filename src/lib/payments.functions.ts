@@ -10,7 +10,7 @@ export const listGateways = createServerFn({ method: "GET" })
   });
 
 export const upsertGateway = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({
       provider: z.string(),
       publicKey: z.string().optional(),

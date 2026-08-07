@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 import { setCookie, deleteCookie } from '@tanstack/react-start/server';
 
 export const login = createServerFn({ method: 'POST' })
-  .inputValidator((input: unknown) => z.object({ email: z.string().email(), password: z.string() }).parse(input))
+  .validator((input: unknown) => z.object({ email: z.string().email(), password: z.string() }).parse(input))
   .handler(async ({ data }) => {
     const user = await prisma.user.findUnique({ where: { email: data.email } });
     if (!user) throw new Error('Invalid email or password');
@@ -27,7 +27,7 @@ export const login = createServerFn({ method: 'POST' })
   });
 
 export const signup = createServerFn({ method: 'POST' })
-  .inputValidator((input: unknown) => z.object({ email: z.string().email(), password: z.string(), businessName: z.string() }).parse(input))
+  .validator((input: unknown) => z.object({ email: z.string().email(), password: z.string(), businessName: z.string() }).parse(input))
   .handler(async ({ data }) => {
     const exists = await prisma.user.findUnique({ where: { email: data.email } });
     if (exists) throw new Error('Email already in use');

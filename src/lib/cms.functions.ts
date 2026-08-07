@@ -10,14 +10,14 @@ export const listPages = createServerFn({ method: "GET" })
   });
 
 export const getPageBySlug = createServerFn({ method: "GET" })
-  .inputValidator((input: unknown) => z.object({ slug: z.string() }).parse(input))
+  .validator((input: unknown) => z.object({ slug: z.string() }).parse(input))
   .handler(async ({ data }) => {
     // Public accessible (not restricted to admin) for rendering
     return prisma.page.findUnique({ where: { slug: data.slug } });
   });
 
 export const upsertPage = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) =>
+  .validator((input: unknown) =>
     z.object({
       id: z.string().optional(),
       slug: z.string().min(1),
@@ -36,7 +36,7 @@ export const upsertPage = createServerFn({ method: "POST" })
   });
 
 export const deletePage = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.object({ id: z.string() }).parse(input))
+  .validator((input: unknown) => z.object({ id: z.string() }).parse(input))
   .handler(async ({ data }) => {
     await requireAdmin();
     await prisma.page.delete({ where: { id: data.id } });

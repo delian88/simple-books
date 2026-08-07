@@ -12,7 +12,7 @@ export const getSystemSettings = createServerFn({ method: "GET" })
   });
 
 export const updateSystemSettings = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => z.record(z.string(), z.string()).parse(input))
+  .validator((input: unknown) => z.record(z.string(), z.string()).parse(input))
   .handler(async ({ data }) => {
     await requireAdmin();
     const ops = Object.entries(data).map(([key, value]) =>
