@@ -52,14 +52,16 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
+import { AIInsightsWidget } from "@/components/AIInsightsWidget";
+
 // Mock data for sparklines
 const generateSparkline = () =>
   Array.from({ length: 10 }, (_, i) => ({ value: Math.random() * 100 + 50 }));
 
 function Dashboard() {
   const { data } = useSuspenseQuery(dashboardQuery);
-  const currency = data.profile.currency;
-  const txns = data.transactions;
+  const { profile, transactions: txns, balanceItems } = data;
+  const currency = profile.currency;
 
   const sum = (predicate: (c: TxnCategory) => boolean) =>
     txns.filter((t) => predicate(t.category as TxnCategory)).reduce((acc, t) => acc + t.amount, 0);
@@ -139,6 +141,7 @@ function Dashboard() {
         </div>
       }
     >
+      <AIInsightsWidget />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
         {stats.map((stat) => (
           <Card

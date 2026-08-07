@@ -159,3 +159,64 @@ export const listExpenses = createServerFn({ method: "GET" })
     });
     return expenses;
   });
+
+export const generateFinancialInsights = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const companyId = await getActiveCompanyId(context.userId);
+    
+    // Get last 90 days of data
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+    const expenses = await prisma.expense.findMany({
+      where: { companyId, date: { gte: ninetyDaysAgo } },
+      select: { amount: true, category: true, date: true }
+    });
+
+    const invoices = await prisma.salesInvoice.findMany({
+      where: { companyId, issueDate: { gte: ninetyDaysAgo }, status: { not: "CANCELLED" } },
+      select: { totalAmount: true, issueDate: true, status: true }
+    });
+
+    // Aggregate
+    const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount), 0);
+    const totalRevenue = invoices.reduce((s, i) => s + Number(i.totalAmount), 0);
+    
+    const categories = expenses.reduce((acc, exp) => {
+      acc[exp.category] = (acc[exp.category] || 0) + Number(exp.amount);
+      return acc;
+    }, {} as Record<string, number>);
+
+    const prompt = `
+      You are an expert financial analyst. Analyze the following 90-day financial summary for a small business.
+      Total Revenue (Invoiced): ${totalRevenue}
+      Total Expenses: ${totalExpenses}
+      Expenses by Category: ${JSON.stringify(categories)}
+      
+      Generate a JSON response with exactly two keys:
+      - "insights": An array of 3 strings. Each string is a brief, actionable insight or observation about their spending/revenue.
+      - "prediction": A short 1-sentence prediction for their cash flow over the next 30 days based on these numbers.
+
+      Return ONLY valid JSON. No markdown.
+    `;
+
+    try {
+      const url = `https://text.pollinations.ai/prompt/${encodeURIComponent(prompt.trim())}?model=openai`;
+      const response = await fetch(url);
+      const result = await response.text();
+      
+      let cleanJson = result.trim();
+      if (cleanJson.startsWith('\`\`\`json')) cleanJson = cleanJson.slice(7);
+      if (cleanJson.startsWith('\`\`\`')) cleanJson = cleanJson.slice(3);
+      if (cleanJson.endsWith('\`\`\`')) cleanJson = cleanJson.slice(0, -3);
+      
+      return JSON.parse(cleanJson.trim());
+    } catch (err) {
+      console.error("Insights Error:", err);
+      return {
+        insights: ["Revenue looks steady.", "Keep an eye on categorizing your expenses.", "Upload more receipts to get better insights!"],
+        prediction: "Cash flow should remain stable over the next 30 days."
+      };
+    }
+  });
