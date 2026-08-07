@@ -5,16 +5,7 @@ import { z } from "zod";
 
 const txnInput = z.object({
   direction: z.enum(["inflow", "outflow"]),
-  category: z.enum([
-    "capital",
-    "sales",
-    "loan",
-    "debtor_payment",
-    "asset_purchase",
-    "expense",
-    "vendor_payment",
-    "loan_repayment",
-  ]),
+  category: z.string().trim().min(1).max(100), // Now accepts Account ID
   amount: z.number().positive().max(1_000_000_000_00),
   occurred_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   counterparty: z.string().trim().max(120).nullable().default(null),
@@ -30,14 +21,32 @@ const balanceInput = z.object({
   as_of: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
+async function getActiveCompanyId(userId: string): Promise<string> {
+  const companyUser = await prisma.companyUser.findFirst({
+    where: { userId },
+    select: { companyId: true }
+  });
+  if (!companyUser) throw new Error("User does not belong to any company");
+  return companyUser.companyId;
+}
+
 export const getProfile = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const data = await prisma.profile.findUnique({
-      where: { id: context.userId },
-      select: { id: true, businessName: true, currency: true }
+    const companyUser = await prisma.companyUser.findFirst({
+      where: { userId: context.userId },
+      include: { company: true }
     });
-    return data ? { id: data.id, business_name: data.businessName, currency: data.currency } : { id: context.userId, business_name: "My Business", currency: "NGN" };
+    
+    if (companyUser && companyUser.company) {
+      return { 
+        id: companyUser.company.id, 
+        business_name: companyUser.company.name, 
+        currency: companyUser.company.defaultCurrency 
+      };
+    }
+    
+    return { id: context.userId, business_name: "My Business", currency: "NGN" };
   });
 
 export const updateProfile = createServerFn({ method: "POST" })
@@ -46,10 +55,10 @@ export const updateProfile = createServerFn({ method: "POST" })
     z.object({ business_name: z.string().trim().min(1).max(120), currency: z.string().trim().min(1).max(6) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await prisma.profile.upsert({
-      where: { id: context.userId },
-      update: { businessName: data.business_name, currency: data.currency },
-      create: { id: context.userId, businessName: data.business_name, currency: data.currency }
+    const companyId = await getActiveCompanyId(context.userId);
+    await prisma.company.update({
+      where: { id: companyId },
+      data: { name: data.business_name, defaultCurrency: data.currency }
     });
     return { ok: true };
   });
@@ -57,8 +66,9 @@ export const updateProfile = createServerFn({ method: "POST" })
 export const listTransactions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const companyId = await getActiveCompanyId(context.userId);
     const data = await prisma.transaction.findMany({
-      where: { userId: context.userId },
+      where: { companyId },
       select: { id: true, direction: true, category: true, amount: true, occurredOn: true, counterparty: true, note: true, source: true },
       orderBy: [{ occurredOn: 'desc' }, { createdAt: 'desc' }],
       take: 500
@@ -70,17 +80,57 @@ export const addTransactions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ rows: z.array(txnInput).min(1).max(500) }).parse(input))
   .handler(async ({ data, context }) => {
+    const companyId = await getActiveCompanyId(context.userId);
+    
+    // Fallback cash account for automatic posting
+    let cashAccount = await prisma.account.findFirst({
+      where: { companyId, name: "Cash" }
+    });
+    if (!cashAccount) {
+      cashAccount = await prisma.account.create({
+        data: { companyId, name: "Cash", type: "ASSET" }
+      });
+    }
+
     const rows = data.rows.map((row) => ({
       userId: context.userId,
+      companyId: companyId,
+      createdBy: context.userId,
       direction: row.direction,
-      category: row.category,
+      categoryId: row.category, // Map the selected account ID to categoryId
+      category: "Journal Entry", // Fallback text
       amount: row.amount,
       occurredOn: new Date(row.occurred_on),
       counterparty: row.counterparty,
       note: row.note,
       source: row.source
     }));
+    
+    // First save the old Transaction records for UI compatibility
     await prisma.transaction.createMany({ data: rows });
+
+    // Then post automatic Journal Entries
+    for (const row of data.rows) {
+      const opposingAccountId = row.category;
+      const debitAccountId = row.direction === "inflow" ? cashAccount.id : opposingAccountId;
+      const creditAccountId = row.direction === "inflow" ? opposingAccountId : cashAccount.id;
+
+      await prisma.journalEntry.create({
+        data: {
+          companyId,
+          date: new Date(row.occurred_on),
+          description: row.note || `Auto-posted ${row.direction}`,
+          status: "POSTED",
+          lines: {
+            create: [
+              { accountId: debitAccountId, debit: row.amount, credit: 0 },
+              { accountId: creditAccountId, debit: 0, credit: row.amount }
+            ]
+          }
+        }
+      });
+    }
+
     return { inserted: rows.length };
   });
 
@@ -88,15 +138,17 @@ export const deleteTransaction = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await prisma.transaction.deleteMany({ where: { id: data.id, userId: context.userId } });
+    const companyId = await getActiveCompanyId(context.userId);
+    await prisma.transaction.deleteMany({ where: { id: data.id, companyId } });
     return { ok: true };
   });
 
 export const listBalanceItems = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    const companyId = await getActiveCompanyId(context.userId);
     const data = await prisma.balanceItem.findMany({
-      where: { userId: context.userId },
+      where: { companyId },
       select: { id: true, side: true, name: true, category: true, amount: true, asOf: true },
       orderBy: [{ side: 'asc' }, { createdAt: 'desc' }]
     });
@@ -107,9 +159,11 @@ export const addBalanceItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => balanceInput.parse(input))
   .handler(async ({ data, context }) => {
+    const companyId = await getActiveCompanyId(context.userId);
     await prisma.balanceItem.create({
       data: {
         userId: context.userId,
+        companyId: companyId,
         side: data.side,
         name: data.name,
         category: data.category,
@@ -124,7 +178,8 @@ export const deleteBalanceItem = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await prisma.balanceItem.deleteMany({ where: { id: data.id, userId: context.userId } });
+    const companyId = await getActiveCompanyId(context.userId);
+    await prisma.balanceItem.deleteMany({ where: { id: data.id, companyId } });
     return { ok: true };
   });
 

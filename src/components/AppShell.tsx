@@ -27,9 +27,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const MAIN_NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/customers", label: "Customers", icon: Users },
+  { to: "/sales/invoices", label: "Sales Invoices", icon: FileText },
   { to: "/money-in", label: "Money In", icon: ArrowDownLeft },
   { to: "/money-out", label: "Money Out", icon: ArrowUpRight },
   { to: "/balance-sheet", label: "Balance Sheet", icon: Scale },
+  { to: "/chart-of-accounts", label: "Chart of Accounts", icon: BookOpenText },
+  { to: "/ledger", label: "General Ledger", icon: FileText },
+  { to: "/journal-templates", label: "Journal Templates", icon: FileText },
 ] as const;
 
 const ADMIN_NAV = [

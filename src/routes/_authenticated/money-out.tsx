@@ -2,18 +2,32 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import { getProfile, listTransactions } from "@/lib/accounting.functions";
+import { listAccounts } from "@/lib/accounts.functions";
 import { AppShell } from "@/components/AppShell";
 import { EntryForm, emptyDraft } from "@/components/EntryForm";
 import { ReceiptScanner } from "@/components/ReceiptScanner";
 import { TransactionsTable } from "@/components/TransactionsTable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { OUTFLOW_CATEGORIES, formatMoney } from "@/lib/accounting";
+import { formatMoney } from "@/lib/accounting";
 
 const moneyOutQuery = queryOptions({
   queryKey: ["money-out"],
   queryFn: async () => {
-    const [profile, transactions] = await Promise.all([getProfile(), listTransactions()]);
-    return { profile, transactions: transactions.filter((t) => t.direction === "outflow") };
+    const [profile, transactions, accounts] = await Promise.all([getProfile(), listTransactions(), listAccounts()]);
+    
+    const outflowAccounts = accounts
+      .filter(a => a.type !== "REVENUE")
+      .map(a => ({
+        value: a.id,
+        label: `${a.code ? a.code + ' - ' : ''}${a.name}`,
+        hint: a.type
+      }));
+
+    return { 
+      profile, 
+      transactions: transactions.filter((t) => t.direction === "outflow"),
+      categories: outflowAccounts.length > 0 ? outflowAccounts : [{ value: "default", label: "No accounts found", hint: "Go to Chart of Accounts" }]
+    };
   },
 });
 
@@ -22,8 +36,6 @@ export const Route = createFileRoute("/_authenticated/money-out")({
     meta: [
       { title: "Money out — Ledgerly" },
       { name: "description", content: "Scan third-party receipts to record assets bought, expenses, vendor payments and loan repayments." },
-      { property: "og:title", content: "Money out — Ledgerly" },
-      { property: "og:description", content: "Scan receipts to record expenses, assets, vendor payments and loan repayments." },
     ],
   }),
   component: MoneyOut,
@@ -31,7 +43,7 @@ export const Route = createFileRoute("/_authenticated/money-out")({
 
 function MoneyOut() {
   const { data } = useSuspenseQuery(moneyOutQuery);
-  const [draft, setDraft] = useState(() => emptyDraft("expense"));
+  const [draft, setDraft] = useState(() => emptyDraft(data.categories[0].value));
   const total = data.transactions.reduce((acc, t) => acc + t.amount, 0);
 
   return (
@@ -51,7 +63,7 @@ function MoneyOut() {
           title="Record an outflow"
           description="Check the scanned details — or type a payment in by hand."
           direction="outflow"
-          categories={OUTFLOW_CATEGORIES}
+          categories={data.categories}
           draft={draft}
           onDraftChange={setDraft}
         />

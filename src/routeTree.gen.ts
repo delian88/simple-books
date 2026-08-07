@@ -19,13 +19,19 @@ import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ResourcesRouteImport } from './routes/resources'
 import { Route as AuthenticatedBalanceSheetRouteImport } from './routes/_authenticated/balance-sheet'
+import { Route as AuthenticatedChartOfAccountsRouteImport } from './routes/_authenticated/chart-of-accounts'
+import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedJournalEntryNewRouteImport } from './routes/_authenticated/journal-entry-new'
+import { Route as AuthenticatedJournalTemplatesRouteImport } from './routes/_authenticated/journal-templates'
+import { Route as AuthenticatedLedgerRouteImport } from './routes/_authenticated/ledger'
 import { Route as AuthenticatedMoneyInRouteImport } from './routes/_authenticated/money-in'
 import { Route as AuthenticatedMoneyOutRouteImport } from './routes/_authenticated/money-out'
 import { Route as AdminCmsRouteImport } from './routes/admin/cms'
 import { Route as AdminPaymentsRouteImport } from './routes/admin/payments'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AuthenticatedSalesInvoicesRouteImport } from './routes/_authenticated/sales.invoices'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -77,9 +83,37 @@ const AuthenticatedBalanceSheetRoute =
     path: '/balance-sheet',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedChartOfAccountsRoute =
+  AuthenticatedChartOfAccountsRouteImport.update({
+    id: '/chart-of-accounts',
+    path: '/chart-of-accounts',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCustomersRoute = AuthenticatedCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedJournalEntryNewRoute =
+  AuthenticatedJournalEntryNewRouteImport.update({
+    id: '/journal-entry-new',
+    path: '/journal-entry-new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedJournalTemplatesRoute =
+  AuthenticatedJournalTemplatesRouteImport.update({
+    id: '/journal-templates',
+    path: '/journal-templates',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedLedgerRoute = AuthenticatedLedgerRouteImport.update({
+  id: '/ledger',
+  path: '/ledger',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMoneyInRoute = AuthenticatedMoneyInRouteImport.update({
@@ -112,6 +146,12 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AuthenticatedSalesInvoicesRoute =
+  AuthenticatedSalesInvoicesRouteImport.update({
+    id: '/sales/invoices',
+    path: '/sales/invoices',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -123,13 +163,19 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/resources': typeof ResourcesRoute
   '/balance-sheet': typeof AuthenticatedBalanceSheetRoute
+  '/chart-of-accounts': typeof AuthenticatedChartOfAccountsRoute
+  '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/journal-entry-new': typeof AuthenticatedJournalEntryNewRoute
+  '/journal-templates': typeof AuthenticatedJournalTemplatesRoute
+  '/ledger': typeof AuthenticatedLedgerRoute
   '/money-in': typeof AuthenticatedMoneyInRoute
   '/money-out': typeof AuthenticatedMoneyOutRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/sales/invoices': typeof AuthenticatedSalesInvoicesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -141,13 +187,19 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/resources': typeof ResourcesRoute
   '/balance-sheet': typeof AuthenticatedBalanceSheetRoute
+  '/chart-of-accounts': typeof AuthenticatedChartOfAccountsRoute
+  '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/journal-entry-new': typeof AuthenticatedJournalEntryNewRoute
+  '/journal-templates': typeof AuthenticatedJournalTemplatesRoute
+  '/ledger': typeof AuthenticatedLedgerRoute
   '/money-in': typeof AuthenticatedMoneyInRoute
   '/money-out': typeof AuthenticatedMoneyOutRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/sales/invoices': typeof AuthenticatedSalesInvoicesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -161,13 +213,19 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/resources': typeof ResourcesRoute
   '/_authenticated/balance-sheet': typeof AuthenticatedBalanceSheetRoute
+  '/_authenticated/chart-of-accounts': typeof AuthenticatedChartOfAccountsRoute
+  '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/journal-entry-new': typeof AuthenticatedJournalEntryNewRoute
+  '/_authenticated/journal-templates': typeof AuthenticatedJournalTemplatesRoute
+  '/_authenticated/ledger': typeof AuthenticatedLedgerRoute
   '/_authenticated/money-in': typeof AuthenticatedMoneyInRoute
   '/_authenticated/money-out': typeof AuthenticatedMoneyOutRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/_authenticated/sales/invoices': typeof AuthenticatedSalesInvoicesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -181,13 +239,19 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/resources'
     | '/balance-sheet'
+    | '/chart-of-accounts'
+    | '/customers'
     | '/dashboard'
+    | '/journal-entry-new'
+    | '/journal-templates'
+    | '/ledger'
     | '/money-in'
     | '/money-out'
     | '/admin/cms'
     | '/admin/payments'
     | '/admin/settings'
     | '/admin/users'
+    | '/sales/invoices'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -199,13 +263,19 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/resources'
     | '/balance-sheet'
+    | '/chart-of-accounts'
+    | '/customers'
     | '/dashboard'
+    | '/journal-entry-new'
+    | '/journal-templates'
+    | '/ledger'
     | '/money-in'
     | '/money-out'
     | '/admin/cms'
     | '/admin/payments'
     | '/admin/settings'
     | '/admin/users'
+    | '/sales/invoices'
   id:
     | '__root__'
     | '/'
@@ -218,13 +288,19 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/resources'
     | '/_authenticated/balance-sheet'
+    | '/_authenticated/chart-of-accounts'
+    | '/_authenticated/customers'
     | '/_authenticated/dashboard'
+    | '/_authenticated/journal-entry-new'
+    | '/_authenticated/journal-templates'
+    | '/_authenticated/ledger'
     | '/_authenticated/money-in'
     | '/_authenticated/money-out'
     | '/admin/cms'
     | '/admin/payments'
     | '/admin/settings'
     | '/admin/users'
+    | '/_authenticated/sales/invoices'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -311,11 +387,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBalanceSheetRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/chart-of-accounts': {
+      id: '/_authenticated/chart-of-accounts'
+      path: '/chart-of-accounts'
+      fullPath: '/chart-of-accounts'
+      preLoaderRoute: typeof AuthenticatedChartOfAccountsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/customers': {
+      id: '/_authenticated/customers'
+      path: '/customers'
+      fullPath: '/customers'
+      preLoaderRoute: typeof AuthenticatedCustomersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/journal-entry-new': {
+      id: '/_authenticated/journal-entry-new'
+      path: '/journal-entry-new'
+      fullPath: '/journal-entry-new'
+      preLoaderRoute: typeof AuthenticatedJournalEntryNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/journal-templates': {
+      id: '/_authenticated/journal-templates'
+      path: '/journal-templates'
+      fullPath: '/journal-templates'
+      preLoaderRoute: typeof AuthenticatedJournalTemplatesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/ledger': {
+      id: '/_authenticated/ledger'
+      path: '/ledger'
+      fullPath: '/ledger'
+      preLoaderRoute: typeof AuthenticatedLedgerRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/money-in': {
@@ -360,21 +471,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/_authenticated/sales/invoices': {
+      id: '/_authenticated/sales/invoices'
+      path: '/sales/invoices'
+      fullPath: '/sales/invoices'
+      preLoaderRoute: typeof AuthenticatedSalesInvoicesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedBalanceSheetRoute: typeof AuthenticatedBalanceSheetRoute
+  AuthenticatedChartOfAccountsRoute: typeof AuthenticatedChartOfAccountsRoute
+  AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedJournalEntryNewRoute: typeof AuthenticatedJournalEntryNewRoute
+  AuthenticatedJournalTemplatesRoute: typeof AuthenticatedJournalTemplatesRoute
+  AuthenticatedLedgerRoute: typeof AuthenticatedLedgerRoute
   AuthenticatedMoneyInRoute: typeof AuthenticatedMoneyInRoute
   AuthenticatedMoneyOutRoute: typeof AuthenticatedMoneyOutRoute
+  AuthenticatedSalesInvoicesRoute: typeof AuthenticatedSalesInvoicesRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBalanceSheetRoute: AuthenticatedBalanceSheetRoute,
+  AuthenticatedChartOfAccountsRoute: AuthenticatedChartOfAccountsRoute,
+  AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedJournalEntryNewRoute: AuthenticatedJournalEntryNewRoute,
+  AuthenticatedJournalTemplatesRoute: AuthenticatedJournalTemplatesRoute,
+  AuthenticatedLedgerRoute: AuthenticatedLedgerRoute,
   AuthenticatedMoneyInRoute: AuthenticatedMoneyInRoute,
   AuthenticatedMoneyOutRoute: AuthenticatedMoneyOutRoute,
+  AuthenticatedSalesInvoicesRoute: AuthenticatedSalesInvoicesRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
