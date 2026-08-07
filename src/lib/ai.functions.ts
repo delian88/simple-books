@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { prisma } from "./prisma";
+import { prisma } from "@/server/db";
 import Tesseract from "tesseract.js";
 
 async function getActiveCompanyId(userId: string): Promise<string> {
