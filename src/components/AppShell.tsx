@@ -24,11 +24,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AIChatWidget } from "@/components/AIChatWidget";
 
 const MAIN_NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/customers", label: "Customers", icon: Users },
   { to: "/sales/invoices", label: "Sales Invoices", icon: FileText },
+  { to: "/expenses", label: "Expenses (AI)", icon: ArrowUpRight },
   { to: "/money-in", label: "Money In", icon: ArrowDownLeft },
   { to: "/money-out", label: "Money Out", icon: ArrowUpRight },
   { to: "/balance-sheet", label: "Balance Sheet", icon: Scale },
@@ -247,6 +249,7 @@ export function AppShell({
           {children}
         </main>
       </div>
+      <AIChatWidget />
     </div>
   );
 }

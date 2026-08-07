@@ -60,6 +60,8 @@ model Company {
   salesInvoices      SalesInvoice[]
   customerPayments   CustomerPayment[]
   creditNotes        CreditNote[]
+  documents          Document[]
+  expenses           Expense[]
 
   @@map("companies")
 }
@@ -445,4 +447,39 @@ model CreditNoteAllocation {
   @@index([creditNoteId])
   @@index([invoiceId])
   @@map("credit_note_allocations")
+}
+
+model Document {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  companyId String   @map("company_id") @db.VarChar(36)
+  filename  String   @db.VarChar(255)
+  mimeType  String   @map("mime_type") @db.VarChar(100)
+  content   Bytes    @db.LongBlob
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  expenses Expense[]
+
+  @@index([companyId])
+  @@map("documents")
+}
+
+model Expense {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  companyId   String   @map("company_id") @db.VarChar(36)
+  documentId  String?  @map("document_id") @db.VarChar(36)
+  vendor      String   @db.VarChar(255)
+  description String?  @db.Text
+  amount      Decimal  @db.Decimal(14, 2)
+  date        DateTime
+  category    String   @db.VarChar(100)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  document Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([documentId])
+  @@map("expenses")
 }

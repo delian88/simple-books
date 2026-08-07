@@ -22,6 +22,7 @@ import { Route as AuthenticatedBalanceSheetRouteImport } from './routes/_authent
 import { Route as AuthenticatedChartOfAccountsRouteImport } from './routes/_authenticated/chart-of-accounts'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
 import { Route as AuthenticatedJournalEntryNewRouteImport } from './routes/_authenticated/journal-entry-new'
 import { Route as AuthenticatedJournalTemplatesRouteImport } from './routes/_authenticated/journal-templates'
 import { Route as AuthenticatedLedgerRouteImport } from './routes/_authenticated/ledger'
@@ -99,6 +100,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
+  id: '/expenses',
+  path: '/expenses',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedJournalEntryNewRoute =
   AuthenticatedJournalEntryNewRouteImport.update({
     id: '/journal-entry-new',
@@ -166,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/chart-of-accounts': typeof AuthenticatedChartOfAccountsRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/expenses': typeof AuthenticatedExpensesRoute
   '/journal-entry-new': typeof AuthenticatedJournalEntryNewRoute
   '/journal-templates': typeof AuthenticatedJournalTemplatesRoute
   '/ledger': typeof AuthenticatedLedgerRoute
@@ -190,6 +197,7 @@ export interface FileRoutesByTo {
   '/chart-of-accounts': typeof AuthenticatedChartOfAccountsRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/expenses': typeof AuthenticatedExpensesRoute
   '/journal-entry-new': typeof AuthenticatedJournalEntryNewRoute
   '/journal-templates': typeof AuthenticatedJournalTemplatesRoute
   '/ledger': typeof AuthenticatedLedgerRoute
@@ -216,6 +224,7 @@ export interface FileRoutesById {
   '/_authenticated/chart-of-accounts': typeof AuthenticatedChartOfAccountsRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
   '/_authenticated/journal-entry-new': typeof AuthenticatedJournalEntryNewRoute
   '/_authenticated/journal-templates': typeof AuthenticatedJournalTemplatesRoute
   '/_authenticated/ledger': typeof AuthenticatedLedgerRoute
@@ -242,6 +251,7 @@ export interface FileRouteTypes {
     | '/chart-of-accounts'
     | '/customers'
     | '/dashboard'
+    | '/expenses'
     | '/journal-entry-new'
     | '/journal-templates'
     | '/ledger'
@@ -266,6 +276,7 @@ export interface FileRouteTypes {
     | '/chart-of-accounts'
     | '/customers'
     | '/dashboard'
+    | '/expenses'
     | '/journal-entry-new'
     | '/journal-templates'
     | '/ledger'
@@ -291,6 +302,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chart-of-accounts'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
+    | '/_authenticated/expenses'
     | '/_authenticated/journal-entry-new'
     | '/_authenticated/journal-templates'
     | '/_authenticated/ledger'
@@ -408,6 +420,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/expenses': {
+      id: '/_authenticated/expenses'
+      path: '/expenses'
+      fullPath: '/expenses'
+      preLoaderRoute: typeof AuthenticatedExpensesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/journal-entry-new': {
       id: '/_authenticated/journal-entry-new'
       path: '/journal-entry-new'
@@ -486,6 +505,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedChartOfAccountsRoute: typeof AuthenticatedChartOfAccountsRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
   AuthenticatedJournalEntryNewRoute: typeof AuthenticatedJournalEntryNewRoute
   AuthenticatedJournalTemplatesRoute: typeof AuthenticatedJournalTemplatesRoute
   AuthenticatedLedgerRoute: typeof AuthenticatedLedgerRoute
@@ -499,6 +519,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedChartOfAccountsRoute: AuthenticatedChartOfAccountsRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
   AuthenticatedJournalEntryNewRoute: AuthenticatedJournalEntryNewRoute,
   AuthenticatedJournalTemplatesRoute: AuthenticatedJournalTemplatesRoute,
   AuthenticatedLedgerRoute: AuthenticatedLedgerRoute,
