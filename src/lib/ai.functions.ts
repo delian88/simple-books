@@ -1,8 +1,16 @@
 import { createServerFn } from "@tanstack/react-start";
-import { requireSupabaseAuth } from "./auth.functions";
-import { getActiveCompanyId } from "./auth.functions";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { prisma } from "./prisma";
 import Tesseract from "tesseract.js";
+
+async function getActiveCompanyId(userId: string): Promise<string> {
+  const companyUser = await prisma.companyUser.findFirst({
+    where: { userId },
+    select: { companyId: true }
+  });
+  if (!companyUser) throw new Error("User does not belong to any company");
+  return companyUser.companyId;
+}
 
 // Call Pollinations API for JSON formatting
 async function formatWithPollinations(text: string): Promise<any> {
