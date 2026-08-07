@@ -6,14 +6,63 @@ import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Users, Search, User, Mail, Phone, MapPin, X, Loader2, AlertTriangle } from "lucide-react";
+import { Plus, Users, Search, User, Mail, Phone, MapPin, X, Loader2, AlertTriangle, Download, FileText, Sheet } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+
+// ---- Export helpers ----
+function exportCSV(customers: any[]) {
+  const headers = ["Name", "Email", "Phone", "Address", "Currency", "Created"];
+  const rows = customers.map((c) => [
+    c.name,
+    c.email ?? "",
+    c.phone ?? "",
+    c.address ?? "",
+    c.currency,
+    new Date(c.createdAt).toLocaleDateString(),
+  ]);
+  const csvContent = [headers, ...rows]
+    .map((row) => row.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `customers-${new Date().toISOString().split("T")[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function exportPDF(customers: any[]) {
+  const { default: jsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
+  const doc = new jsPDF({ orientation: "landscape" });
+  doc.setFontSize(16);
+  doc.text("Customer List", 14, 15);
+  doc.setFontSize(10);
+  doc.text(`Exported on ${new Date().toLocaleDateString()}`, 14, 22);
+  autoTable(doc, {
+    startY: 28,
+    head: [["Name", "Email", "Phone", "Address", "Currency"]],
+    body: customers.map((c) => [
+      c.name,
+      c.email ?? "—",
+      c.phone ?? "—",
+      c.address ?? "—",
+      c.currency,
+    ]),
+    headStyles: { fillColor: [11, 61, 43], textColor: 255 },
+    alternateRowStyles: { fillColor: [245, 247, 245] },
+    styles: { fontSize: 9, cellPadding: 3 },
+  });
+  doc.save(`customers-${new Date().toISOString().split("T")[0]}.pdf`);
+}
 
 export const Route = createFileRoute("/_authenticated/customers")({
   component: CustomersPage,
@@ -287,9 +336,41 @@ function CustomersPage() {
       title="Customers"
       subtitle="Manage your clients and their outstanding balances"
       actions={
-        <Button onClick={() => setModalOpen(true)} className="bg-[#0B3D2B] hover:bg-[#0B3D2B]/90 shadow-sm gap-2">
-          <Plus className="h-4 w-4" /> New Customer
-        </Button>
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2 border-gray-200">
+                <Download className="h-4 w-4" /> Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer"
+                onClick={() => {
+                  exportCSV(customers as any[]);
+                  toast.success("CSV downloaded!");
+                }}
+              >
+                <Sheet className="h-4 w-4 text-emerald-600" />
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="gap-2 cursor-pointer"
+                onClick={async () => {
+                  toast.loading("Generating PDF…", { id: "pdf-export" });
+                  await exportPDF(customers as any[]);
+                  toast.success("PDF downloaded!", { id: "pdf-export" });
+                }}
+              >
+                <FileText className="h-4 w-4 text-red-500" />
+                Export as PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button onClick={() => setModalOpen(true)} className="bg-[#0B3D2B] hover:bg-[#0B3D2B]/90 shadow-sm gap-2">
+            <Plus className="h-4 w-4" /> New Customer
+          </Button>
+        </div>
       }
     >
     <div className="space-y-7 animate-in fade-in duration-500">
