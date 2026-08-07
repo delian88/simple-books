@@ -473,6 +473,8 @@ model Expense {
   amount      Decimal  @db.Decimal(14, 2)
   date        DateTime
   category    String   @db.VarChar(100)
+  isFlagged   Boolean  @default(false) @map("is_flagged")
+  flagReason  String?  @map("flag_reason") @db.Text
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 

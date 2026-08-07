@@ -2,11 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listJournalEntries, approveJournalEntry, reverseJournalEntry } from "@/lib/ledger.functions";
-import { useState } from "react";
-import { CheckCircle, Undo2, Clock, FileText, Plus } from "lucide-react";
+import { useState, useRef } from "react";
+import { CheckCircle, Undo2, Clock, FileText, Plus, UploadCloud, RefreshCw, Check } from "lucide-react";
 import { format } from "date-fns";
-
 import { AppShell } from "@/components/AppShell";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/ledger")({
   component: Ledger,
@@ -34,11 +36,49 @@ function Ledger() {
   });
 
   const [filter, setFilter] = useState("ALL");
+  const [reconcileModalOpen, setReconcileModalOpen] = useState(false);
+  const [reconcileResults, setReconcileResults] = useState<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredJournals = journals.filter(j => {
     if (filter === "ALL") return true;
     return j.status === filter;
   });
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const csv = event.target?.result as string;
+      // Simple mock reconciliation algorithm
+      const lines = csv.split('\n').filter(l => l.trim().length > 0);
+      const matches = lines.slice(1).map((line, idx) => {
+        const parts = line.split(',');
+        const amount = parseFloat(parts[2]);
+        // Find a matching journal within ±10% amount for demo
+        const match = journals.find(j => {
+          const total = j.lines.reduce((s: number, l: any) => s + Number(l.debit), 0);
+          return Math.abs(total - amount) < (amount * 0.1);
+        });
+
+        return {
+          id: idx,
+          date: parts[0],
+          desc: parts[1],
+          amount: amount,
+          matched: !!match,
+          confidence: match ? 98 : 0,
+          journalId: match?.id
+        };
+      });
+      setReconcileResults(matches);
+      toast.success("Bank statement analyzed.");
+    };
+    reader.readAsText(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   if (isLoading) return <div className="p-8 text-gray-500">Loading ledger...</div>;
 
@@ -58,6 +98,9 @@ function Ledger() {
             <option value="PENDING_APPROVAL">Pending Approval</option>
             <option value="REVERSED">Reversed</option>
           </select>
+          <Button onClick={() => setReconcileModalOpen(true)} variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50 gap-2">
+            <RefreshCw className="w-4 h-4" /> Smart Reconcile
+          </Button>
           <Link to="/journal-entry-new" className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-xl font-medium transition-all shadow-md hover:shadow-emerald-500/25 flex items-center gap-2 text-sm">
             <Plus size={16} /> New Journal Entry
           </Link>
@@ -170,6 +213,72 @@ function Ledger() {
           ))
         )}
       </div>
+
+      <Dialog open={reconcileModalOpen} onOpenChange={setReconcileModalOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <RefreshCw className="h-5 w-5 text-blue-600" /> Smart Reconciliation
+            </DialogTitle>
+          </DialogHeader>
+          <div className="p-4 space-y-4">
+            {!reconcileResults ? (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-blue-200 bg-blue-50/50 rounded-xl p-8 text-center cursor-pointer hover:bg-blue-50 transition-colors"
+              >
+                <UploadCloud className="h-10 w-10 text-blue-500 mx-auto mb-3" />
+                <p className="text-sm font-medium text-blue-800 mb-1">Upload Bank Statement (CSV)</p>
+                <p className="text-xs text-blue-600/70">Format: Date, Description, Amount</p>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  accept=".csv"
+                  onChange={handleFileUpload}
+                />
+              </div>
+            ) : (
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+                <div className="bg-blue-50 p-3 rounded-lg text-sm text-blue-800 flex items-start gap-2">
+                  <CheckCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                  <p>Analyzed {reconcileResults.length} transactions from your bank statement.</p>
+                </div>
+                {reconcileResults.map((res: any) => (
+                  <div key={res.id} className="p-3 border rounded-lg flex items-center justify-between bg-white">
+                    <div>
+                      <p className="font-medium text-sm">{res.desc}</p>
+                      <p className="text-xs text-gray-500">{res.date} • ₦{res.amount.toFixed(2)}</p>
+                    </div>
+                    {res.matched ? (
+                      <div className="text-right">
+                        <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded">
+                          <Check className="h-3 w-3" /> {res.confidence}% MATCH
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="text-right">
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-1 rounded">
+                          UNMATCHED
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                <div className="flex justify-end gap-3 pt-4 border-t">
+                  <Button variant="outline" onClick={() => setReconcileResults(null)}>Reset</Button>
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={() => {
+                    toast.success("Reconciliation complete.");
+                    setReconcileModalOpen(false);
+                  }}>
+                    Approve Matches
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }

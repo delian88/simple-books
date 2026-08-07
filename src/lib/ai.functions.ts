@@ -103,6 +103,48 @@ export const saveAIExpense = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const companyId = await getActiveCompanyId(context.userId);
     
+    let isFlagged = false;
+    let flagReason = null;
+
+    // 1. Duplicate Check: Same vendor & amount within 48 hours
+    const fortyEightHoursAgo = new Date();
+    fortyEightHoursAgo.setHours(fortyEightHoursAgo.getHours() - 48);
+
+    const duplicate = await prisma.expense.findFirst({
+      where: {
+        companyId,
+        vendor: data.vendor,
+        amount: data.amount,
+        createdAt: { gte: fortyEightHoursAgo }
+      }
+    });
+
+    if (duplicate) {
+      isFlagged = true;
+      flagReason = "DUPLICATE: An expense with this exact vendor and amount was submitted within the last 48 hours.";
+    }
+
+    // 2. Anomaly Detection: Check if amount is unusually high for this vendor
+    if (!isFlagged) {
+      const pastExpenses = await prisma.expense.findMany({
+        where: { companyId, vendor: data.vendor },
+        select: { amount: true }
+      });
+
+      if (pastExpenses.length >= 3) {
+        const sum = pastExpenses.reduce((acc, exp) => acc + Number(exp.amount), 0);
+        const avg = sum / pastExpenses.length;
+        if (data.amount > avg * 3) { // >300% of average
+          isFlagged = true;
+          flagReason = `ANOMALY: This amount is >300% higher than your historical average (₦${avg.toFixed(2)}) for ${data.vendor}.`;
+        }
+      } else if (data.amount > 500000) {
+        // Generic flag for very high undocumented single expenses
+        isFlagged = true;
+        flagReason = "ANOMALY: High value expense requiring manual review.";
+      }
+    }
+
     const expense = await prisma.expense.create({
       data: {
         companyId,
@@ -111,11 +153,13 @@ export const saveAIExpense = createServerFn({ method: "POST" })
         description: data.description,
         amount: data.amount,
         date: data.date,
-        category: data.category
+        category: data.category,
+        isFlagged,
+        flagReason
       }
     });
     
-    return { ok: true, expenseId: expense.id };
+    return { ok: true, expenseId: expense.id, isFlagged, flagReason };
   });
 
 export const aiChatQuery = createServerFn({ method: "POST" })
@@ -219,4 +263,18 @@ export const generateFinancialInsights = createServerFn({ method: "GET" })
         prediction: "Cash flow should remain stable over the next 30 days."
       };
     }
+  });
+
+export const processVoiceExpense = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { text: string }) => data)
+  .handler(async ({ data }) => {
+    // We reuse the Pollinations API to parse the transcribed text
+    const parsed = await formatWithPollinations(data.text);
+    return {
+      vendor: parsed.vendor || "Voice Entry",
+      amount: parsed.amount || 0,
+      date: parsed.date || new Date().toISOString().split("T")[0],
+      category: parsed.category || "Other"
+    };
   });

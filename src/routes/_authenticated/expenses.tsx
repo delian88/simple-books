@@ -2,12 +2,12 @@ import { createFileRoute } from '@tanstack/react-router'
 import { createFileRoute } from "@tanstack/react-start";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { processReceiptBase64, saveAIExpense, listExpenses } from "@/lib/ai.functions";
+import { processReceiptBase64, saveAIExpense, listExpenses, processVoiceExpense } from "@/lib/ai.functions";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UploadCloud, Bot, Loader2, Sparkles, FileText, Calendar, Plus, X } from "lucide-react";
+import { UploadCloud, Bot, Loader2, Sparkles, FileText, Calendar, Plus, X, Mic, AlertTriangle } from "lucide-react";
 import { useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -21,11 +21,13 @@ export const Route = createFileRoute("/_authenticated/expenses")({
 function ExpensesPage() {
   const getExpenses = useServerFn(listExpenses);
   const doUpload = useServerFn(processReceiptBase64);
+  const doVoice = useServerFn(processVoiceExpense);
   const doSave = useServerFn(saveAIExpense);
   const qc = useQueryClient();
 
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [parsedData, setParsedData] = useState<any>(null);
   const [uploadProgress, setUploadProgress] = useState("");
   
@@ -38,7 +40,11 @@ function ExpensesPage() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
-      await doSave({ data });
+      const res = await doSave({ data });
+      if (res.isFlagged) {
+        toast.warning(res.flagReason, { duration: 8000 });
+      }
+      return res;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["expenses"] });
@@ -50,6 +56,55 @@ function ExpensesPage() {
       toast.error(err.message || "Failed to save expense.");
     }
   });
+
+  const handleVoiceEntry = () => {
+    // Check for browser support
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      toast.error("Voice entry is not supported in your browser. Please use Chrome.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      setIsRecording(true);
+      setUploadModalOpen(true);
+      setParsedData(null);
+      setUploadProgress("Listening... Speak your expense clearly.");
+    };
+
+    recognition.onresult = async (event: any) => {
+      setIsRecording(false);
+      const text = event.results[0][0].transcript;
+      setIsUploading(true);
+      setUploadProgress(`Heard: "${text}"... Analyzing with AI...`);
+      
+      try {
+        const result = await doVoice({ data: { text } });
+        setParsedData(result);
+        toast.success("Voice parsed successfully!");
+      } catch (err: any) {
+        toast.error("Failed to parse voice entry.");
+      } finally {
+        setIsUploading(false);
+      }
+    };
+
+    recognition.onerror = (event: any) => {
+      setIsRecording(false);
+      toast.error("Voice recognition failed: " + event.error);
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+
+    recognition.start();
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -100,11 +155,16 @@ function ExpensesPage() {
   return (
     <AppShell
       title="Expenses (AI Powered)"
-      subtitle="Smart expense tracking with OCR and categorization"
+      subtitle="Smart expense tracking with OCR, Voice, and Fraud Detection"
       actions={
-        <Button onClick={() => setUploadModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 shadow-sm gap-2 text-white">
-          <Sparkles className="h-4 w-4" /> Smart Upload
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleVoiceEntry} variant="outline" className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 gap-2">
+            <Mic className={`h-4 w-4 ${isRecording ? "animate-pulse text-red-500" : ""}`} /> Voice Entry
+          </Button>
+          <Button onClick={() => setUploadModalOpen(true)} className="bg-emerald-600 hover:bg-emerald-700 shadow-sm gap-2 text-white">
+            <Sparkles className="h-4 w-4" /> Smart Upload
+          </Button>
+        </div>
       }
     >
       <div className="space-y-6 animate-in fade-in duration-500">
@@ -135,14 +195,23 @@ function ExpensesPage() {
                 </TableRow>
               ) : (
                 expenses.map((expense: any) => (
-                  <TableRow key={expense.id} className="hover:bg-gray-50/60">
+                  <TableRow key={expense.id} className={`hover:bg-gray-50/60 ${expense.isFlagged ? "bg-red-50/30" : ""}`}>
                     <TableCell className="text-sm text-gray-500">
                       <div className="flex items-center gap-1.5">
                         <Calendar className="h-3 w-3" />
                         {new Date(expense.date).toLocaleDateString()}
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium text-gray-800">{expense.vendor}</TableCell>
+                    <TableCell className="font-medium text-gray-800">
+                      <div className="flex items-center gap-2">
+                        {expense.vendor}
+                        {expense.isFlagged && (
+                          <span title={expense.flagReason} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 cursor-help">
+                            <AlertTriangle className="h-3 w-3" /> FLAGGED
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
                         {expense.category}
