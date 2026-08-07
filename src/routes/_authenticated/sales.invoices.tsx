@@ -79,7 +79,6 @@ function NewInvoiceModal({
           dueDate: new Date(dueDate),
           notes,
           lines: lines.map((l) => ({
-            accountId: "00000000-0000-0000-0000-000000000000", // placeholder
             description: l.description,
             quantity: l.quantity,
             unitPrice: l.unitPrice,

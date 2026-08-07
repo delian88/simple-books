@@ -64,7 +64,6 @@ export const createSalesInvoice = createServerFn({ method: "POST" })
     notes?: string;
     terms?: string;
     lines: {
-      accountId?: string;
       description: string;
       quantity: number;
       unitPrice: number;
@@ -100,7 +99,6 @@ export const createSalesInvoice = createServerFn({ method: "POST" })
         status: "DRAFT",
         lines: {
           create: data.lines.map(line => ({
-            ...(line.accountId ? { accountId: line.accountId } : {}),
             description: line.description,
             quantity: line.quantity,
             unitPrice: line.unitPrice,
