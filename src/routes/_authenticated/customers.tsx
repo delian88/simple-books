@@ -198,10 +198,77 @@ function NewCustomerModal({ open, onClose }: { open: boolean; onClose: () => voi
   );
 }
 
+function CustomerDetailModal({ customer, onClose }: { customer: any; onClose: () => void }) {
+  if (!customer) return null;
+  return (
+    <Dialog open={!!customer} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-md p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-lg font-bold text-gray-900">Customer Details</DialogTitle>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </DialogHeader>
+        <div className="p-6 space-y-5">
+          {/* Avatar + name */}
+          <div className="flex items-center gap-4">
+            <div className={`h-14 w-14 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0 ${getAvatarColor(customer.name)}`}>
+              {getInitials(customer.name)}
+            </div>
+            <div>
+              <p className="text-xl font-bold text-gray-900">{customer.name}</p>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200 mt-1">
+                {customer.currency}
+              </span>
+            </div>
+          </div>
+
+          {/* Details grid */}
+          <div className="space-y-3 text-sm">
+            {customer.email && (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400 font-medium">Email</p>
+                  <p className="text-gray-800">{customer.email}</p>
+                </div>
+              </div>
+            )}
+            {customer.phone && (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-400 font-medium">Phone</p>
+                  <p className="text-gray-800">{customer.phone}</p>
+                </div>
+              </div>
+            )}
+            {customer.address && (
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-gray-50">
+                <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs text-gray-400 font-medium">Billing Address</p>
+                  <p className="text-gray-800">{customer.address}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="px-6 py-4 border-t border-gray-100 flex justify-end">
+          <Button onClick={onClose} className="bg-[#0B3D2B] hover:bg-[#0B3D2B]/90">Close</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function CustomersPage() {
   const getCustomers = useServerFn(listCustomers);
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
 
   const { data: customers = [], isLoading, isError } = useQuery({
     queryKey: ["customers"],
@@ -345,16 +412,7 @@ function CustomersPage() {
                       variant="ghost"
                       size="sm"
                       className="text-xs h-7 text-[#0B3D2B] hover:text-[#0B3D2B] hover:bg-[#0B3D2B]/10"
-                      onClick={() => {
-                        const info = [
-                          customer.name,
-                          customer.email && `Email: ${customer.email}`,
-                          customer.phone && `Phone: ${customer.phone}`,
-                          customer.address && `Address: ${customer.address}`,
-                          `Currency: ${customer.currency}`,
-                        ].filter(Boolean).join('\n');
-                        alert(info);
-                      }}
+                      onClick={() => setSelectedCustomer(customer)}
                     >
                       View
                     </Button>
@@ -367,6 +425,7 @@ function CustomersPage() {
       </Card>
 
       <NewCustomerModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <CustomerDetailModal customer={selectedCustomer} onClose={() => setSelectedCustomer(null)} />
     </div>
     </AppShell>
   );
