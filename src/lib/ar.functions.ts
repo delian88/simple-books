@@ -112,6 +112,69 @@ export const createSalesInvoice = createServerFn({ method: "POST" })
     return { ok: true, invoiceId: invoice.id };
   });
 
+export const updateSalesInvoice = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: {
+    id: string;
+    customerId: string;
+    invoiceNumber: string;
+    issueDate: Date;
+    dueDate: Date;
+    notes?: string;
+    terms?: string;
+    lines: {
+      description: string;
+      quantity: number;
+      unitPrice: number;
+      taxRate: number;
+    }[]
+  }) => data)
+  .handler(async ({ context, data }) => {
+    const companyId = await getActiveCompanyId(context.userId);
+    
+    let subtotal = 0;
+    let taxAmount = 0;
+
+    data.lines.forEach(line => {
+      const lineAmount = line.quantity * line.unitPrice;
+      subtotal += lineAmount;
+      taxAmount += lineAmount * (line.taxRate / 100);
+    });
+
+    const totalAmount = subtotal + taxAmount;
+
+    // Delete existing lines first
+    await prisma.salesInvoiceLine.deleteMany({
+      where: { invoiceId: data.id }
+    });
+
+    const invoice = await prisma.salesInvoice.update({
+      where: { id: data.id, companyId },
+      data: {
+        customerId: data.customerId,
+        invoiceNumber: data.invoiceNumber,
+        issueDate: data.issueDate,
+        dueDate: data.dueDate,
+        notes: data.notes ?? null,
+        terms: data.terms ?? null,
+        subtotal,
+        taxAmount,
+        totalAmount,
+        lines: {
+          create: data.lines.map(line => ({
+            description: line.description,
+            quantity: line.quantity,
+            unitPrice: line.unitPrice,
+            amount: line.quantity * line.unitPrice,
+            taxRate: line.taxRate
+          }))
+        }
+      }
+    });
+
+    return { ok: true, invoiceId: invoice.id };
+  });
+
 export const updateInvoiceStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { id: string; status: string }) => data)

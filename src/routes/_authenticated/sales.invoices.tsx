@@ -1,15 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { listInvoices, createSalesInvoice, listCustomers } from "@/lib/ar.functions";
+import { listInvoices, createSalesInvoice, listCustomers, updateSalesInvoice, updateInvoiceStatus } from "@/lib/ar.functions";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
-  Plus, Search, FileText, Calendar, Clock, Trash2, X, Loader2, AlertTriangle
+  Plus, Search, FileText, Calendar, Clock, Trash2, X, Loader2, AlertTriangle, Mail, CheckCircle, Edit, Ban
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -46,55 +46,80 @@ function NewInvoiceModal({
   open,
   onClose,
   customers,
+  invoice,
 }: {
   open: boolean;
   onClose: () => void;
   customers: any[];
+  invoice?: any;
 }) {
   const qc = useQueryClient();
   const doCreate = useServerFn(createSalesInvoice);
+  const doUpdate = useServerFn(updateSalesInvoice);
 
   const [customerId, setCustomerId] = useState("");
-  const [invoiceNumber, setInvoiceNumber] = useState(
-    `INV-${Date.now().toString().slice(-6)}`
-  );
+  const [invoiceNumber, setInvoiceNumber] = useState(`INV-${Date.now().toString().slice(-6)}`);
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split("T")[0]);
-  const [dueDate, setDueDate] = useState(
-    new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]
-  );
+  const [dueDate, setDueDate] = useState(new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0]);
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<LineItem[]>([
     { description: "", quantity: 1, unitPrice: 0, taxRate: 0 },
   ]);
 
+  useEffect(() => {
+    if (open) {
+      if (invoice) {
+        setCustomerId(invoice.customerId);
+        setInvoiceNumber(invoice.invoiceNumber);
+        setIssueDate(new Date(invoice.issueDate).toISOString().split("T")[0]);
+        setDueDate(new Date(invoice.dueDate).toISOString().split("T")[0]);
+        setNotes(invoice.notes || "");
+        setLines(
+          invoice.lines.map((l: any) => ({
+            description: l.description,
+            quantity: Number(l.quantity),
+            unitPrice: Number(l.unitPrice),
+            taxRate: Number(l.taxRate),
+          }))
+        );
+      } else {
+        resetForm();
+      }
+    }
+  }, [open, invoice]);
+
   const mutation = useMutation({
     mutationFn: async () => {
       if (!customerId) throw new Error("Please select a customer");
       if (lines.some((l) => !l.description)) throw new Error("All line items need a description");
-      await doCreate({
-        data: {
-          customerId,
-          invoiceNumber,
-          issueDate: new Date(issueDate),
-          dueDate: new Date(dueDate),
-          notes,
-          lines: lines.map((l) => ({
-            description: l.description,
-            quantity: l.quantity,
-            unitPrice: l.unitPrice,
-            taxRate: l.taxRate,
-          })),
-        },
-      });
+      
+      const payload = {
+        customerId,
+        invoiceNumber,
+        issueDate: new Date(issueDate),
+        dueDate: new Date(dueDate),
+        notes,
+        lines: lines.map((l) => ({
+          description: l.description,
+          quantity: l.quantity,
+          unitPrice: l.unitPrice,
+          taxRate: l.taxRate,
+        })),
+      };
+
+      if (invoice) {
+        await doUpdate({ data: { id: invoice.id, ...payload } });
+      } else {
+        await doCreate({ data: payload });
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["salesInvoices"] });
-      toast.success("Invoice created successfully!");
+      toast.success(invoice ? "Invoice updated successfully!" : "Invoice created successfully!");
       onClose();
-      resetForm();
     },
     onError: (err: any) => {
-      toast.error(err.message || "Failed to create invoice");
+      toast.error(err.message || (invoice ? "Failed to update invoice" : "Failed to create invoice"));
     },
   });
 
@@ -126,7 +151,9 @@ function NewInvoiceModal({
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-gray-100 sticky top-0 bg-white z-10">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-bold text-gray-900">New Sales Invoice</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-gray-900">
+              {invoice ? "Edit Invoice" : "New Sales Invoice"}
+            </DialogTitle>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
               <X className="h-5 w-5" />
             </button>
@@ -134,7 +161,6 @@ function NewInvoiceModal({
         </DialogHeader>
 
         <div className="p-6 space-y-6">
-          {/* Header fields */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Customer <span className="text-red-500">*</span></Label>
@@ -163,7 +189,6 @@ function NewInvoiceModal({
             </div>
           </div>
 
-          {/* Line Items */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-gray-800">Line Items</h3>
@@ -243,7 +268,6 @@ function NewInvoiceModal({
               </table>
             </div>
 
-            {/* Totals */}
             <div className="flex justify-end">
               <div className="w-64 space-y-1 text-sm">
                 <div className="flex justify-between text-gray-500">
@@ -262,7 +286,6 @@ function NewInvoiceModal({
             </div>
           </div>
 
-          {/* Notes */}
           <div className="space-y-1.5">
             <Label>Notes / Terms</Label>
             <Textarea
@@ -275,7 +298,6 @@ function NewInvoiceModal({
           </div>
         </div>
 
-        {/* Footer */}
         <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 bg-white">
           <Button variant="outline" onClick={onClose} disabled={mutation.isPending}>Cancel</Button>
           <Button
@@ -284,11 +306,189 @@ function NewInvoiceModal({
             className="bg-[#0B3D2B] hover:bg-[#0B3D2B]/90 gap-2"
           >
             {mutation.isPending ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Creating…</>
+              <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>
             ) : (
-              <><FileText className="h-4 w-4" /> Create Invoice</>
+              <><FileText className="h-4 w-4" /> {invoice ? "Save Changes" : "Create Invoice"}</>
             )}
           </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function InvoiceDetailModal({
+  invoice,
+  open,
+  onClose,
+  onEdit,
+}: {
+  invoice: any | null;
+  open: boolean;
+  onClose: () => void;
+  onEdit: (invoice: any) => void;
+}) {
+  const qc = useQueryClient();
+  const doUpdateStatus = useServerFn(updateInvoiceStatus);
+
+  const statusMutation = useMutation({
+    mutationFn: async (status: string) => {
+      await doUpdateStatus({ data: { id: invoice.id, status } });
+      return status;
+    },
+    onSuccess: (status) => {
+      qc.invalidateQueries({ queryKey: ["salesInvoices"] });
+      if (status === "SENT") {
+        toast.info("Email sending is disabled for now");
+        toast.success("Invoice marked as Sent.");
+      } else {
+        toast.success(`Invoice marked as ${status}.`);
+      }
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update status");
+    }
+  });
+
+  if (!invoice) return null;
+
+  const cfg = STATUS_CONFIG[invoice.status] || STATUS_CONFIG.DRAFT;
+  const currency = invoice.customer?.currency || "NGN";
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+        <DialogHeader className="px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <DialogTitle className="text-xl font-bold text-gray-900">
+                Invoice {invoice.invoiceNumber}
+              </DialogTitle>
+              <Badge variant="outline" className={cfg.className}>{cfg.label}</Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              {invoice.status === "DRAFT" && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs h-8"
+                    onClick={() => {
+                      onClose();
+                      onEdit(invoice);
+                    }}
+                  >
+                    <Edit className="h-3.5 w-3.5" /> Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs h-8 bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200"
+                    disabled={statusMutation.isPending}
+                    onClick={() => statusMutation.mutate("SENT")}
+                  >
+                    <Mail className="h-3.5 w-3.5" /> Send via Email
+                  </Button>
+                </>
+              )}
+              {["SENT", "PARTIAL", "OVERDUE"].includes(invoice.status) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs h-8 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200"
+                  disabled={statusMutation.isPending}
+                  onClick={() => statusMutation.mutate("PAID")}
+                >
+                  <CheckCircle className="h-3.5 w-3.5" /> Mark as Paid
+                </Button>
+              )}
+              {invoice.status !== "CANCELLED" && invoice.status !== "PAID" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs h-8 text-gray-500 hover:text-red-600"
+                  disabled={statusMutation.isPending}
+                  onClick={() => statusMutation.mutate("CANCELLED")}
+                >
+                  <Ban className="h-3.5 w-3.5" /> Mark as Void
+                </Button>
+              )}
+              <div className="w-px h-6 bg-gray-200 mx-1" />
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="p-8">
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <p className="text-sm font-medium text-gray-500 mb-1">Bill To</p>
+              <h3 className="text-lg font-bold text-gray-900">{invoice.customer?.name}</h3>
+              {invoice.customer?.email && <p className="text-sm text-gray-600">{invoice.customer.email}</p>}
+              {invoice.customer?.phone && <p className="text-sm text-gray-600">{invoice.customer.phone}</p>}
+            </div>
+            <div className="text-right text-sm">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                <span className="text-gray-500">Issue Date:</span>
+                <span className="font-medium text-gray-900">{new Date(invoice.issueDate).toLocaleDateString()}</span>
+                <span className="text-gray-500">Due Date:</span>
+                <span className="font-medium text-gray-900">{new Date(invoice.dueDate).toLocaleDateString()}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="border border-gray-200 rounded-lg overflow-hidden mb-6">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Description</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-600">Qty</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-600">Unit Price</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-600">Tax %</th>
+                  <th className="text-right px-4 py-3 font-medium text-gray-600">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {invoice.lines?.map((line: any) => (
+                  <tr key={line.id} className="border-b border-gray-100 last:border-0">
+                    <td className="px-4 py-3 text-gray-800">{line.description}</td>
+                    <td className="px-4 py-3 text-right text-gray-600">{line.quantity}</td>
+                    <td className="px-4 py-3 text-right text-gray-600">{fmtCurrency(line.unitPrice, currency)}</td>
+                    <td className="px-4 py-3 text-right text-gray-600">{line.taxRate}%</td>
+                    <td className="px-4 py-3 text-right font-medium text-gray-900 tabular-nums">
+                      {fmtCurrency(line.amount, currency)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex justify-end mb-8">
+            <div className="w-64 space-y-2 text-sm">
+              <div className="flex justify-between text-gray-600">
+                <span>Subtotal</span>
+                <span className="tabular-nums">{fmtCurrency(invoice.subtotal, currency)}</span>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                <span>Tax Amount</span>
+                <span className="tabular-nums">{fmtCurrency(invoice.taxAmount, currency)}</span>
+              </div>
+              <div className="flex justify-between font-bold text-lg text-gray-900 border-t border-gray-200 pt-2 mt-2">
+                <span>Total</span>
+                <span className="tabular-nums">{fmtCurrency(invoice.totalAmount, currency)}</span>
+              </div>
+            </div>
+          </div>
+
+          {invoice.notes && (
+            <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-700">
+              <span className="font-semibold block mb-1">Notes / Terms:</span>
+              <p className="whitespace-pre-wrap">{invoice.notes}</p>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>
@@ -299,7 +499,11 @@ function InvoicesPage() {
   const getInvoices = useServerFn(listInvoices);
   const getCustomers = useServerFn(listCustomers);
   const [search, setSearch] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  
+  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   const { data: invoices = [], isLoading, isError } = useQuery({
     queryKey: ["salesInvoices"],
@@ -331,7 +535,7 @@ function InvoicesPage() {
       title="Sales Invoices"
       subtitle="Manage and track your customer invoices"
       actions={
-        <Button onClick={() => setModalOpen(true)} className="bg-[#0B3D2B] hover:bg-[#0B3D2B]/90 shadow-sm gap-2">
+        <Button onClick={() => setCreateModalOpen(true)} className="bg-[#0B3D2B] hover:bg-[#0B3D2B]/90 shadow-sm gap-2">
           <Plus className="h-4 w-4" /> New Invoice
         </Button>
       }
@@ -435,7 +639,17 @@ function InvoicesPage() {
                       {fmtCurrency(inv.totalAmount, currency)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" className="text-xs h-7">View</Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-xs h-7"
+                        onClick={() => {
+                          setSelectedInvoice(inv);
+                          setViewModalOpen(true);
+                        }}
+                      >
+                        View
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );
@@ -446,9 +660,32 @@ function InvoicesPage() {
       </Card>
 
       <NewInvoiceModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
         customers={customers as any[]}
+      />
+      
+      <NewInvoiceModal
+        open={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setSelectedInvoice(null);
+        }}
+        customers={customers as any[]}
+        invoice={selectedInvoice}
+      />
+
+      <InvoiceDetailModal
+        open={viewModalOpen}
+        onClose={() => {
+          setViewModalOpen(false);
+          setSelectedInvoice(null);
+        }}
+        invoice={selectedInvoice}
+        onEdit={(inv) => {
+          setSelectedInvoice(inv);
+          setEditModalOpen(true);
+        }}
       />
     </div>
     </AppShell>
