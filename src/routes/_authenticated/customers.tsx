@@ -15,8 +15,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 // ---- Export helpers ----
 function exportCSV(customers: any[]) {
   const headers = ["Name", "Email", "Phone", "Address", "Currency", "Created"];
@@ -41,6 +39,8 @@ function exportCSV(customers: any[]) {
 }
 
 async function exportPDF(customers: any[]) {
+  const { default: jsPDF } = await import("jspdf");
+  const { default: autoTable } = await import("jspdf-autotable");
   const doc = new jsPDF({ orientation: "landscape" });
   doc.setFontSize(16);
   doc.text("Customer List", 14, 15);
