@@ -39,8 +39,10 @@ function exportCSV(customers: any[]) {
 }
 
 async function exportPDF(customers: any[]) {
-  const { default: jsPDF } = await import("jspdf");
-  const { default: autoTable } = await import("jspdf-autotable");
+  // @ts-ignore
+  const { default: jsPDF } = await import(/* @vite-ignore */ "https://esm.sh/jspdf@2.5.2");
+  // @ts-ignore
+  const { default: autoTable } = await import(/* @vite-ignore */ "https://esm.sh/jspdf-autotable@3.8.4");
   const doc = new jsPDF({ orientation: "landscape" });
   doc.setFontSize(16);
   doc.text("Customer List", 14, 15);
