@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { prisma } from "@/server/db";
-import Tesseract from "tesseract.js";
 
 async function getActiveCompanyId(userId: string): Promise<string> {
   const companyUser = await prisma.companyUser.findFirst({
@@ -75,6 +74,7 @@ export const processReceiptBase64 = createServerFn({ method: "POST" })
     // 3. Run Tesseract OCR directly on the buffer
     let ocrText = "";
     try {
+      const { default: Tesseract } = await import(/* @vite-ignore */ "tesseract.js");
       const result = await Tesseract.recognize(buffer, "eng");
       ocrText = result.data.text;
     } catch (err) {
