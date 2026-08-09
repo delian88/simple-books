@@ -16,7 +16,8 @@ import {
   CreditCard,
   FileText,
   Menu,
-  X
+  X,
+  Printer
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { logout, getSession } from "@/lib/auth.functions";
@@ -34,6 +35,7 @@ const MAIN_NAV = [
   { to: "/money-in", label: "Money In", icon: ArrowDownLeft },
   { to: "/money-out", label: "Money Out", icon: ArrowUpRight },
   { to: "/balance-sheet", label: "Balance Sheet", icon: Scale },
+  { to: "/account-statement", label: "Statement of Account", icon: FileText },
   { to: "/chart-of-accounts", label: "Chart of Accounts", icon: BookOpenText },
   { to: "/ledger", label: "General Ledger", icon: FileText },
   { to: "/journal-templates", label: "Journal Templates", icon: FileText },
@@ -85,7 +87,7 @@ export function AppShell({
       )}
 
       {/* Sidebar */}
-      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#0B3D2B] text-white transition-transform duration-200 ease-in-out lg:translate-x-0 ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#0B3D2B] text-white transition-transform duration-200 ease-in-out lg:translate-x-0 print:hidden ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex h-14 lg:h-20 items-center justify-between px-6">
           <Link to="/dashboard" className="flex items-center gap-3 font-display text-xl font-bold">
             <div className="rounded border-2 border-[#D4AF37] p-1">
@@ -169,7 +171,6 @@ export function AppShell({
             <p>© 2025 Ledgerly</p>
             <p>All rights reserved.</p>
           </div>
-          
           <Button variant="ghost" size="sm" onClick={signOut} className="w-full justify-start gap-2 text-white/60 hover:bg-white/10 hover:text-white px-2">
             <LogOut className="h-4 w-4" />
             Sign out
@@ -178,9 +179,9 @@ export function AppShell({
       </aside>
 
       {/* Main Content */}
-      <div className="flex h-full flex-1 flex-col lg:pl-64">
+      <div className="flex h-full flex-1 flex-col lg:pl-64 print:pl-0">
         {/* Main Header */}
-        <header className="flex h-14 w-full shrink-0 items-center justify-between border-b border-border/40 bg-background/95 px-4 lg:h-20 lg:px-8">
+        <header className="flex h-14 w-full shrink-0 items-center justify-between border-b border-border/40 bg-background/95 px-4 lg:h-20 lg:px-8 print:hidden">
           <div className="flex items-center gap-3">
             <button className="lg:hidden text-muted-foreground hover:text-foreground" onClick={() => setIsMobileMenuOpen(true)}>
               <Menu className="h-5 w-5" />
@@ -214,6 +215,14 @@ export function AppShell({
               </div>
             </div>
 
+            <button 
+              className="relative text-muted-foreground hover:text-foreground"
+              onClick={() => window.print()}
+              title="Print"
+            >
+              <Printer className="h-5 w-5" />
+            </button>
+
             <button className="relative text-muted-foreground hover:text-foreground">
               <Bell className="h-5 w-5" />
               <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-white ring-2 ring-background">
@@ -234,22 +243,24 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-8 print:p-0">
           {isDashboard && (
-             <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+             <div className="mb-6 flex flex-wrap items-end justify-between gap-4 print:hidden">
                 <p className="text-sm text-muted-foreground mt-1">Here's a running summary of everything you have recorded.</p>
                 {actions}
              </div>
           )}
           {!isDashboard && actions && (
-             <div className="mb-6 flex justify-end">
+             <div className="mb-6 flex justify-end print:hidden">
                 {actions}
              </div>
           )}
           {children}
         </main>
       </div>
-      <AIChatWidget />
+      <div className="print:hidden">
+        <AIChatWidget />
+      </div>
     </div>
   );
 }

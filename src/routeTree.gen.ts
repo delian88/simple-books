@@ -18,6 +18,7 @@ import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as ResourcesRouteImport } from './routes/resources'
+import { Route as AuthenticatedAccountStatementRouteImport } from './routes/_authenticated/account-statement'
 import { Route as AuthenticatedBalanceSheetRouteImport } from './routes/_authenticated/balance-sheet'
 import { Route as AuthenticatedChartOfAccountsRouteImport } from './routes/_authenticated/chart-of-accounts'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
@@ -78,6 +79,12 @@ const ResourcesRoute = ResourcesRouteImport.update({
   path: '/resources',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAccountStatementRoute =
+  AuthenticatedAccountStatementRouteImport.update({
+    id: '/account-statement',
+    path: '/account-statement',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedBalanceSheetRoute =
   AuthenticatedBalanceSheetRouteImport.update({
     id: '/balance-sheet',
@@ -168,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/how-it-works': typeof HowItWorksRoute
   '/pricing': typeof PricingRoute
   '/resources': typeof ResourcesRoute
+  '/account-statement': typeof AuthenticatedAccountStatementRoute
   '/balance-sheet': typeof AuthenticatedBalanceSheetRoute
   '/chart-of-accounts': typeof AuthenticatedChartOfAccountsRoute
   '/customers': typeof AuthenticatedCustomersRoute
@@ -193,6 +201,7 @@ export interface FileRoutesByTo {
   '/how-it-works': typeof HowItWorksRoute
   '/pricing': typeof PricingRoute
   '/resources': typeof ResourcesRoute
+  '/account-statement': typeof AuthenticatedAccountStatementRoute
   '/balance-sheet': typeof AuthenticatedBalanceSheetRoute
   '/chart-of-accounts': typeof AuthenticatedChartOfAccountsRoute
   '/customers': typeof AuthenticatedCustomersRoute
@@ -220,6 +229,7 @@ export interface FileRoutesById {
   '/how-it-works': typeof HowItWorksRoute
   '/pricing': typeof PricingRoute
   '/resources': typeof ResourcesRoute
+  '/_authenticated/account-statement': typeof AuthenticatedAccountStatementRoute
   '/_authenticated/balance-sheet': typeof AuthenticatedBalanceSheetRoute
   '/_authenticated/chart-of-accounts': typeof AuthenticatedChartOfAccountsRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
@@ -247,6 +257,7 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/pricing'
     | '/resources'
+    | '/account-statement'
     | '/balance-sheet'
     | '/chart-of-accounts'
     | '/customers'
@@ -272,6 +283,7 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/pricing'
     | '/resources'
+    | '/account-statement'
     | '/balance-sheet'
     | '/chart-of-accounts'
     | '/customers'
@@ -298,6 +310,7 @@ export interface FileRouteTypes {
     | '/how-it-works'
     | '/pricing'
     | '/resources'
+    | '/_authenticated/account-statement'
     | '/_authenticated/balance-sheet'
     | '/_authenticated/chart-of-accounts'
     | '/_authenticated/customers'
@@ -391,6 +404,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/resources'
       preLoaderRoute: typeof ResourcesRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/account-statement': {
+      id: '/_authenticated/account-statement'
+      path: '/account-statement'
+      fullPath: '/account-statement'
+      preLoaderRoute: typeof AuthenticatedAccountStatementRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/balance-sheet': {
       id: '/_authenticated/balance-sheet'
@@ -501,6 +521,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAccountStatementRoute: typeof AuthenticatedAccountStatementRoute
   AuthenticatedBalanceSheetRoute: typeof AuthenticatedBalanceSheetRoute
   AuthenticatedChartOfAccountsRoute: typeof AuthenticatedChartOfAccountsRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
@@ -515,6 +536,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAccountStatementRoute: AuthenticatedAccountStatementRoute,
   AuthenticatedBalanceSheetRoute: AuthenticatedBalanceSheetRoute,
   AuthenticatedChartOfAccountsRoute: AuthenticatedChartOfAccountsRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,

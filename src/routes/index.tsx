@@ -66,7 +66,7 @@ function Landing() {
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
-  const heroWords = ["Keep", "your", "books", "without", "keeping", "an", "accountant", "on", "retainer."];
+  const heroWords = ["Bookkeeping", "for", "MSMEs", "made", "easy"];
   const fullText = "Inflows come straight from your bank statement. Outflows come from the receipts already in your pocket. Ledgerly turns them into profit and a balance sheet you can actually read.";
 
   // AI Assistant responses

@@ -211,3 +211,101 @@ export const listJournalTemplates = createServerFn({ method: "GET" })
       })
     }));
   });
+
+const statementInput = z.object({
+  accountId: z.string().uuid(),
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+export const getAccountStatement = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input: unknown) => statementInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const companyId = await getActiveCompanyId(context.userId);
+    
+    // Get account to know type and base opening balance
+    const account = await prisma.account.findUnique({
+      where: { id: data.accountId, companyId: companyId }
+    });
+    
+    if (!account) throw new Error("Account not found");
+
+    // Get prior journal lines to calculate opening balance as of startDate
+    const priorLines = await prisma.journalLine.findMany({
+      where: {
+        accountId: data.accountId,
+        journalEntry: {
+          companyId,
+          status: "POSTED",
+          date: { lt: new Date(data.startDate) }
+        }
+      }
+    });
+
+    let runningBalance = Number(account.openingBalance);
+    // Determine normal balance based on account type
+    const isNormalDebit = ["ASSET", "EXPENSE"].includes(account.type);
+
+    for (const line of priorLines) {
+      if (isNormalDebit) {
+         runningBalance += Number(line.debit) - Number(line.credit);
+      } else {
+         runningBalance += Number(line.credit) - Number(line.debit);
+      }
+    }
+
+    const initialOpeningBalance = runningBalance;
+
+    // Get journal lines for the period
+    const lines = await prisma.journalLine.findMany({
+      where: {
+        accountId: data.accountId,
+        journalEntry: {
+          companyId,
+          status: "POSTED",
+          date: { 
+            gte: new Date(data.startDate),
+            lte: new Date(data.endDate + 'T23:59:59.999Z') 
+          }
+        }
+      },
+      include: {
+        journalEntry: true
+      },
+      orderBy: {
+        journalEntry: {
+          date: 'asc'
+        }
+      }
+    });
+
+    const formattedLines = lines.map(line => {
+      if (isNormalDebit) {
+         runningBalance += Number(line.debit) - Number(line.credit);
+      } else {
+         runningBalance += Number(line.credit) - Number(line.debit);
+      }
+      return {
+        id: line.id,
+        date: line.journalEntry.date,
+        description: line.journalEntry.description,
+        reference: line.journalEntry.reference,
+        debit: Number(line.debit),
+        credit: Number(line.credit),
+        balance: runningBalance
+      };
+    });
+
+    return {
+      accountName: account.name,
+      accountCode: account.code,
+      type: account.type,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      openingBalance: initialOpeningBalance,
+      closingBalance: runningBalance,
+      lines: formattedLines
+    };
+  });
+
