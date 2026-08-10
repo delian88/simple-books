@@ -55,7 +55,7 @@ function AccountStatement() {
 
   return (
     <AppShell
-      title="Statement of Account"
+      title="General Ledger"
       subtitle="Generate and print account statements."
     >
       <div className="flex flex-col gap-6 max-w-5xl mx-auto">
@@ -114,10 +114,10 @@ function AccountStatement() {
         {statementData && (
           <div className="bg-white p-8 md:p-12 rounded-2xl border border-gray-200 shadow-sm print:border-none print:shadow-none print:p-0 animate-in fade-in">
             {/* Header */}
-            <div className="border-b border-gray-200 pb-6 mb-6">
+              <div className="border-b border-gray-200 pb-6 mb-6">
               <div className="flex justify-between items-start">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 font-display">Statement of Account</h1>
+                  <h1 className="text-3xl font-bold text-gray-900 font-display">General Ledger</h1>
                   <p className="text-gray-500 mt-1">Ledgerly Systems Inc.</p>
                 </div>
                 <div className="text-right">

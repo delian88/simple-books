@@ -84,7 +84,7 @@ function Ledger() {
 
   return (
     <AppShell
-      title="General Ledger"
+      title="General Journal"
       subtitle="View and manage all journal entries."
       actions={
         <div className="flex gap-4">

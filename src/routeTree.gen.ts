@@ -24,11 +24,13 @@ import { Route as AuthenticatedChartOfAccountsRouteImport } from './routes/_auth
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedExpensesRouteImport } from './routes/_authenticated/expenses'
+import { Route as AuthenticatedIncomeStatementRouteImport } from './routes/_authenticated/income-statement'
 import { Route as AuthenticatedJournalEntryNewRouteImport } from './routes/_authenticated/journal-entry-new'
 import { Route as AuthenticatedJournalTemplatesRouteImport } from './routes/_authenticated/journal-templates'
 import { Route as AuthenticatedLedgerRouteImport } from './routes/_authenticated/ledger'
 import { Route as AuthenticatedMoneyInRouteImport } from './routes/_authenticated/money-in'
 import { Route as AuthenticatedMoneyOutRouteImport } from './routes/_authenticated/money-out'
+import { Route as AuthenticatedTrialBalanceRouteImport } from './routes/_authenticated/trial-balance'
 import { Route as AdminCmsRouteImport } from './routes/admin/cms'
 import { Route as AdminPaymentsRouteImport } from './routes/admin/payments'
 import { Route as AdminSettingsRouteImport } from './routes/admin/settings'
@@ -112,6 +114,12 @@ const AuthenticatedExpensesRoute = AuthenticatedExpensesRouteImport.update({
   path: '/expenses',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedIncomeStatementRoute =
+  AuthenticatedIncomeStatementRouteImport.update({
+    id: '/income-statement',
+    path: '/income-statement',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedJournalEntryNewRoute =
   AuthenticatedJournalEntryNewRouteImport.update({
     id: '/journal-entry-new',
@@ -139,6 +147,12 @@ const AuthenticatedMoneyOutRoute = AuthenticatedMoneyOutRouteImport.update({
   path: '/money-out',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTrialBalanceRoute =
+  AuthenticatedTrialBalanceRouteImport.update({
+    id: '/trial-balance',
+    path: '/trial-balance',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AdminCmsRoute = AdminCmsRouteImport.update({
   id: '/cms',
   path: '/cms',
@@ -181,11 +195,13 @@ export interface FileRoutesByFullPath {
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/expenses': typeof AuthenticatedExpensesRoute
+  '/income-statement': typeof AuthenticatedIncomeStatementRoute
   '/journal-entry-new': typeof AuthenticatedJournalEntryNewRoute
   '/journal-templates': typeof AuthenticatedJournalTemplatesRoute
   '/ledger': typeof AuthenticatedLedgerRoute
   '/money-in': typeof AuthenticatedMoneyInRoute
   '/money-out': typeof AuthenticatedMoneyOutRoute
+  '/trial-balance': typeof AuthenticatedTrialBalanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -207,11 +223,13 @@ export interface FileRoutesByTo {
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/expenses': typeof AuthenticatedExpensesRoute
+  '/income-statement': typeof AuthenticatedIncomeStatementRoute
   '/journal-entry-new': typeof AuthenticatedJournalEntryNewRoute
   '/journal-templates': typeof AuthenticatedJournalTemplatesRoute
   '/ledger': typeof AuthenticatedLedgerRoute
   '/money-in': typeof AuthenticatedMoneyInRoute
   '/money-out': typeof AuthenticatedMoneyOutRoute
+  '/trial-balance': typeof AuthenticatedTrialBalanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -235,11 +253,13 @@ export interface FileRoutesById {
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/expenses': typeof AuthenticatedExpensesRoute
+  '/_authenticated/income-statement': typeof AuthenticatedIncomeStatementRoute
   '/_authenticated/journal-entry-new': typeof AuthenticatedJournalEntryNewRoute
   '/_authenticated/journal-templates': typeof AuthenticatedJournalTemplatesRoute
   '/_authenticated/ledger': typeof AuthenticatedLedgerRoute
   '/_authenticated/money-in': typeof AuthenticatedMoneyInRoute
   '/_authenticated/money-out': typeof AuthenticatedMoneyOutRoute
+  '/_authenticated/trial-balance': typeof AuthenticatedTrialBalanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -263,11 +283,13 @@ export interface FileRouteTypes {
     | '/customers'
     | '/dashboard'
     | '/expenses'
+    | '/income-statement'
     | '/journal-entry-new'
     | '/journal-templates'
     | '/ledger'
     | '/money-in'
     | '/money-out'
+    | '/trial-balance'
     | '/admin/cms'
     | '/admin/payments'
     | '/admin/settings'
@@ -289,11 +311,13 @@ export interface FileRouteTypes {
     | '/customers'
     | '/dashboard'
     | '/expenses'
+    | '/income-statement'
     | '/journal-entry-new'
     | '/journal-templates'
     | '/ledger'
     | '/money-in'
     | '/money-out'
+    | '/trial-balance'
     | '/admin/cms'
     | '/admin/payments'
     | '/admin/settings'
@@ -316,11 +340,13 @@ export interface FileRouteTypes {
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
     | '/_authenticated/expenses'
+    | '/_authenticated/income-statement'
     | '/_authenticated/journal-entry-new'
     | '/_authenticated/journal-templates'
     | '/_authenticated/ledger'
     | '/_authenticated/money-in'
     | '/_authenticated/money-out'
+    | '/_authenticated/trial-balance'
     | '/admin/cms'
     | '/admin/payments'
     | '/admin/settings'
@@ -447,6 +473,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedExpensesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/income-statement': {
+      id: '/_authenticated/income-statement'
+      path: '/income-statement'
+      fullPath: '/income-statement'
+      preLoaderRoute: typeof AuthenticatedIncomeStatementRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/journal-entry-new': {
       id: '/_authenticated/journal-entry-new'
       path: '/journal-entry-new'
@@ -480,6 +513,13 @@ declare module '@tanstack/react-router' {
       path: '/money-out'
       fullPath: '/money-out'
       preLoaderRoute: typeof AuthenticatedMoneyOutRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/trial-balance': {
+      id: '/_authenticated/trial-balance'
+      path: '/trial-balance'
+      fullPath: '/trial-balance'
+      preLoaderRoute: typeof AuthenticatedTrialBalanceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/admin/cms': {
@@ -527,11 +567,13 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedExpensesRoute: typeof AuthenticatedExpensesRoute
+  AuthenticatedIncomeStatementRoute: typeof AuthenticatedIncomeStatementRoute
   AuthenticatedJournalEntryNewRoute: typeof AuthenticatedJournalEntryNewRoute
   AuthenticatedJournalTemplatesRoute: typeof AuthenticatedJournalTemplatesRoute
   AuthenticatedLedgerRoute: typeof AuthenticatedLedgerRoute
   AuthenticatedMoneyInRoute: typeof AuthenticatedMoneyInRoute
   AuthenticatedMoneyOutRoute: typeof AuthenticatedMoneyOutRoute
+  AuthenticatedTrialBalanceRoute: typeof AuthenticatedTrialBalanceRoute
   AuthenticatedSalesInvoicesRoute: typeof AuthenticatedSalesInvoicesRoute
 }
 
@@ -542,11 +584,13 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedExpensesRoute: AuthenticatedExpensesRoute,
+  AuthenticatedIncomeStatementRoute: AuthenticatedIncomeStatementRoute,
   AuthenticatedJournalEntryNewRoute: AuthenticatedJournalEntryNewRoute,
   AuthenticatedJournalTemplatesRoute: AuthenticatedJournalTemplatesRoute,
   AuthenticatedLedgerRoute: AuthenticatedLedgerRoute,
   AuthenticatedMoneyInRoute: AuthenticatedMoneyInRoute,
   AuthenticatedMoneyOutRoute: AuthenticatedMoneyOutRoute,
+  AuthenticatedTrialBalanceRoute: AuthenticatedTrialBalanceRoute,
   AuthenticatedSalesInvoicesRoute: AuthenticatedSalesInvoicesRoute,
 }
 

@@ -34,10 +34,12 @@ const MAIN_NAV = [
   { to: "/expenses", label: "Expenses (AI)", icon: ArrowUpRight },
   { to: "/money-in", label: "Money In", icon: ArrowDownLeft },
   { to: "/money-out", label: "Money Out", icon: ArrowUpRight },
-  { to: "/balance-sheet", label: "Balance Sheet", icon: Scale },
-  { to: "/account-statement", label: "Statement of Account", icon: FileText },
   { to: "/chart-of-accounts", label: "Chart of Accounts", icon: BookOpenText },
-  { to: "/ledger", label: "General Ledger", icon: FileText },
+  { to: "/ledger", label: "General Journal", icon: FileText },
+  { to: "/account-statement", label: "General Ledger", icon: FileText },
+  { to: "/trial-balance", label: "Trial Balance", icon: Scale },
+  { to: "/income-statement", label: "Income Statement", icon: Scale },
+  { to: "/balance-sheet", label: "Balance Sheet", icon: Scale },
   { to: "/journal-templates", label: "Journal Templates", icon: FileText },
 ] as const;
 

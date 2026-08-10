@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpenText, Landmark, Receipt, PieChart, Lock, ArrowRight, CheckCircle2, ChevronDown, MessageCircle, X, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { getSession, logout } from "@/lib/auth.functions";
+import { useNavigate } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -65,6 +67,8 @@ function Landing() {
   ]);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
 
   const heroWords = ["Bookkeeping", "for", "MSMEs", "made", "easy"];
   const fullText = "Inflows come straight from your bank statement. Outflows come from the receipts already in your pocket. Ledgerly turns them into profit and a balance sheet you can actually read.";
@@ -161,6 +165,16 @@ function Landing() {
     };
   }, []);
 
+  useEffect(() => {
+    getSession().then(setUser);
+  }, []);
+
+  const handleLogout = async () => {
+    await logout();
+    setUser(null);
+    navigate({ to: "/" });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 overflow-hidden">
       {/* Fixed Header */}
@@ -188,14 +202,29 @@ function Landing() {
             </Link>
           </nav>
           <div className="flex items-center gap-3">
-            <Button asChild variant="ghost" size="sm" className="transition-all hover:scale-105">
-              <Link to="/auth">Sign in</Link>
-            </Button>
-            <Button asChild size="sm" className="group bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 hover:shadow-lg hover:shadow-emerald-200">
-              <Link to="/auth">
-                Get started free <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </Link>
-            </Button>
+            {user ? (
+              <>
+                <Button variant="ghost" size="sm" onClick={handleLogout} className="transition-all hover:scale-105">
+                  Sign out
+                </Button>
+                <Button asChild size="sm" className="group bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 hover:shadow-lg hover:shadow-emerald-200">
+                  <Link to="/dashboard">
+                    Dashboard <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild variant="ghost" size="sm" className="transition-all hover:scale-105">
+                  <Link to="/auth">Sign in</Link>
+                </Button>
+                <Button asChild size="sm" className="group bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 hover:shadow-lg hover:shadow-emerald-200">
+                  <Link to="/auth">
+                    Get started free <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -618,14 +647,24 @@ function Landing() {
                 </span>
               </p>
               <div className="mt-6 sm:mt-8 flex flex-wrap gap-3 sm:gap-4 animate-in fade-in slide-in-from-left duration-500">
-                <Button asChild size="default" className="group bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 hover:shadow-xl hover:shadow-emerald-200 sm:text-base">
-                  <Link to="/auth">
-                    Start your ledger <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:translate-x-1" />
-                  </Link>
-                </Button>
-                <Button asChild variant="outline" size="default" className="transition-all hover:scale-105 hover:border-emerald-600 hover:text-emerald-600 sm:text-base">
-                  <Link to="/auth">I already have an account</Link>
-                </Button>
+                {user ? (
+                  <Button asChild size="default" className="group bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 hover:shadow-xl hover:shadow-emerald-200 sm:text-base">
+                    <Link to="/dashboard">
+                      Go to Dashboard <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                  </Button>
+                ) : (
+                  <>
+                    <Button asChild size="default" className="group bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 hover:shadow-xl hover:shadow-emerald-200 sm:text-base">
+                      <Link to="/auth">
+                        Start your ledger <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:translate-x-1" />
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" size="default" className="transition-all hover:scale-105 hover:border-emerald-600 hover:text-emerald-600 sm:text-base">
+                      <Link to="/auth">I already have an account</Link>
+                    </Button>
+                  </>
+                )}
               </div>
               <div className="mt-6 sm:mt-8 flex flex-wrap gap-4 sm:gap-6 text-xs sm:text-sm text-gray-600 animate-in fade-in duration-500">
                 <div className="flex items-center gap-2 group cursor-default">

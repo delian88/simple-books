@@ -4,6 +4,7 @@ import { prisma, JWT_SECRET, requireCustomAuth } from '@/server/db';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { setCookie, deleteCookie } from '@tanstack/react-start/server';
+import { seedStandardChartOfAccounts } from './chart-of-accounts';
 
 export const login = createServerFn({ method: 'POST' })
   .validator((input: unknown) => z.object({ email: z.string().email(), password: z.string() }).parse(input))
@@ -34,24 +35,50 @@ export const signup = createServerFn({ method: 'POST' })
     const pass = await bcrypt.hash(data.password, 10);
     const trialEnds = new Date();
     trialEnds.setDate(trialEnds.getDate() + 14);
-    const user = await prisma.user.create({
-      data: {
-        email: data.email,
-        password: pass,
-        role: 'Company',
-        subscriptionStatus: 'TRIAL',
-        trialEndsAt: trialEnds,
-        profile: {
-          create: { businessName: data.businessName || 'My Business' }
-        },
-        activityLogs: {
-          create: {
-            action: "SIGNUP",
-            description: "User registered a new company account."
+    
+    // Use transaction for safer creation
+    const user = await prisma.$transaction(async (tx) => {
+      const newUser = await tx.user.create({
+        data: {
+          email: data.email,
+          password: pass,
+          role: 'Company',
+          subscriptionStatus: 'TRIAL',
+          trialEndsAt: trialEnds,
+          profile: {
+            create: { businessName: data.businessName || 'My Business' }
+          },
+          activityLogs: {
+            create: {
+              action: "SIGNUP",
+              description: "User registered a new company account."
+            }
           }
         }
-      }
+      });
+
+      const company = await tx.company.create({
+        data: {
+          name: data.businessName || 'My Business',
+          defaultCurrency: 'NGN', // can be updated later
+        }
+      });
+
+      await tx.companyUser.create({
+        data: {
+          userId: newUser.id,
+          companyId: company.id,
+          role: "OWNER",
+          status: "ACTIVE"
+        }
+      });
+
+      return { ...newUser, companyId: company.id };
     });
+
+    // Seed the accounts
+    await seedStandardChartOfAccounts(user.companyId);
+
     const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
     setCookie('ledgerly_auth', token, { maxAge: 86400, path: '/' });
     return { ok: true };

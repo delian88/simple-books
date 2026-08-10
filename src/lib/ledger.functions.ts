@@ -309,3 +309,155 @@ export const getAccountStatement = createServerFn({ method: "POST" })
     };
   });
 
+export const getTrialBalance = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const companyId = await getActiveCompanyId(context.userId);
+    const accounts = await prisma.account.findMany({
+      where: { companyId },
+    });
+
+    const lines = await prisma.journalLine.findMany({
+      where: {
+        journalEntry: {
+          companyId,
+          status: "POSTED",
+        }
+      }
+    });
+
+    let totalDebit = 0;
+    let totalCredit = 0;
+
+    const balances = accounts.map(acc => {
+      const accLines = lines.filter(l => l.accountId === acc.id);
+      const debits = accLines.reduce((sum, l) => sum + Number(l.debit), 0);
+      const credits = accLines.reduce((sum, l) => sum + Number(l.credit), 0);
+      
+      let balance = Number(acc.openingBalance);
+      let debitBalance = 0;
+      let creditBalance = 0;
+
+      const isNormalDebit = ["ASSET", "EXPENSE"].includes(acc.type);
+      if (isNormalDebit) {
+        balance += debits - credits;
+        if (balance >= 0) debitBalance = balance;
+        else creditBalance = Math.abs(balance);
+      } else {
+        balance += credits - debits;
+        if (balance >= 0) creditBalance = balance;
+        else debitBalance = Math.abs(balance);
+      }
+
+      totalDebit += debitBalance;
+      totalCredit += creditBalance;
+
+      return {
+        id: acc.id,
+        name: acc.name,
+        code: acc.code,
+        type: acc.type,
+        subType: acc.subType,
+        debit: debitBalance,
+        credit: creditBalance,
+      };
+    }).filter(b => b.debit !== 0 || b.credit !== 0);
+
+    return { balances, totalDebit, totalCredit };
+  });
+
+export const getFinancialStatements = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const companyId = await getActiveCompanyId(context.userId);
+    const accounts = await prisma.account.findMany({
+      where: { companyId },
+    });
+
+    const lines = await prisma.journalLine.findMany({
+      where: {
+        journalEntry: {
+          companyId,
+          status: "POSTED",
+        }
+      }
+    });
+
+    // Calculate balances for each account
+    const balances = accounts.map(acc => {
+      const accLines = lines.filter(l => l.accountId === acc.id);
+      const debits = accLines.reduce((sum, l) => sum + Number(l.debit), 0);
+      const credits = accLines.reduce((sum, l) => sum + Number(l.credit), 0);
+      
+      let balance = Number(acc.openingBalance);
+      const isNormalDebit = ["ASSET", "EXPENSE"].includes(acc.type);
+      if (isNormalDebit) {
+        balance += debits - credits;
+      } else {
+        balance += credits - debits;
+      }
+
+      return {
+        ...acc,
+        balance
+      };
+    });
+
+    // 1. Income Statement
+    let revenue = 0;
+    let cogs = 0;
+    let expenses = 0;
+
+    const incomeStatementAccounts = balances.filter(a => ["REVENUE", "EXPENSE"].includes(a.type));
+    
+    incomeStatementAccounts.forEach(acc => {
+      if (acc.type === "REVENUE") {
+        revenue += acc.balance;
+      } else if (acc.type === "EXPENSE") {
+        if (acc.subType === "Cost of Goods Sold") {
+          cogs += acc.balance;
+        } else {
+          expenses += acc.balance;
+        }
+      }
+    });
+
+    const grossProfit = revenue - cogs;
+    const netProfit = grossProfit - expenses;
+
+    const incomeStatement = {
+      revenue,
+      cogs,
+      grossProfit,
+      expenses,
+      netProfit,
+      details: incomeStatementAccounts
+    };
+
+    // 2. Balance Sheet
+    let assets = 0;
+    let liabilities = 0;
+    let equity = 0;
+
+    const balanceSheetAccounts = balances.filter(a => ["ASSET", "LIABILITY", "EQUITY"].includes(a.type));
+
+    balanceSheetAccounts.forEach(acc => {
+      if (acc.type === "ASSET") assets += acc.balance;
+      if (acc.type === "LIABILITY") liabilities += acc.balance;
+      if (acc.type === "EQUITY") equity += acc.balance;
+    });
+
+    // Add Net Profit to Retained Earnings / Equity
+    equity += netProfit;
+
+    const balanceSheet = {
+      assets,
+      liabilities,
+      equity,
+      details: balanceSheetAccounts
+    };
+
+    return { incomeStatement, balanceSheet };
+  });
+
+
