@@ -32,3 +32,4 @@ dist-ssr
 *.sw?
 
 /src/generated/prisma
+eng.traineddata

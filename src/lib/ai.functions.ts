@@ -12,18 +12,75 @@ async function getActiveCompanyId(userId: string): Promise<string> {
 }
 
 // Call Pollinations API for JSON formatting
+function extractAmountFromText(text: string, aiAmount?: any): number {
+  if (aiAmount != null) {
+    if (typeof aiAmount === "number" && !isNaN(aiAmount) && aiAmount > 0) {
+      return aiAmount;
+    }
+    if (typeof aiAmount === "string") {
+      const clean = aiAmount.replace(/[^0-9.]/g, "");
+      const num = parseFloat(clean);
+      if (!isNaN(num) && num > 0) return num;
+    }
+  }
+
+  const lines = text.split(/\r?\n/);
+  const totalKeywords = /total|amount|due|balance|net|grand total|subtotal|pay|price|cost/i;
+
+  for (const line of lines) {
+    if (totalKeywords.test(line)) {
+      const matches = line.match(/(?:[₦$€£\s]*)(\d{1,3}(?:[,\s]\d{3})*(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/g);
+      if (matches) {
+        for (const match of matches) {
+          const numStr = match.replace(/[^0-9.]/g, "");
+          const val = parseFloat(numStr);
+          if (!isNaN(val) && val > 0) return val;
+        }
+      }
+    }
+  }
+
+  const numbers = text.match(/\b\d{1,3}(?:,\d{3})*(?:\.\d{2})?\b|\b\d+\.\d{2}\b|\b\d{2,7}\b/g);
+  if (numbers) {
+    const validNums = numbers
+      .map(n => parseFloat(n.replace(/,/g, "")))
+      .filter(n => !isNaN(n) && n > 0 && n < 100000000);
+    if (validNums.length > 0) {
+      return Math.max(...validNums);
+    }
+  }
+
+  return 0;
+}
+
+function extractVendorFromText(text: string, aiVendor?: string): string {
+  if (aiVendor && aiVendor.trim() && aiVendor.toLowerCase() !== "unknown vendor" && aiVendor.toLowerCase() !== "unknown") {
+    return aiVendor.trim();
+  }
+
+  const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 2);
+  for (const line of lines) {
+    if (!/total|receipt|date|tax|thank you|welcome|amount|tel|phone|cashier|invoice|subtotal/i.test(line)) {
+      return line.substring(0, 60);
+    }
+  }
+
+  return "Scanned Merchant";
+}
+
 async function formatWithPollinations(text: string): Promise<any> {
   const prompt = `
     Extract the following fields from this raw receipt OCR text.
     Return ONLY a valid JSON object with these keys (no markdown formatting, no code blocks):
     - vendor: string (name of the store/vendor)
     - date: string (YYYY-MM-DD format)
-    - amount: number (total amount)
+    - amount: number (total numeric amount without currency symbols, e.g. 1500 or 45.99)
     - category: string (best guess of expense category, e.g., "Office Supplies", "Meals", "Software", "Travel", "Utilities", "Other")
+    - description: string (summary or list of items purchased on the receipt)
     
     Raw OCR Text:
     """
-    ${text.substring(0, 1000)} // truncate to avoid giant inputs
+    ${text.substring(0, 1500)}
     """
   `;
 
@@ -32,7 +89,6 @@ async function formatWithPollinations(text: string): Promise<any> {
     const response = await fetch(url);
     const result = await response.text();
     
-    // Sometimes LLMs return markdown code blocks anyway. Let's clean it up.
     let cleanJson = result.trim();
     if (cleanJson.startsWith('```json')) cleanJson = cleanJson.slice(7);
     if (cleanJson.startsWith('```')) cleanJson = cleanJson.slice(3);
@@ -41,12 +97,12 @@ async function formatWithPollinations(text: string): Promise<any> {
     return JSON.parse(cleanJson.trim());
   } catch (err) {
     console.error("Pollinations formatting error:", err);
-    // Fallback if parsing fails
     return {
       vendor: "Unknown Vendor",
       date: new Date().toISOString().split("T")[0],
       amount: 0,
-      category: "Other"
+      category: "Other",
+      description: "General expense"
     };
   }
 }
@@ -57,11 +113,9 @@ export const processReceiptBase64 = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const companyId = await getActiveCompanyId(context.userId);
 
-    // 1. Remove data URL prefix if present
     const base64Clean = data.base64Data.replace(/^data:image\/\w+;base64,/, "");
     const buffer = Buffer.from(base64Clean, "base64");
 
-    // 2. Save document to MySQL LONGBLOB
     const document = await prisma.document.create({
       data: {
         companyId,
@@ -71,7 +125,6 @@ export const processReceiptBase64 = createServerFn({ method: "POST" })
       }
     });
 
-    // 3. Run Tesseract OCR directly on the buffer
     let ocrText = "";
     try {
       const { default: Tesseract } = await import(/* @vite-ignore */ "tesseract.js");
@@ -86,35 +139,41 @@ export const processReceiptBase64 = createServerFn({ method: "POST" })
       throw new Error("No text found in the image");
     }
 
-    // 4. Use Pollinations AI to format into JSON
     const parsed = await formatWithPollinations(ocrText);
+    const amount = extractAmountFromText(ocrText, parsed?.amount);
+    const vendor = extractVendorFromText(ocrText, parsed?.vendor);
 
     return {
       documentId: document.id,
-      vendor: parsed.vendor || "Unknown Vendor",
-      amount: parsed.amount || 0,
+      vendor: vendor,
+      amount: amount,
       date: parsed.date || new Date().toISOString().split("T")[0],
-      category: parsed.category || "Other"
+      category: parsed.category || "Other",
+      description: parsed.description || `Scanned receipt: ${data.filename}`,
+      rawText: ocrText.substring(0, 500)
     };
   });
 
 export const saveAIExpense = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: {
-    documentId: string;
+    id?: string;
+    documentId?: string;
     vendor: string;
     description?: string;
     amount: number;
-    date: Date;
+    date: Date | string;
     category: string;
   }) => data)
   .handler(async ({ context, data }) => {
     const companyId = await getActiveCompanyId(context.userId);
     
+    const parsedDate = data.date instanceof Date ? data.date : new Date(data.date || Date.now());
+    const validDate = isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+
     let isFlagged = false;
     let flagReason = null;
 
-    // 1. Duplicate Check: Same vendor & amount within 48 hours
     const fortyEightHoursAgo = new Date();
     fortyEightHoursAgo.setHours(fortyEightHoursAgo.getHours() - 48);
 
@@ -123,7 +182,8 @@ export const saveAIExpense = createServerFn({ method: "POST" })
         companyId,
         vendor: data.vendor,
         amount: data.amount,
-        createdAt: { gte: fortyEightHoursAgo }
+        createdAt: { gte: fortyEightHoursAgo },
+        ...(data.id ? { id: { not: data.id } } : {})
       }
     });
 
@@ -132,7 +192,6 @@ export const saveAIExpense = createServerFn({ method: "POST" })
       flagReason = "DUPLICATE: An expense with this exact vendor and amount was submitted within the last 48 hours.";
     }
 
-    // 2. Anomaly Detection: Check if amount is unusually high for this vendor
     if (!isFlagged) {
       const pastExpenses = await prisma.expense.findMany({
         where: { companyId, vendor: data.vendor },
@@ -142,30 +201,98 @@ export const saveAIExpense = createServerFn({ method: "POST" })
       if (pastExpenses.length >= 3) {
         const sum = pastExpenses.reduce((acc, exp) => acc + Number(exp.amount), 0);
         const avg = sum / pastExpenses.length;
-        if (data.amount > avg * 3) { // >300% of average
+        if (data.amount > avg * 3) {
           isFlagged = true;
           flagReason = `ANOMALY: This amount is >300% higher than your historical average (₦${avg.toFixed(2)}) for ${data.vendor}.`;
         }
       } else if (data.amount > 500000) {
-        // Generic flag for very high undocumented single expenses
         isFlagged = true;
         flagReason = "ANOMALY: High value expense requiring manual review.";
       }
     }
 
-    const expense = await prisma.expense.create({
-      data: {
-        companyId,
-        documentId: data.documentId,
-        vendor: data.vendor,
-        description: data.description,
-        amount: data.amount,
-        date: data.date,
-        category: data.category,
-        isFlagged,
-        flagReason
+    let expense;
+    if (data.id) {
+      expense = await prisma.expense.update({
+        where: { id: data.id },
+        data: {
+          vendor: data.vendor,
+          description: data.description || null,
+          amount: data.amount,
+          date: validDate,
+          category: data.category,
+          isFlagged,
+          flagReason
+        }
+      });
+    } else {
+      expense = await prisma.expense.create({
+        data: {
+          companyId,
+          documentId: data.documentId || null,
+          vendor: data.vendor,
+          description: data.description || null,
+          amount: data.amount,
+          date: validDate,
+          category: data.category,
+          isFlagged,
+          flagReason
+        }
+      });
+    }
+
+    try {
+      let expenseAccount = await prisma.account.findFirst({
+        where: { companyId, type: "EXPENSE" }
+      });
+      if (!expenseAccount) {
+        expenseAccount = await prisma.account.create({
+          data: { companyId, name: "General Expenses", type: "EXPENSE" }
+        });
       }
-    });
+
+      let cashAccount = await prisma.account.findFirst({
+        where: { companyId, name: "Cash" }
+      });
+      if (!cashAccount) {
+        cashAccount = await prisma.account.create({
+          data: { companyId, name: "Cash", type: "ASSET" }
+        });
+      }
+
+      await prisma.transaction.create({
+        data: {
+          userId: context.userId,
+          companyId,
+          createdBy: context.userId,
+          direction: "outflow",
+          categoryId: expenseAccount.id,
+          category: data.category || "Expense",
+          amount: data.amount,
+          occurredOn: validDate,
+          counterparty: data.vendor,
+          note: data.description || `Scanned receipt from ${data.vendor}`,
+          source: data.documentId ? "receipt_scan" : "manual"
+        }
+      });
+
+      await prisma.journalEntry.create({
+        data: {
+          companyId,
+          date: validDate,
+          description: `Receipt: ${data.vendor} - ${data.category}`,
+          status: "POSTED",
+          lines: {
+            create: [
+              { accountId: expenseAccount.id, debit: data.amount, credit: 0 },
+              { accountId: cashAccount.id, debit: 0, credit: data.amount }
+            ]
+          }
+        }
+      });
+    } catch (journalErr) {
+      console.error("Failed to post journal entry for expense:", journalErr);
+    }
     
     return { ok: true, expenseId: expense.id, isFlagged, flagReason };
   });
@@ -174,8 +301,6 @@ export const aiChatQuery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { query: string; history: { role: string; content: string }[] }) => data)
   .handler(async ({ context, data }) => {
-    // In a real app we would pass company data to the prompt context.
-    // Here we'll just forward the chat to Pollinations for a generic accounting assistant.
     const systemPrompt = `You are an expert AI accounting assistant for a platform called Ledgerly. Be concise and helpful.`;
     
     const fullHistory = [
@@ -197,8 +322,37 @@ export const aiChatQuery = createServerFn({ method: "POST" })
       return { response: text };
     } catch (err) {
       console.error("AI Chat Error:", err);
-      return { response: "I'm sorry, I'm having trouble connecting to my brain right now. Please try again later." };
+      return { response: "I'm sorry, I'm having trouble connecting right now. Please try again later." };
     }
+  });
+
+export const deleteAIExpense = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { id: string }) => data)
+  .handler(async ({ context, data }) => {
+    const companyId = await getActiveCompanyId(context.userId);
+    await prisma.expense.deleteMany({
+      where: { id: data.id, companyId }
+    });
+    return { ok: true };
+  });
+
+export const getExpenseDocument = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((data: { documentId: string }) => data)
+  .handler(async ({ context, data }) => {
+    const companyId = await getActiveCompanyId(context.userId);
+    const doc = await prisma.document.findFirst({
+      where: { id: data.documentId, companyId },
+      select: { filename: true, mimeType: true, content: true }
+    });
+    if (!doc) throw new Error("Document not found");
+    const base64 = doc.content.toString("base64");
+    return {
+      filename: doc.filename,
+      mimeType: doc.mimeType,
+      dataUrl: `data:${doc.mimeType};base64,${base64}`
+    };
   });
 
 export const listExpenses = createServerFn({ method: "GET" })
@@ -207,9 +361,18 @@ export const listExpenses = createServerFn({ method: "GET" })
     const companyId = await getActiveCompanyId(context.userId);
     const expenses = await prisma.expense.findMany({
       where: { companyId },
+      include: {
+        document: {
+          select: { id: true, filename: true, mimeType: true }
+        }
+      },
       orderBy: { date: "desc" }
     });
-    return expenses;
+    return expenses.map((exp) => ({
+      ...exp,
+      amount: Number(exp.amount),
+      date: exp.date.toISOString().split("T")[0]
+    }));
   });
 
 export const generateFinancialInsights = createServerFn({ method: "GET" })
@@ -277,11 +440,12 @@ export const processVoiceExpense = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((data: { text: string }) => data)
   .handler(async ({ data }) => {
-    // We reuse the Pollinations API to parse the transcribed text
     const parsed = await formatWithPollinations(data.text);
+    const amount = extractAmountFromText(data.text, parsed?.amount);
+    const vendor = extractVendorFromText(data.text, parsed?.vendor);
     return {
-      vendor: parsed.vendor || "Voice Entry",
-      amount: parsed.amount || 0,
+      vendor: vendor || "Voice Entry",
+      amount: amount,
       date: parsed.date || new Date().toISOString().split("T")[0],
       category: parsed.category || "Other"
     };

@@ -1,16 +1,41 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router';
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { processReceiptBase64, saveAIExpense, listExpenses, processVoiceExpense } from "@/lib/ai.functions";
+import { 
+  processReceiptBase64, 
+  saveAIExpense, 
+  listExpenses, 
+  processVoiceExpense, 
+  deleteAIExpense, 
+  getExpenseDocument 
+} from "@/lib/ai.functions";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UploadCloud, Bot, Loader2, Sparkles, FileText, Calendar, Plus, X, Mic, AlertTriangle } from "lucide-react";
+import { 
+  UploadCloud, 
+  Bot, 
+  Loader2, 
+  Sparkles, 
+  FileText, 
+  Calendar, 
+  X, 
+  Mic, 
+  AlertTriangle,
+  Eye,
+  Trash2,
+  CheckCircle2,
+  Image as ImageIcon,
+  ExternalLink,
+  ShieldAlert,
+  Info
+} from "lucide-react";
 import { useState, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/expenses")({
@@ -22,6 +47,8 @@ function ExpensesPage() {
   const doUpload = useServerFn(processReceiptBase64);
   const doVoice = useServerFn(processVoiceExpense);
   const doSave = useServerFn(saveAIExpense);
+  const doDelete = useServerFn(deleteAIExpense);
+  const fetchDocument = useServerFn(getExpenseDocument);
   const qc = useQueryClient();
 
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
@@ -30,6 +57,11 @@ function ExpensesPage() {
   const [parsedData, setParsedData] = useState<any>(null);
   const [uploadProgress, setUploadProgress] = useState("");
   
+  // Full details viewer state
+  const [selectedExpense, setSelectedExpense] = useState<any>(null);
+  const [docPreviewUrl, setDocPreviewUrl] = useState<string | null>(null);
+  const [isLoadingDoc, setIsLoadingDoc] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: expenses = [], isLoading } = useQuery({
@@ -47,8 +79,11 @@ function ExpensesPage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["expenses"] });
-      toast.success("Expense saved successfully!");
+      qc.invalidateQueries({ queryKey: ["money-out"] });
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      toast.success("Expense updated successfully!");
       setUploadModalOpen(false);
+      setSelectedExpense(null);
       setParsedData(null);
     },
     onError: (err: any) => {
@@ -56,8 +91,41 @@ function ExpensesPage() {
     }
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return doDelete({ data: { id } });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["expenses"] });
+      qc.invalidateQueries({ queryKey: ["money-out"] });
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      toast.success("Expense deleted successfully");
+      setSelectedExpense(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete expense");
+    }
+  });
+
+  const openDetailsModal = async (expense: any) => {
+    setSelectedExpense(expense);
+    setDocPreviewUrl(null);
+
+    if (expense.documentId || expense.document?.id) {
+      const docId = expense.documentId || expense.document.id;
+      setIsLoadingDoc(true);
+      try {
+        const docRes = await fetchDocument({ data: { documentId: docId } });
+        setDocPreviewUrl(docRes.dataUrl);
+      } catch (err) {
+        console.error("Could not load receipt image:", err);
+      } finally {
+        setIsLoadingDoc(false);
+      }
+    }
+  };
+
   const handleVoiceEntry = () => {
-    // Check for browser support
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       toast.error("Voice entry is not supported in your browser. Please use Chrome.");
@@ -80,14 +148,31 @@ function ExpensesPage() {
       setIsRecording(false);
       const text = event.results[0][0].transcript;
       setIsUploading(true);
-      setUploadProgress(`Heard: "${text}"... Analyzing with AI...`);
+      setUploadProgress(`Heard: "${text}"... Detecting transaction details...`);
       
       try {
         const result = await doVoice({ data: { text } });
-        setParsedData(result);
-        toast.success("Voice parsed successfully!");
+        setUploadProgress("Recording transaction automatically...");
+        const saveRes = await doSave({
+          data: {
+            vendor: result.vendor,
+            amount: Number(result.amount),
+            date: new Date(result.date),
+            category: result.category,
+            description: `Voice note: "${text}"`
+          }
+        });
+        qc.invalidateQueries({ queryKey: ["expenses"] });
+        qc.invalidateQueries({ queryKey: ["money-out"] });
+        qc.invalidateQueries({ queryKey: ["transactions"] });
+        if (saveRes.isFlagged) {
+          toast.warning(`Auto-recorded with flag: ${saveRes.flagReason}`, { duration: 8000 });
+        } else {
+          toast.success(`Transaction detected & recorded: ${result.vendor} (₦${Number(result.amount).toLocaleString()})`);
+        }
+        setParsedData({ ...result, description: `Voice note: "${text}"`, recorded: true, expenseId: saveRes.expenseId });
       } catch (err: any) {
-        toast.error("Failed to parse voice entry.");
+        toast.error("Failed to process voice entry.");
       } finally {
         setIsUploading(false);
       }
@@ -115,18 +200,45 @@ function ExpensesPage() {
     }
 
     setIsUploading(true);
-    setUploadProgress("Reading image using Tesseract OCR...");
+    setUploadProgress("Reading receipt image with OCR...");
     setParsedData(null);
 
     try {
       const reader = new FileReader();
       reader.onload = async (event) => {
-        const base64 = event.target?.result as string;
-        setUploadProgress("Analyzing text with Pollinations AI...");
-        const result = await doUpload({ data: { base64Data: base64, mimeType: file.type, filename: file.name } });
-        setParsedData(result);
-        setIsUploading(false);
-        toast.success("Receipt parsed successfully!");
+        try {
+          const base64 = event.target?.result as string;
+          setUploadProgress("Detecting transaction details with AI...");
+          const result = await doUpload({ data: { base64Data: base64, mimeType: file.type, filename: file.name } });
+          
+          setUploadProgress("Recording transaction automatically...");
+          const saveRes = await doSave({
+            data: {
+              documentId: result.documentId,
+              vendor: result.vendor,
+              amount: Number(result.amount),
+              date: new Date(result.date || new Date().toISOString().split('T')[0]),
+              category: result.category,
+              description: result.description || `Scanned receipt: ${file.name}`
+            }
+          });
+
+          qc.invalidateQueries({ queryKey: ["expenses"] });
+          qc.invalidateQueries({ queryKey: ["money-out"] });
+          qc.invalidateQueries({ queryKey: ["transactions"] });
+
+          if (saveRes.isFlagged) {
+            toast.warning(`Recorded with flag: ${saveRes.flagReason}`, { duration: 8000 });
+          } else {
+            toast.success(`Transaction detected & recorded: ${result.vendor} (₦${Number(result.amount).toLocaleString()})`);
+          }
+
+          setParsedData({ ...result, recorded: true, expenseId: saveRes.expenseId });
+        } catch (err: any) {
+          toast.error(err.message || "Failed to process receipt");
+        } finally {
+          setIsUploading(false);
+        }
       };
       reader.readAsDataURL(file);
     } catch (err: any) {
@@ -134,7 +246,6 @@ function ExpensesPage() {
       setIsUploading(false);
     }
     
-    // Clear input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -147,7 +258,20 @@ function ExpensesPage() {
       vendor: parsedData.vendor,
       amount: Number(parsedData.amount),
       date: new Date(parsedData.date),
-      category: parsedData.category
+      category: parsedData.category,
+      description: parsedData.description
+    });
+  };
+
+  const handleUpdateSelected = () => {
+    if (!selectedExpense) return;
+    saveMutation.mutate({
+      id: selectedExpense.id,
+      vendor: selectedExpense.vendor,
+      amount: Number(selectedExpense.amount),
+      date: new Date(selectedExpense.date),
+      category: selectedExpense.category,
+      description: selectedExpense.description
     });
   };
 
@@ -169,55 +293,119 @@ function ExpensesPage() {
       <div className="space-y-6 animate-in fade-in duration-500">
         <Card className="border-gray-200 shadow-sm overflow-hidden">
           <Table>
-            <TableHeader className="bg-gray-50">
-              <TableRow>
-                <TableHead className="font-semibold text-gray-600">Date</TableHead>
-                <TableHead className="font-semibold text-gray-600">Vendor</TableHead>
-                <TableHead className="font-semibold text-gray-600">Category</TableHead>
-                <TableHead className="text-right font-semibold text-gray-600">Amount</TableHead>
+            <TableHeader className="bg-gray-50/80">
+              <TableRow className="border-b border-gray-200">
+                <TableHead className="font-semibold text-gray-700">Date</TableHead>
+                <TableHead className="font-semibold text-gray-700">Vendor & Details</TableHead>
+                <TableHead className="font-semibold text-gray-700">Category</TableHead>
+                <TableHead className="font-semibold text-gray-700">Source</TableHead>
+                <TableHead className="font-semibold text-gray-700">Audit & Fraud Status</TableHead>
+                <TableHead className="text-right font-semibold text-gray-700">Amount</TableHead>
+                <TableHead className="text-center font-semibold text-gray-700 w-24">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-40 text-center">
-                    <Loader2 className="h-6 w-6 animate-spin text-gray-300 mx-auto mb-2" />
+                  <TableCell colSpan={7} className="h-40 text-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-gray-400 mx-auto mb-2" />
+                    <p className="text-xs text-gray-500">Loading transactions...</p>
                   </TableCell>
                 </TableRow>
               ) : expenses.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-40 text-center">
-                    <Bot className="h-8 w-8 mx-auto text-emerald-200 mb-3" />
-                    <p className="text-sm font-medium text-gray-500">No expenses yet</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Click "Smart Upload" to scan your first receipt</p>
+                  <TableCell colSpan={7} className="h-44 text-center">
+                    <Bot className="h-9 w-9 mx-auto text-emerald-300 mb-2" />
+                    <p className="text-sm font-semibold text-gray-700">No expenses recorded yet</p>
+                    <p className="text-xs text-gray-400 mt-1">Click "Smart Upload" to scan a receipt or "Voice Entry" to speak your expense</p>
                   </TableCell>
                 </TableRow>
               ) : (
                 expenses.map((expense: any) => (
-                  <TableRow key={expense.id} className={`hover:bg-gray-50/60 ${expense.isFlagged ? "bg-red-50/30" : ""}`}>
-                    <TableCell className="text-sm text-gray-500">
+                  <TableRow 
+                    key={expense.id} 
+                    className={`hover:bg-emerald-50/40 transition-colors cursor-pointer ${expense.isFlagged ? "bg-red-50/30" : ""}`}
+                    onClick={() => openDetailsModal(expense)}
+                  >
+                    <TableCell className="text-xs font-medium text-gray-600 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
-                        <Calendar className="h-3 w-3" />
-                        {new Date(expense.date).toLocaleDateString()}
+                        <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                        {new Date(expense.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                       </div>
                     </TableCell>
-                    <TableCell className="font-medium text-gray-800">
-                      <div className="flex items-center gap-2">
-                        {expense.vendor}
-                        {expense.isFlagged && (
-                          <span title={expense.flagReason} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 text-red-700 cursor-help">
-                            <AlertTriangle className="h-3 w-3" /> FLAGGED
-                          </span>
+                    
+                    <TableCell className="font-medium text-gray-900">
+                      <div>
+                        <div className="font-semibold text-gray-900 flex items-center gap-2">
+                          {expense.vendor}
+                        </div>
+                        {expense.description ? (
+                          <p className="text-xs text-gray-500 line-clamp-1 mt-0.5">{expense.description}</p>
+                        ) : (
+                          <p className="text-[11px] text-gray-400 italic mt-0.5">Scanned receipt entry</p>
                         )}
                       </div>
                     </TableCell>
+                    
                     <TableCell>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
-                        {expense.category}
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/60">
+                        {expense.category || "General"}
                       </span>
                     </TableCell>
-                    <TableCell className="text-right font-semibold text-gray-800 tabular-nums">
+
+                    <TableCell>
+                      {expense.documentId || expense.document ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 font-medium">
+                          <ImageIcon className="h-3 w-3 text-emerald-600" /> OCR Receipt
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-100 font-medium">
+                          <Mic className="h-3 w-3 text-blue-600" /> Voice Entry
+                        </span>
+                      )}
+                    </TableCell>
+
+                    <TableCell>
+                      {expense.isFlagged ? (
+                        <span title={expense.flagReason} className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                          <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0" /> FLAGGED
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium bg-emerald-100/70 text-emerald-800">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 shrink-0" /> Verified
+                        </span>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="text-right font-bold text-gray-900 tabular-nums">
                       ₦{Number(expense.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </TableCell>
+
+                    <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center justify-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-gray-500 hover:text-emerald-700 hover:bg-emerald-100/60"
+                          onClick={() => openDetailsModal(expense)}
+                          title="View Full Details"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                          onClick={() => {
+                            if (confirm(`Are you sure you want to delete expense for "${expense.vendor}"?`)) {
+                              deleteMutation.mutate(expense.id);
+                            }
+                          }}
+                          title="Delete Expense"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -226,7 +414,168 @@ function ExpensesPage() {
           </Table>
         </Card>
 
-        {/* Upload Modal */}
+        {/* Full Details Modal */}
+        <Dialog open={!!selectedExpense} onOpenChange={(v) => !v && setSelectedExpense(null)}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            {selectedExpense && (
+              <>
+                <DialogHeader className="border-b pb-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <DialogTitle className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                        {selectedExpense.vendor}
+                      </DialogTitle>
+                      <DialogDescription className="text-sm text-gray-500 mt-1">
+                        Recorded on {new Date(selectedExpense.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                      </DialogDescription>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-extrabold text-emerald-700 tabular-nums">
+                        ₦{Number(selectedExpense.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </p>
+                      <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                        {selectedExpense.category}
+                      </span>
+                    </div>
+                  </div>
+                </DialogHeader>
+
+                <div className="py-4 space-y-6">
+                  {/* Fraud / Anomaly Banner */}
+                  {selectedExpense.isFlagged ? (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 text-amber-900">
+                      <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-bold text-sm text-amber-900">Fraud Detection Alert</p>
+                        <p className="text-xs text-amber-800 mt-0.5">{selectedExpense.flagReason}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex items-center gap-2.5 text-emerald-800">
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                      <p className="text-xs font-medium">Transaction verified and logged into general ledger without anomalies.</p>
+                    </div>
+                  )}
+
+                  {/* Transaction Metadata Grid */}
+                  <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
+                    <div>
+                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendor</Label>
+                      <Input
+                        className="mt-1 bg-white"
+                        value={selectedExpense.vendor}
+                        onChange={(e) => setSelectedExpense({ ...selectedExpense, vendor: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</Label>
+                      <Input
+                        type="date"
+                        className="mt-1 bg-white"
+                        value={selectedExpense.date ? selectedExpense.date.split("T")[0] : ""}
+                        onChange={(e) => setSelectedExpense({ ...selectedExpense, date: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount (₦)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        className="mt-1 bg-white"
+                        value={selectedExpense.amount}
+                        onChange={(e) => setSelectedExpense({ ...selectedExpense, amount: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</Label>
+                      <Input
+                        className="mt-1 bg-white"
+                        value={selectedExpense.category}
+                        onChange={(e) => setSelectedExpense({ ...selectedExpense, category: e.target.value })}
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Description & Item Notes</Label>
+                      <Textarea
+                        rows={2}
+                        className="mt-1 bg-white"
+                        value={selectedExpense.description || ""}
+                        placeholder="Add items or note..."
+                        onChange={(e) => setSelectedExpense({ ...selectedExpense, description: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Receipt Preview Section */}
+                  {(selectedExpense.documentId || selectedExpense.document) && (
+                    <div className="space-y-2">
+                      <Label className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                        <ImageIcon className="h-4 w-4 text-emerald-600" /> Attached Receipt Image
+                      </Label>
+
+                      {isLoadingDoc ? (
+                        <div className="h-48 border border-dashed rounded-xl flex items-center justify-center bg-gray-50 text-gray-400">
+                          <Loader2 className="h-6 w-6 animate-spin text-emerald-600 mr-2" /> Loading receipt scan...
+                        </div>
+                      ) : docPreviewUrl ? (
+                        <div className="border rounded-xl overflow-hidden bg-gray-900 max-h-80 flex justify-center items-center relative group">
+                          <img 
+                            src={docPreviewUrl} 
+                            alt="Receipt Scan" 
+                            className="max-h-80 object-contain" 
+                          />
+                          <a 
+                            href={docPreviewUrl} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            className="absolute top-3 right-3 bg-black/70 hover:bg-black text-white p-2 rounded-lg text-xs flex items-center gap-1 opacity-90 transition-opacity"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" /> Open Full Image
+                          </a>
+                        </div>
+                      ) : (
+                        <div className="p-4 border rounded-xl bg-gray-50 text-xs text-gray-500">
+                          Receipt image attached ({selectedExpense.document?.filename || "receipt"})
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="gap-1.5"
+                      onClick={() => {
+                        if (confirm("Are you sure you want to delete this expense?")) {
+                          deleteMutation.mutate(selectedExpense.id);
+                        }
+                      }}
+                      disabled={deleteMutation.isPending || saveMutation.isPending}
+                    >
+                      <Trash2 className="h-4 w-4" /> Delete Expense
+                    </Button>
+
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setSelectedExpense(null)}>
+                        Cancel
+                      </Button>
+                      <Button 
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                        onClick={handleUpdateSelected}
+                        disabled={saveMutation.isPending}
+                      >
+                        {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Upload Scan Modal */}
         <Dialog open={uploadModalOpen} onOpenChange={(v) => !v && setUploadModalOpen(false)}>
           <DialogContent className="max-w-md">
             <DialogHeader>
@@ -275,14 +624,21 @@ function ExpensesPage() {
 
               {parsedData && !isUploading && (
                 <div className="space-y-4">
-                  <div className="bg-emerald-50 border border-emerald-100 rounded-lg p-3 text-sm text-emerald-800 flex items-start gap-2 mb-4">
-                    <Sparkles className="h-4 w-4 mt-0.5 shrink-0 text-emerald-600" />
-                    <p>Our AI extracted the following details. Please review and edit if necessary before saving.</p>
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-sm text-emerald-900 flex items-start gap-2.5 mb-4 shadow-sm">
+                    <Sparkles className="h-5 w-5 mt-0.5 shrink-0 text-emerald-600 animate-pulse" />
+                    <div>
+                      <p className="font-semibold text-emerald-900">
+                        Transaction Automatically Recorded!
+                      </p>
+                      <p className="text-xs text-emerald-700 mt-0.5">
+                        Our AI detected the details from your receipt and recorded it directly into your ledger.
+                      </p>
+                    </div>
                   </div>
                   
                   <div className="space-y-3">
                     <div className="space-y-1.5">
-                      <Label>Vendor Name</Label>
+                      <Label className="text-gray-700 font-medium">Vendor Name</Label>
                       <Input
                         value={parsedData.vendor}
                         onChange={(e) => setParsedData({ ...parsedData, vendor: e.target.value })}
@@ -291,7 +647,7 @@ function ExpensesPage() {
                     
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1.5">
-                        <Label>Date</Label>
+                        <Label className="text-gray-700 font-medium">Date</Label>
                         <Input
                           type="date"
                           value={parsedData.date}
@@ -299,7 +655,7 @@ function ExpensesPage() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <Label>Amount</Label>
+                        <Label className="text-gray-700 font-medium">Amount (₦)</Label>
                         <Input
                           type="number"
                           step="0.01"
@@ -310,10 +666,19 @@ function ExpensesPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label>Predicted Category</Label>
+                      <Label className="text-gray-700 font-medium">Category</Label>
                       <Input
                         value={parsedData.category}
                         onChange={(e) => setParsedData({ ...parsedData, category: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label className="text-gray-700 font-medium">Description</Label>
+                      <Textarea
+                        rows={2}
+                        value={parsedData.description || ""}
+                        onChange={(e) => setParsedData({ ...parsedData, description: e.target.value })}
                       />
                     </div>
                   </div>
@@ -321,18 +686,21 @@ function ExpensesPage() {
                   <div className="flex gap-3 pt-4 border-t border-gray-100 mt-6">
                     <Button
                       variant="outline"
-                      className="flex-1"
+                      className="flex-1 border-gray-300 hover:bg-gray-50"
                       onClick={() => setParsedData(null)}
                       disabled={saveMutation.isPending}
                     >
-                      Scan Another
+                      Scan Another Receipt
                     </Button>
                     <Button
                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                      onClick={handleSave}
+                      onClick={() => {
+                        handleSave();
+                        setUploadModalOpen(false);
+                      }}
                       disabled={saveMutation.isPending}
                     >
-                      {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Expense"}
+                      {saveMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Done"}
                     </Button>
                   </div>
                 </div>
