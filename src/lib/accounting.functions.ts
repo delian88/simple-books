@@ -5,6 +5,7 @@ import { z } from "zod";
 
 const txnInput = z.object({
   direction: z.enum(["inflow", "outflow"]),
+  bankAccountId: z.string().trim().min(1),
   category: z.string().trim().min(1).max(100), // Now accepts Account ID
   amount: z.number().positive().max(1_000_000_000_00),
   occurred_on: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -82,16 +83,6 @@ export const addTransactions = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const companyId = await getActiveCompanyId(context.userId);
     
-    // Fallback cash account for automatic posting
-    let cashAccount = await prisma.account.findFirst({
-      where: { companyId, name: "Cash" }
-    });
-    if (!cashAccount) {
-      cashAccount = await prisma.account.create({
-        data: { companyId, name: "Cash", type: "ASSET" }
-      });
-    }
-
     const rows = data.rows.map((row) => ({
       userId: context.userId,
       companyId: companyId,
@@ -112,8 +103,9 @@ export const addTransactions = createServerFn({ method: "POST" })
     // Then post automatic Journal Entries
     for (const row of data.rows) {
       const opposingAccountId = row.category;
-      const debitAccountId = row.direction === "inflow" ? cashAccount.id : opposingAccountId;
-      const creditAccountId = row.direction === "inflow" ? opposingAccountId : cashAccount.id;
+      const bankAccountId = row.bankAccountId;
+      const debitAccountId = row.direction === "inflow" ? bankAccountId : opposingAccountId;
+      const creditAccountId = row.direction === "inflow" ? opposingAccountId : bankAccountId;
 
       await prisma.journalEntry.create({
         data: {

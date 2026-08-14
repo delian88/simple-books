@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import {
@@ -32,6 +33,8 @@ import {
   CartesianGrid,
 } from "recharts";
 import { Button } from "@/components/ui/button";
+import { TransactionsTable } from "@/components/TransactionsTable";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 const dashboardQuery = queryOptions({
   queryKey: ["dashboard"],
@@ -52,16 +55,15 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: Dashboard,
 });
 
-import { AIInsightsWidget } from "@/components/AIInsightsWidget";
 
-// Mock data for sparklines
-const generateSparkline = () =>
-  Array.from({ length: 10 }, (_, i) => ({ value: Math.random() * 100 + 50 }));
 
 function Dashboard() {
   const { data } = useSuspenseQuery(dashboardQuery);
   const { profile, transactions: txns, balanceItems } = data;
   const currency = profile.currency;
+  
+  const [filter, setFilter] = useState<"all" | "inflow" | "outflow">("all");
+  const filteredTxns = filter === "all" ? txns : txns.filter((t) => t.direction === filter);
 
   const sum = (predicate: (c: TxnCategory) => boolean) =>
     txns.filter((t) => predicate(t.category as TxnCategory)).reduce((acc, t) => acc + t.amount, 0);
@@ -82,44 +84,6 @@ function Dashboard() {
     .reduce((a, i) => a + i.amount, 0);
   const netWorth = assets - liabilities;
 
-  const stats = [
-    {
-      label: "CASH IN",
-      value: totalIn,
-      icon: ArrowDownLeft,
-      color: "#22c55e",
-      bgClass: "bg-green-50/50 border-green-100 dark:bg-green-950/20 dark:border-green-900",
-      textClass: "text-green-600 dark:text-green-400",
-      iconBg: "bg-green-100 dark:bg-green-900/50",
-    },
-    {
-      label: "CASH OUT",
-      value: totalOut,
-      icon: ArrowUpRight,
-      color: "#ef4444",
-      bgClass: "bg-red-50/50 border-red-100 dark:bg-red-950/20 dark:border-red-900",
-      textClass: "text-red-500 dark:text-red-400",
-      iconBg: "bg-red-100 dark:bg-red-900/50",
-    },
-    {
-      label: "PROFIT (REVENUE − EXPENSES)",
-      value: profit,
-      icon: TrendingUp,
-      color: "#3b82f6",
-      bgClass: "bg-blue-50/50 border-blue-100 dark:bg-blue-950/20 dark:border-blue-900",
-      textClass: "text-blue-600 dark:text-blue-400",
-      iconBg: "bg-blue-100 dark:bg-blue-900/50",
-    },
-    {
-      label: "NET WORTH (ASSETS − LIABILITIES)",
-      value: netWorth,
-      icon: Scale,
-      color: "#8b5cf6",
-      bgClass: "bg-purple-50/50 border-purple-100 dark:bg-purple-950/20 dark:border-purple-900",
-      textClass: "text-purple-600 dark:text-purple-400",
-      iconBg: "bg-purple-100 dark:bg-purple-900/50",
-    },
-  ];
 
   const pieData = [
     { name: "Sales Revenue", value: sales || 0, color: "#10b981" },
@@ -141,53 +105,6 @@ function Dashboard() {
         </div>
       }
     >
-      <AIInsightsWidget />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
-        {stats.map((stat) => (
-          <Card
-            key={stat.label}
-            className={`border relative overflow-hidden shadow-sm ${stat.bgClass}`}
-          >
-            <CardContent className="p-5">
-              <div className="flex items-center gap-3 mb-2">
-                <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-full ${stat.iconBg}`}
-                >
-                  <stat.icon className={`h-5 w-5 ${stat.textClass}`} />
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                    {stat.label}
-                  </h3>
-                  <div className={`text-3xl font-bold tracking-tight mt-0.5 ${stat.textClass}`}>
-                    {formatMoney(stat.value, currency)}
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-end justify-between">
-                <div className="text-xs font-medium text-green-600">
-                  ↑ 0% <span className="text-muted-foreground font-normal">vs last 30 days</span>
-                </div>
-                <div className="h-10 w-24">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={generateSparkline()}>
-                      <Line
-                        type="monotone"
-                        dataKey="value"
-                        stroke={stat.color}
-                        strokeWidth={2}
-                        dot={false}
-                        isAnimationActive={false}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
 
       <div className="grid gap-6 lg:grid-cols-3 mb-6">
         <Card className="lg:col-span-2 shadow-sm border-border">
@@ -197,42 +114,55 @@ function Dashboard() {
                 <CalendarIcon className="h-5 w-5 text-muted-foreground" />
                 Recent Entries
               </h2>
-              <Button variant="outline" size="sm" className="text-xs h-8">
-                All Transactions <span className="ml-1 opacity-50">▼</span>
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-xs h-8">
+                    {filter === "all" ? "All Transactions" : filter === "inflow" ? "Money In" : "Money Out"} <span className="ml-1 opacity-50">▼</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setFilter("all")}>All Transactions</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilter("inflow")}>Money In</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilter("outflow")}>Money Out</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="relative mb-6">
-                <div className="absolute inset-0 -m-4 bg-muted/50 rounded-full animate-pulse-slow"></div>
-                <div className="relative z-10 flex h-24 w-24 items-center justify-center rounded-full bg-background border shadow-sm">
-                  <FileText className="h-10 w-10 text-muted-foreground/50" />
-                  <div className="absolute -bottom-2 -right-2 bg-background rounded-full p-1 border shadow-sm">
-                    <Search className="h-5 w-5 text-primary" />
+            {filteredTxns.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 -m-4 bg-muted/50 rounded-full animate-pulse-slow"></div>
+                  <div className="relative z-10 flex h-24 w-24 items-center justify-center rounded-full bg-background border shadow-sm">
+                    <FileText className="h-10 w-10 text-muted-foreground/50" />
+                    <div className="absolute -bottom-2 -right-2 bg-background rounded-full p-1 border shadow-sm">
+                      <Search className="h-5 w-5 text-primary" />
+                    </div>
                   </div>
                 </div>
+                <h3 className="text-lg font-bold font-display">No entries yet</h3>
+                <p className="mt-2 text-sm text-muted-foreground max-w-[250px]">
+                  Start by adding your first money in or money out transaction.
+                </p>
+                <div className="mt-6 flex items-center gap-3">
+                  <Button asChild className="bg-[#0B3D2B] hover:bg-[#0B3D2B]/90 text-white gap-2">
+                    <Link to="/money-in">
+                      <span>+</span> Money In
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 gap-2"
+                  >
+                    <Link to="/money-out">
+                      <span>−</span> Money Out
+                    </Link>
+                  </Button>
+                </div>
               </div>
-              <h3 className="text-lg font-bold font-display">No entries yet</h3>
-              <p className="mt-2 text-sm text-muted-foreground max-w-[250px]">
-                Start by adding your first money in or money out transaction.
-              </p>
-              <div className="mt-6 flex items-center gap-3">
-                <Button asChild className="bg-[#0B3D2B] hover:bg-[#0B3D2B]/90 text-white gap-2">
-                  <Link to="/money-in">
-                    <span>+</span> Money In
-                  </Link>
-                </Button>
-                <Button
-                  asChild
-                  variant="outline"
-                  className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 gap-2"
-                >
-                  <Link to="/money-out">
-                    <span>−</span> Money Out
-                  </Link>
-                </Button>
-              </div>
-            </div>
+            ) : (
+              <TransactionsTable rows={filteredTxns} currency={currency} />
+            )}
           </CardContent>
         </Card>
 
@@ -309,75 +239,6 @@ function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="flex flex-col justify-between rounded-xl border bg-card p-4 shadow-sm">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-yellow-100 text-yellow-600">
-              <FileText className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase">
-                Outstanding Invoices
-              </p>
-              <div className="flex items-end gap-2 mt-1">
-                <span className="text-xl font-bold">{formatMoney(0, currency)}</span>
-              </div>
-            </div>
-          </div>
-          <div className="text-xs text-muted-foreground mt-2">0 invoices awaiting payment</div>
-        </div>
-
-        <div className="flex flex-col justify-between rounded-xl border bg-card p-4 shadow-sm">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100 text-red-600">
-              <Layers className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase">Bills Due</p>
-              <div className="flex items-end gap-2 mt-1">
-                <span className="text-xl font-bold">{formatMoney(0, currency)}</span>
-              </div>
-            </div>
-          </div>
-          <div className="text-xs text-muted-foreground mt-2">0 bills to pay this week</div>
-        </div>
-
-        <div className="flex flex-col justify-between rounded-xl border bg-card p-4 shadow-sm">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
-              <DatabaseZap className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase">Cash Balance</p>
-              <div className="flex items-end gap-2 mt-1">
-                <span className="text-xl font-bold">{formatMoney(assets, currency)}</span>
-              </div>
-            </div>
-          </div>
-          <div className="text-xs text-green-600 font-medium mt-2">
-            Available across all accounts
-          </div>
-        </div>
-
-        <div className="flex flex-col justify-between rounded-xl border bg-card p-4 shadow-sm">
-          <div className="flex items-center gap-4 mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100 text-purple-600">
-              <Info className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-muted-foreground uppercase">Quick Actions</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            <Button size="sm" variant="outline" className="text-xs">
-              Create Invoice
-            </Button>
-            <Button size="sm" variant="outline" className="text-xs">
-              Add Bill
-            </Button>
-          </div>
-        </div>
-      </div>
 
       <div className="grid gap-6 lg:grid-cols-2 mb-6 mt-6">
         <Card className="shadow-sm border-border">

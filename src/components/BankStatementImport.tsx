@@ -93,7 +93,14 @@ function parseStatement(text: string): Draft[] {
   return drafts.slice(0, 300);
 }
 
-export function BankStatementImport({ currency }: { currency: string }) {
+export function BankStatementImport({ 
+  currency, 
+  bankAccounts 
+}: { 
+  currency: string;
+  bankAccounts: { value: string; label: string }[];
+}) {
+  const [bankAccountId, setBankAccountId] = useState(() => bankAccounts[0]?.value || "");
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const queryClient = useQueryClient();
 
@@ -103,6 +110,7 @@ export function BankStatementImport({ currency }: { currency: string }) {
         .filter((d) => d.include)
         .map((d) => ({
           direction: "inflow" as const,
+          bankAccountId,
           category: d.category,
           amount: d.amount,
           occurred_on: d.date,
@@ -145,6 +153,22 @@ export function BankStatementImport({ currency }: { currency: string }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="grid gap-2">
+          <Label>Bank Account</Label>
+          <Select value={bankAccountId} onValueChange={setBankAccountId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select bank account" />
+            </SelectTrigger>
+            <SelectContent>
+              {bankAccounts.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         <div className="grid gap-2">
           <Label htmlFor="statement">Statement file (.csv)</Label>
           <Input

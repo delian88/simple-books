@@ -23,10 +23,18 @@ const moneyInQuery = queryOptions({
         hint: a.type
       }));
 
+    const bankAccounts = accounts
+      .filter(a => a.type === "ASSET")
+      .map(a => ({
+        value: a.id,
+        label: `${a.code ? a.code + ' - ' : ''}${a.name}`
+      }));
+
     return { 
       profile, 
       transactions: transactions.filter((t) => t.direction === "inflow"),
-      categories: inflowAccounts.length > 0 ? inflowAccounts : [{ value: "default", label: "No accounts found", hint: "Go to Chart of Accounts" }]
+      categories: inflowAccounts.length > 0 ? inflowAccounts : [{ value: "default", label: "No accounts found", hint: "Go to Chart of Accounts" }],
+      bankAccounts: bankAccounts.length > 0 ? bankAccounts : [{ value: "default", label: "No asset accounts found" }]
     };
   },
 });
@@ -43,7 +51,7 @@ export const Route = createFileRoute("/_authenticated/money-in")({
 
 function MoneyIn() {
   const { data } = useSuspenseQuery(moneyInQuery);
-  const [draft, setDraft] = useState(() => emptyDraft(data.categories[0].value));
+  const [draft, setDraft] = useState(() => emptyDraft(data.categories[0].value, data.bankAccounts[0].value));
   const total = data.transactions.reduce((acc, t) => acc + t.amount, 0);
 
   return (
@@ -63,10 +71,11 @@ function MoneyIn() {
           description="Type in a single credit by hand."
           direction="inflow"
           categories={data.categories}
+          bankAccounts={data.bankAccounts}
           draft={draft}
           onDraftChange={setDraft}
         />
-        <BankStatementImport currency={data.profile.currency} />
+        <BankStatementImport currency={data.profile.currency} bankAccounts={data.bankAccounts} />
       </div>
 
       <Card className="mt-6">

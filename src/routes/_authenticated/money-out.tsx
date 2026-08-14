@@ -23,10 +23,18 @@ const moneyOutQuery = queryOptions({
         hint: a.type
       }));
 
+    const bankAccounts = accounts
+      .filter(a => a.type === "ASSET")
+      .map(a => ({
+        value: a.id,
+        label: `${a.code ? a.code + ' - ' : ''}${a.name}`
+      }));
+
     return { 
       profile, 
       transactions: transactions.filter((t) => t.direction === "outflow"),
-      categories: outflowAccounts.length > 0 ? outflowAccounts : [{ value: "default", label: "No accounts found", hint: "Go to Chart of Accounts" }]
+      categories: outflowAccounts.length > 0 ? outflowAccounts : [{ value: "default", label: "No accounts found", hint: "Go to Chart of Accounts" }],
+      bankAccounts: bankAccounts.length > 0 ? bankAccounts : [{ value: "default", label: "No asset accounts found" }]
     };
   },
 });
@@ -43,7 +51,7 @@ export const Route = createFileRoute("/_authenticated/money-out")({
 
 function MoneyOut() {
   const { data } = useSuspenseQuery(moneyOutQuery);
-  const [draft, setDraft] = useState(() => emptyDraft(data.categories[0].value));
+  const [draft, setDraft] = useState(() => emptyDraft(data.categories[0].value, data.bankAccounts[0].value));
   const total = data.transactions.reduce((acc, t) => acc + t.amount, 0);
 
   return (
@@ -64,6 +72,7 @@ function MoneyOut() {
           description="Check the scanned details — or type a payment in by hand."
           direction="outflow"
           categories={data.categories}
+          bankAccounts={data.bankAccounts}
           draft={draft}
           onDraftChange={setDraft}
         />

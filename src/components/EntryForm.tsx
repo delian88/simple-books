@@ -18,6 +18,7 @@ import type { CaptureSource, Direction, TxnCategory } from "@/lib/accounting";
 
 export type EntryDraft = {
   category: TxnCategory;
+  bankAccountId: string;
   amount: string;
   occurred_on: string;
   counterparty: string;
@@ -25,9 +26,10 @@ export type EntryDraft = {
   source: CaptureSource;
 };
 
-export function emptyDraft(category: TxnCategory): EntryDraft {
+export function emptyDraft(category: TxnCategory, bankAccountId: string): EntryDraft {
   return {
     category,
+    bankAccountId,
     amount: "",
     occurred_on: new Date().toISOString().slice(0, 10),
     counterparty: "",
@@ -41,6 +43,7 @@ export function EntryForm({
   description,
   direction,
   categories,
+  bankAccounts,
   draft,
   onDraftChange,
 }: {
@@ -48,6 +51,7 @@ export function EntryForm({
   description: string;
   direction: Direction;
   categories: { value: TxnCategory; label: string; hint: string }[];
+  bankAccounts: { value: string; label: string }[];
   draft: EntryDraft;
   onDraftChange: (draft: EntryDraft) => void;
 }) {
@@ -64,6 +68,7 @@ export function EntryForm({
           rows: [
             {
               direction,
+              bankAccountId: draft.bankAccountId,
               category: draft.category,
               amount: Math.round(amount * 100) / 100,
               occurred_on: draft.occurred_on,
@@ -78,7 +83,7 @@ export function EntryForm({
     onSuccess: () => {
       toast.success("Entry recorded");
       setError("");
-      onDraftChange(emptyDraft(draft.category));
+      onDraftChange(emptyDraft(draft.category, draft.bankAccountId));
       queryClient.invalidateQueries();
     },
     onError: (err: Error) => setError(err.message),
@@ -115,6 +120,23 @@ export function EntryForm({
               </SelectContent>
             </Select>
             <p className="text-xs text-muted-foreground">{hint}</p>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Bank Account</Label>
+            <Select value={draft.bankAccountId} onValueChange={(value) => set({ bankAccountId: value })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {bankAccounts.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">The asset account to debit/credit</p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
