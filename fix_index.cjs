@@ -1,22 +1,24 @@
-const mysql = require('mysql2/promise');
+const { spawn } = require('child_process');
+const fs = require('fs');
+const http = require('http');
 
-async function main() {
-  const connection = await mysql.createConnection({
-    host: 'czv80u.h.filess.io',
-    port: 3306,
-    user: 'Ledgerly_db_swamtimeif',
-    password: '0c4ea697645ed3d779657d59c26959693e01a3b2',
-    database: 'Ledgerly_db_swamtimeif'
+console.log('Starting server...');
+const server = spawn('node', ['.output/server/index.mjs'], { stdio: 'inherit' });
+
+setTimeout(() => {
+  console.log('Fetching index.html from server...');
+  http.get('http://localhost:3000/', (res) => {
+    let data = '';
+    res.on('data', chunk => { data += chunk; });
+    res.on('end', () => {
+      fs.writeFileSync('.output/public/index.html', data);
+      console.log('Successfully saved index.html!');
+      server.kill();
+      process.exit(0);
+    });
+  }).on('error', (err) => {
+    console.error('Error fetching:', err);
+    server.kill();
+    process.exit(1);
   });
-
-  try {
-    await connection.query('CREATE INDEX transactions_userId_idx ON transactions(user_id)');
-    console.log("Index created successfully.");
-  } catch (error) {
-    console.error("Query failed:", error.message);
-  }
-
-  await connection.end();
-}
-
-main();
+}, 3000);
