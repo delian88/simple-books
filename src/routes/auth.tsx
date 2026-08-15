@@ -3,6 +3,8 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { BookOpenText, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { login, signup, getSession } from "@/lib/auth.functions";
+import { getPublicSettings } from "@/lib/app.functions";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +38,11 @@ function AuthPage() {
     });
   }, [navigate]);
 
+  const { data: appSettings } = useQuery({
+    queryKey: ["app_settings"],
+    queryFn: () => getPublicSettings(),
+  });
+
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -65,8 +72,12 @@ function AuthPage() {
     <div className="ledger-grid flex min-h-screen items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <Link to="/" className="mb-6 flex items-center justify-center gap-2 font-display text-2xl">
-          <BookOpenText className="h-6 w-6 text-accent" />
-          Ledgerly
+          {appSettings?.appLogo ? (
+            <img src={appSettings.appLogo} alt="App Logo" className="h-8 w-8 object-contain" />
+          ) : (
+            <BookOpenText className="h-6 w-6 text-accent" />
+          )}
+          {appSettings?.appName || "Ledgerly"}
         </Link>
         <Card className="shadow-ledger">
           <CardHeader>

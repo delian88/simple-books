@@ -22,6 +22,8 @@ function AdminSettings() {
   });
 
   const [formData, setFormData] = useState({
+    appName: "",
+    appLogo: "",
     subscriptionPrice: "",
     smtpEnabled: false,
     smtpHost: "",
@@ -33,6 +35,8 @@ function AdminSettings() {
   useEffect(() => {
     if (settings) {
       setFormData({
+        appName: settings.appName || "Ledgerly",
+        appLogo: settings.appLogo || "",
         subscriptionPrice: settings.subscriptionPrice || "10",
         smtpEnabled: settings.smtpEnabled === "true",
         smtpHost: settings.smtpHost || "",
@@ -42,6 +46,26 @@ function AdminSettings() {
       });
     }
   }, [settings]);
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Optional: check file size, e.g. max 1MB
+    if (file.size > 1024 * 1024) {
+      toast.error("File is too large. Please upload an image smaller than 1MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result;
+      if (typeof result === "string") {
+        setFormData(prev => ({ ...prev, appLogo: result }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const mutation = useMutation({
     mutationFn: (data: Record<string, string>) => updateSystemSettings({ data }),
@@ -61,6 +85,52 @@ function AdminSettings() {
           <h1 className="text-3xl font-bold tracking-tight">Admin Settings</h1>
           <p className="text-muted-foreground">Configure global application settings</p>
         </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Application Identity</CardTitle>
+            <CardDescription>Set the name and logo of the application.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="appName">Application Name</Label>
+              <Input
+                id="appName"
+                value={formData.appName}
+                onChange={e => setFormData({ ...formData, appName: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="appLogo">Application Logo URL (or Upload)</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="appLogo"
+                  value={formData.appLogo}
+                  placeholder="https://example.com/logo.png"
+                  onChange={e => setFormData({ ...formData, appLogo: e.target.value })}
+                  className="flex-1"
+                />
+                <Label htmlFor="logoUpload" className="cursor-pointer">
+                  <div className="flex h-10 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring">
+                    Upload
+                  </div>
+                </Label>
+                <input 
+                  id="logoUpload" 
+                  type="file" 
+                  accept="image/*" 
+                  className="hidden" 
+                  onChange={handleLogoUpload} 
+                />
+              </div>
+              {formData.appLogo && (
+                <div className="mt-2">
+                  <img src={formData.appLogo} alt="Logo Preview" className="h-12 w-12 object-contain rounded border" />
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -121,6 +191,8 @@ function AdminSettings() {
         <Button
           onClick={() => {
             const dataToSave = {
+              appName: formData.appName,
+              appLogo: formData.appLogo,
               subscriptionPrice: formData.subscriptionPrice,
               smtpEnabled: String(formData.smtpEnabled),
               smtpHost: formData.smtpHost,

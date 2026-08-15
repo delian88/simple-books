@@ -21,5 +21,20 @@ export default defineConfig({
       allowedHosts: ['simple-books-06hs.onrender.com', '.onrender.com'],
       host: true,
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: () => 'app.js',
+          assetFileNames: (assetInfo) => {
+            if (assetInfo.name && assetInfo.name.endsWith('.css')) {
+              return 'assets/app.css';
+            }
+            return 'assets/[name].[ext]';
+          },
+          entryFileNames: 'assets/[name].js',
+          chunkFileNames: 'assets/[name].js',
+        }
+      }
+    }
   },
 });

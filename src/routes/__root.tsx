@@ -81,9 +81,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         name: "description",
         content:
-          "Capture inflows from your bank statement and outflows from scanned receipts, see your profit, and keep a live balance sheet.",
+          "Capture inflows from your bank statement and outflows from scanned receipts, see your profit, and keep a live balance sheet with our simple accounting platform.",
       },
+      { name: "keywords", content: "accounting, small business, bookkeeping, ledger, financial statements, trial balance, receipt scanner" },
+      { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
+      { property: "og:title", content: "Ledgerly — Simple Accounting for Small Businesses" },
+      { property: "og:description", content: "Capture inflows from your bank statement and outflows from scanned receipts, see your profit, and keep a live balance sheet." },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "Ledgerly" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [

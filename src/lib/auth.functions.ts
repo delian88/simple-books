@@ -1,105 +1,36 @@
-import { createServerFn } from '@tanstack/react-start';
-import { z } from 'zod';
-import { prisma, JWT_SECRET, requireCustomAuth } from '@/server/db';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
-import { setCookie, deleteCookie } from '@tanstack/react-start/server';
-import { seedStandardChartOfAccounts } from './chart-of-accounts';
-
-export const login = createServerFn({ method: 'POST' })
-  .validator((input: unknown) => z.object({ email: z.string().email(), password: z.string() }).parse(input))
-  .handler(async ({ data }) => {
-    const user = await prisma.user.findUnique({ where: { email: data.email } });
-    if (!user) throw new Error('Invalid email or password');
-    const valid = await bcrypt.compare(data.password, user.password);
-    if (!valid) throw new Error('Invalid email or password');
-
-    await prisma.activityLog.create({
-      data: {
-        userId: user.id,
-        action: "LOGIN",
-        description: "User logged in to the platform."
-      }
-    });
-
-    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
-    setCookie('ledgerly_auth', token, { maxAge: 86400, path: '/' });
-    return { ok: true };
+export const login = async ({ data }: { data: { email: string; password: string } }) => {
+  const res = await fetch('/api/auth.php?action=login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data })
   });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Failed to login');
+  return json;
+};
 
-export const signup = createServerFn({ method: 'POST' })
-  .validator((input: unknown) => z.object({ email: z.string().email(), password: z.string(), businessName: z.string() }).parse(input))
-  .handler(async ({ data }) => {
-    const exists = await prisma.user.findUnique({ where: { email: data.email } });
-    if (exists) throw new Error('Email already in use');
-    const pass = await bcrypt.hash(data.password, 10);
-    const trialEnds = new Date();
-    trialEnds.setDate(trialEnds.getDate() + 14);
-    
-    // Use transaction for safer creation
-    const user = await prisma.$transaction(async (tx) => {
-      const newUser = await tx.user.create({
-        data: {
-          email: data.email,
-          password: pass,
-          role: 'Company',
-          subscriptionStatus: 'TRIAL',
-          trialEndsAt: trialEnds,
-          profile: {
-            create: { businessName: data.businessName || 'My Business' }
-          },
-          activityLogs: {
-            create: {
-              action: "SIGNUP",
-              description: "User registered a new company account."
-            }
-          }
-        }
-      });
-
-      const company = await tx.company.create({
-        data: {
-          name: data.businessName || 'My Business',
-          defaultCurrency: 'NGN', // can be updated later
-        }
-      });
-
-      await tx.companyUser.create({
-        data: {
-          userId: newUser.id,
-          companyId: company.id,
-          role: "OWNER",
-          status: "ACTIVE"
-        }
-      });
-
-      return { ...newUser, companyId: company.id };
-    });
-
-    // Seed the accounts
-    await seedStandardChartOfAccounts(user.companyId);
-
-    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '1d' });
-    setCookie('ledgerly_auth', token, { maxAge: 86400, path: '/' });
-    return { ok: true };
+export const signup = async ({ data }: { data: { email: string; password: string; businessName: string } }) => {
+  const res = await fetch('/api/auth.php?action=signup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data })
   });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Failed to signup');
+  return json;
+};
 
-export const logout = createServerFn({ method: 'POST' })
-  .handler(async () => {
-    deleteCookie('ledgerly_auth', { path: '/' });
-    return { ok: true };
-  });
+export const logout = async () => {
+  const res = await fetch('/api/auth.php?action=logout', { method: 'POST' });
+  return res.json();
+};
 
-export const getSession = createServerFn({ method: 'GET' })
-  .handler(async () => {
-    try {
-      const payload = await requireCustomAuth();
-      const user = await prisma.user.findUnique({ where: { id: payload.userId }, select: { id: true, email: true, role: true } });
-      if (!user) return null;
-      return user;
-    } catch {
-      return null;
-    }
-  });
-
-
+export const getSession = async () => {
+  try {
+    const res = await fetch('/api/auth.php?action=session');
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+};
