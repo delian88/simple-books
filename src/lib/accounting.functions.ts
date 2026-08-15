@@ -97,31 +97,33 @@ export const addTransactions = createServerFn({ method: "POST" })
       source: row.source
     }));
     
-    // First save the old Transaction records for UI compatibility
-    await prisma.transaction.createMany({ data: rows });
+    await prisma.$transaction(async (tx) => {
+      // First save the old Transaction records for UI compatibility
+      await tx.transaction.createMany({ data: rows });
 
-    // Then post automatic Journal Entries
-    for (const row of data.rows) {
-      const opposingAccountId = row.category;
-      const bankAccountId = row.bankAccountId;
-      const debitAccountId = row.direction === "inflow" ? bankAccountId : opposingAccountId;
-      const creditAccountId = row.direction === "inflow" ? opposingAccountId : bankAccountId;
+      // Then post automatic Journal Entries
+      for (const row of data.rows) {
+        const opposingAccountId = row.category;
+        const bankAccountId = row.bankAccountId;
+        const debitAccountId = row.direction === "inflow" ? bankAccountId : opposingAccountId;
+        const creditAccountId = row.direction === "inflow" ? opposingAccountId : bankAccountId;
 
-      await prisma.journalEntry.create({
-        data: {
-          companyId,
-          date: new Date(row.occurred_on),
-          description: row.note || `Auto-posted ${row.direction}`,
-          status: "POSTED",
-          lines: {
-            create: [
-              { accountId: debitAccountId, debit: row.amount, credit: 0 },
-              { accountId: creditAccountId, debit: 0, credit: row.amount }
-            ]
+        await tx.journalEntry.create({
+          data: {
+            companyId,
+            date: new Date(row.occurred_on),
+            description: row.note || `Auto-posted ${row.direction}`,
+            status: "POSTED",
+            lines: {
+              create: [
+                { accountId: debitAccountId, debit: row.amount, credit: 0 },
+                { accountId: creditAccountId, debit: 0, credit: row.amount }
+              ]
+            }
           }
-        }
-      });
-    }
+        });
+      }
+    });
 
     return { inserted: rows.length };
   });

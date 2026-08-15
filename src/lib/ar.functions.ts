@@ -12,6 +12,24 @@ async function getActiveCompanyId(userId: string): Promise<string> {
   return companyUser.companyId;
 }
 
+async function ensureDefaultAccount(tx: Omit<Prisma.TransactionClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">, companyId: string, type: string, subType: string, name: string): Promise<string> {
+  let account = await tx.account.findFirst({
+    where: { companyId, type, subType }
+  });
+  if (!account) {
+    account = await tx.account.create({
+      data: {
+        companyId,
+        name,
+        type,
+        subType,
+        openingBalance: 0,
+      }
+    });
+  }
+  return account.id;
+}
+
 // ----- CUSTOMERS -----
 
 export const createCustomer = createServerFn({ method: "POST" })
@@ -181,13 +199,46 @@ export const updateInvoiceStatus = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const companyId = await getActiveCompanyId(context.userId);
     
-    // Optional GL Posting Logic could go here when status moves to SENT
-    // e.g. Debit Accounts Receivable, Credit Revenue
+    await prisma.$transaction(async (tx) => {
+      const invoice = await tx.salesInvoice.findUnique({ where: { id: data.id } });
+      if (!invoice) throw new Error("Invoice not found");
 
-    await prisma.salesInvoice.update({
-      where: { id: data.id, companyId },
-      data: { status: data.status }
+      // Optional GL Posting Logic could go here when status moves to SENT
+      // e.g. Debit Accounts Receivable, Credit Revenue
+      if (data.status === "SENT" && invoice.status === "DRAFT") {
+        const arAccountId = await ensureDefaultAccount(tx, companyId, "ASSET", "Accounts Receivable", "Accounts Receivable");
+        const salesAccountId = await ensureDefaultAccount(tx, companyId, "REVENUE", "Sales Revenue", "Sales Revenue");
+
+        const ref = `INV-${invoice.invoiceNumber}`;
+        const existingEntry = await tx.journalEntry.findFirst({
+          where: { companyId, reference: ref }
+        });
+
+        if (!existingEntry) {
+          await tx.journalEntry.create({
+            data: {
+              companyId,
+              date: invoice.issueDate,
+              description: `Invoice ${invoice.invoiceNumber}`,
+              reference: ref,
+              status: "POSTED",
+              lines: {
+                create: [
+                  { accountId: arAccountId, debit: invoice.totalAmount, credit: 0 },
+                  { accountId: salesAccountId, debit: 0, credit: invoice.totalAmount }
+                ]
+              }
+            }
+          });
+        }
+      }
+
+      await tx.salesInvoice.update({
+        where: { id: data.id, companyId },
+        data: { status: data.status }
+      });
     });
+
     return { ok: true };
   });
 
@@ -292,6 +343,25 @@ export const recordCustomerPayment = createServerFn({ method: "POST" })
       }
 
       // Automatically post to GL here if required in the future
+      const bankAccountId = await ensureDefaultAccount(tx, companyId, "ASSET", "Bank", "Cash & Bank");
+      const arAccountId = await ensureDefaultAccount(tx, companyId, "ASSET", "Accounts Receivable", "Accounts Receivable");
+      
+      const paymentRef = data.reference || `PMT-${payment.id.substring(0, 8)}`;
+      await tx.journalEntry.create({
+        data: {
+          companyId,
+          date: data.date,
+          description: `Customer Payment ${paymentRef}`,
+          reference: paymentRef,
+          status: "POSTED",
+          lines: {
+            create: [
+              { accountId: bankAccountId, debit: data.amount, credit: 0 },
+              { accountId: arAccountId, debit: 0, credit: data.amount }
+            ]
+          }
+        }
+      });
 
       return { ok: true, paymentId: payment.id };
     });
