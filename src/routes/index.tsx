@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { getSession, logout } from "@/lib/auth.functions";
 import { useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { getPublicSettings } from "@/lib/app.functions";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -63,15 +65,23 @@ function Landing() {
   const [wordIndex, setWordIndex] = useState(0);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; timestamp: Date }>>([
-    { text: "Hi! I'm Ledgerly AI Assistant. How can I help you today?", isUser: false, timestamp: new Date() }
+    { text: "Hi! I'm your AI Assistant. How can I help you today?", isUser: false, timestamp: new Date() }
   ]);
   const [inputMessage, setInputMessage] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
 
+  const { data: appSettings } = useQuery({
+    queryKey: ["public_settings"],
+    queryFn: () => getPublicSettings(),
+    staleTime: 1000 * 60 * 5, // cache 5 min
+  });
+  const appName = appSettings?.appName || "Ledgerly";
+  const appLogo = appSettings?.appLogo || null;
+
   const heroWords = ["Bookkeeping", "for", "MSMEs", "made", "easy"];
-  const fullText = "Inflows come straight from your bank statement. Outflows come from the receipts already in your pocket. Ledgerly turns them into profit and a balance sheet you can actually read.";
+  const fullText = `Inflows come straight from your bank statement. Outflows come from the receipts already in your pocket. ${appName} turns them into profit and a balance sheet you can actually read.`;
 
   // AI Assistant responses
   const getAIResponse = (userMessage: string): string => {
@@ -181,8 +191,12 @@ function Landing() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200 shadow-sm animate-in fade-in slide-in-from-top duration-700">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <Link to="/" className="flex items-center gap-2 group cursor-pointer">
-            <BookOpenText className="h-6 w-6 text-emerald-600 transition-transform group-hover:rotate-12 group-hover:scale-110" />
-            <span className="font-display text-xl font-semibold">Ledgerly</span>
+            {appLogo ? (
+              <img src={appLogo} alt={appName} className="h-6 w-6 object-contain" />
+            ) : (
+              <BookOpenText className="h-6 w-6 text-emerald-600 transition-transform group-hover:rotate-12 group-hover:scale-110" />
+            )}
+            <span className="font-display text-xl font-semibold">{appName}</span>
           </Link>
           <nav className="hidden items-center gap-8 md:flex">
             <Link to="/features" className="group flex items-center gap-1 text-sm font-medium text-gray-700 transition-colors hover:text-gray-900">
