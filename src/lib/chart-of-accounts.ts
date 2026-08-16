@@ -1,5 +1,3 @@
-import { prisma } from "@/server/db";
-
 // Uses the structure exactly as provided by the user
 export const STANDARD_CHART_OF_ACCOUNTS = [
   // Assets
@@ -25,7 +23,7 @@ export const STANDARD_CHART_OF_ACCOUNTS = [
   { name: "Sales", type: "REVENUE", subType: "Revenue" },
   { name: "Other Income", type: "REVENUE", subType: "Revenue" },
 
-  // Cost of Goods Sold (COGS) - We classify this as EXPENSE type but track COGS subType for reporting
+  // Cost of Goods Sold (COGS)
   { name: "Direct Cost of goods or services", type: "EXPENSE", subType: "Cost of Goods Sold" },
 
   // Expenses
@@ -45,23 +43,21 @@ export const STANDARD_CHART_OF_ACCOUNTS = [
   { name: "General Office Expenses", type: "EXPENSE", subType: "Operating Expense" },
 ];
 
+/**
+ * Seeds the standard chart of accounts via the PHP API.
+ * Call this after a new company is created.
+ */
 export async function seedStandardChartOfAccounts(companyId: string) {
-  // Clear any existing accounts to prevent duplicates if called multiple times initially
-  await prisma.account.deleteMany({
-    where: { companyId }
-  });
-
-  // Create accounts
+  const { apiPost } = await import("@/lib/api");
   for (let i = 0; i < STANDARD_CHART_OF_ACCOUNTS.length; i++) {
     const acc = STANDARD_CHART_OF_ACCOUNTS[i];
-    await prisma.account.create({
-      data: {
-        companyId,
-        name: acc.name,
-        code: (1000 + i).toString(), // Auto-generate some code
-        type: acc.type,
-        subType: acc.subType,
-      }
+    await apiPost('/api/accounts.php?action=addAccount', {
+      companyId,
+      name: acc.name,
+      type: acc.type,
+      subType: acc.subType,
+      code: (1000 + i).toString(),
+      openingBalance: 0,
     });
   }
 }

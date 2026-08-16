@@ -6,11 +6,19 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// Force Nitro to build for Node.js instead of Cloudflare (which is Lovable's default)
+// This is required because Prisma Client uses __dirname which crashes in Cloudflare Edge environments.
+process.env.NITRO_PRESET = 'node-server';
+
 export default defineConfig({
   tanstackStart: {
+    ssr: false,
     server: { 
       preset: 'node-server',
-      entry: "server" 
+      entry: "server",
+      prerender: {
+        routes: ['/']
+      }
     },
   },
   vite: {
@@ -18,6 +26,12 @@ export default defineConfig({
       // Allow all hosts (for Render deployment and other hosting providers)
       allowedHosts: ['simple-books-06hs.onrender.com', '.onrender.com'],
       host: true,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:8000',
+          changeOrigin: true
+        }
+      }
     },
     build: {
       rollupOptions: {

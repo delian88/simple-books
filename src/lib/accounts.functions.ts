@@ -1,35 +1,12 @@
-export const listAccounts = async () => {
-  const res = await fetch('/api/accounts.php?action=listAccounts');
-  if (!res.ok) throw new Error('Failed to list accounts');
-  return res.json();
-};
+import { apiGet, apiPost } from "@/lib/api";
 
-export const addAccount = async ({ data }: { data: any }) => {
-  const res = await fetch('/api/accounts.php?action=addAccount', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data })
-  });
-  if (!res.ok) throw new Error('Failed to add account');
-  return res.json();
-};
+export const listAccounts = () => apiGet('/api/accounts.php?action=listAccounts');
 
-export const updateAccount = async ({ data }: { data: any }) => {
-  const res = await fetch('/api/accounts.php?action=updateAccount', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data })
-  });
-  if (!res.ok) throw new Error('Failed to update account');
-  return res.json();
-};
+export const addAccount = ({ data }: { data: any }) =>
+  apiPost('/api/accounts.php?action=addAccount', data);
 
-export const deleteAccount = async ({ data }: { data: { id: string } }) => {
-  const res = await fetch('/api/accounts.php?action=deleteAccount', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ data })
-  });
-  if (!res.ok) throw new Error('Failed to delete account');
-  return res.json();
-};
+export const updateAccount = ({ data }: { data: any }) =>
+  apiPost('/api/accounts.php?action=updateAccount', data);
+
+export const deleteAccount = ({ data }: { data: { id: string } }) =>
+  apiPost('/api/accounts.php?action=deleteAccount', data);

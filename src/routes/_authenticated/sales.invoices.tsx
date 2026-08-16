@@ -515,20 +515,22 @@ function InvoicesPage() {
     queryFn: () => getCustomers(),
   });
 
-  const filtered = (invoices as any[]).filter(
-    (inv) =>
-      inv.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
+  const invoicesList = Array.isArray(invoices) ? invoices : [];
+  
+  const filtered = invoicesList.filter(
+    (inv: any) =>
+      inv.invoiceNumber?.toLowerCase().includes(search.toLowerCase()) ||
       inv.customer?.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   // Summary stats
-  const totalOutstanding = (invoices as any[])
-    .filter((i) => ["SENT", "PARTIAL", "OVERDUE"].includes(i.status))
+  const totalOutstanding = invoicesList
+    .filter((i: any) => ["SENT", "PARTIAL", "OVERDUE"].includes(i.status))
     .reduce((s: number, i: any) => s + i.totalAmount, 0);
-  const totalPaid = (invoices as any[])
-    .filter((i) => i.status === "PAID")
+  const totalPaid = invoicesList
+    .filter((i: any) => i.status === "PAID")
     .reduce((s: number, i: any) => s + i.totalAmount, 0);
-  const overdueCount = (invoices as any[]).filter((i) => i.status === "OVERDUE").length;
+  const overdueCount = invoicesList.filter((i: any) => i.status === "OVERDUE").length;
 
   return (
     <AppShell

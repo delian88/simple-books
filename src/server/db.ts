@@ -1,13 +1,11 @@
 import jwt from 'jsonwebtoken';
 import { getCookie } from '@tanstack/react-start/server';
 
-// import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
-// export const prisma = new PrismaClient({
-//   log: ['error', 'warn'],
-// });
-
-export const prisma = {} as any;
+export const prisma = new PrismaClient({
+  log: ['error', 'warn'],
+});
 
 export async function requireAuth() {
   return { id: "08ac55b9-5141-4af4-aac7-83c4ff03f6dd" };

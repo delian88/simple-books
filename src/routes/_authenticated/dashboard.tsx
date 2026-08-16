@@ -59,11 +59,13 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function Dashboard() {
   const { data } = useSuspenseQuery(dashboardQuery);
-  const { profile, transactions: txns, balanceItems } = data;
+  const profile = data?.profile || { currency: "USD", business_name: "Business" };
+  const txns = Array.isArray(data?.transactions) ? data.transactions : [];
+  const balanceItems = Array.isArray(data?.balanceItems) ? data.balanceItems : [];
   const currency = profile.currency;
   
   const [filter, setFilter] = useState<"all" | "inflow" | "outflow">("all");
-  const filteredTxns = filter === "all" ? txns : txns.filter((t) => t.direction === filter);
+  const filteredTxns = filter === "all" ? txns : txns.filter((t: any) => t.direction === filter);
 
   const sum = (predicate: (c: TxnCategory) => boolean) =>
     txns.filter((t) => predicate(t.category as TxnCategory)).reduce((acc, t) => acc + t.amount, 0);
@@ -76,10 +78,10 @@ function Dashboard() {
   const totalIn = txns.filter((t) => t.direction === "inflow").reduce((a, t) => a + t.amount, 0);
   const totalOut = txns.filter((t) => t.direction === "outflow").reduce((a, t) => a + t.amount, 0);
 
-  const assets = data.balanceItems
-    .filter((i) => i.side === "asset")
-    .reduce((a, i) => a + i.amount, 0);
-  const liabilities = data.balanceItems
+  const assets = balanceItems
+    .filter((i: any) => i.side === "asset")
+    .reduce((a: number, i: any) => a + Number(i.amount), 0);
+  const liabilities = balanceItems
     .filter((i) => i.side === "liability")
     .reduce((a, i) => a + i.amount, 0);
   const netWorth = assets - liabilities;
