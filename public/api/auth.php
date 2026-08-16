@@ -1,34 +1,27 @@
 <?php
-// auth.php - Full custom auth using MySQL + signed JWT (no Supabase)
+// auth.php - Full custom auth using MySQL users table + signed JWT
 require_once 'db.php';
 
-// ── JWT SECRET ─────────────────────────────────────────────────────────────
-// Set this as an environment variable on Namecheap via .htaccess:
-//   SetEnv APP_JWT_SECRET your_random_secret_here
-// Generate a good secret with: php -r "echo bin2hex(random_bytes(32));"
-define('JWT_SECRET', getenv('APP_JWT_SECRET') ?: 'change_this_to_a_random_secret_min_32_chars');
+// JWT SECRET — set via .htaccess: SetEnv APP_JWT_SECRET your_secret_here
+define('JWT_SECRET', getenv('APP_JWT_SECRET') ?: 'ledgerly_default_secret_change_in_production');
 define('TOKEN_EXPIRY_SECONDS', 60 * 60 * 24 * 7); // 7 days
 
-// ── JWT HELPERS ─────────────────────────────────────────────────────────────
 function b64url_encode(string $data): string {
     return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
 }
-
 function b64url_decode(string $data): string {
-    $remainder = strlen($data) % 4;
-    if ($remainder) $data .= str_repeat('=', 4 - $remainder);
+    $pad = strlen($data) % 4;
+    if ($pad) $data .= str_repeat('=', 4 - $pad);
     return base64_decode(strtr($data, '-_', '+/'));
 }
-
 function createJWT(array $payload): string {
-    $header = b64url_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
+    $h = b64url_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
     $payload['iat'] = time();
     $payload['exp'] = time() + TOKEN_EXPIRY_SECONDS;
-    $payloadB64 = b64url_encode(json_encode($payload));
-    $sig = b64url_encode(hash_hmac('sha256', "$header.$payloadB64", JWT_SECRET, true));
-    return "$header.$payloadB64.$sig";
+    $p = b64url_encode(json_encode($payload));
+    $s = b64url_encode(hash_hmac('sha256', "$h.$p", JWT_SECRET, true));
+    return "$h.$p.$s";
 }
-
 function verifyJWT(string $token): ?array {
     $parts = explode('.', $token);
     if (count($parts) !== 3) return null;
@@ -39,14 +32,12 @@ function verifyJWT(string $token): ?array {
     if (!$payload || (isset($payload['exp']) && $payload['exp'] < time())) return null;
     return $payload;
 }
-
 function getAuthPayload(): ?array {
     $headers = function_exists('apache_request_headers') ? apache_request_headers() : [];
-    // Fallback for Nginx
     foreach ($_SERVER as $k => $v) {
         if (strpos($k, 'HTTP_') === 0) {
             $key = str_replace('_', '-', ucwords(strtolower(substr($k, 5)), '_'));
-            $headers[$key] = $v;
+            if (!isset($headers[$key])) $headers[$key] = $v;
         }
     }
     $auth = $headers['Authorization'] ?? $headers['authorization'] ?? '';
@@ -56,23 +47,25 @@ function getAuthPayload(): ?array {
     return null;
 }
 
+// Returns userId string or sends 401
 function requireAuth(): string {
     $payload = getAuthPayload();
-    if (!$payload) {
+    if (!$payload || empty($payload['sub'])) {
         jsonResponse(['error' => 'Unauthorized'], 401);
     }
     return $payload['sub'];
 }
 
+// Returns company_id string or sends 403
 function getActiveCompanyId($pdo, string $userId): string {
-    $stmt = $pdo->prepare("SELECT companyId FROM CompanyUser WHERE userId = ? LIMIT 1");
+    $stmt = $pdo->prepare("SELECT company_id FROM company_users WHERE user_id = ? LIMIT 1");
     $stmt->execute([$userId]);
     $row = $stmt->fetch();
     if (!$row) jsonResponse(['error' => 'User has no company'], 403);
-    return $row['companyId'];
+    return $row['company_id'];
 }
 
-// ── ACTIONS ─────────────────────────────────────────────────────────────────
+// ── ACTIONS ──────────────────────────────────────────────────────────────────
 $action = $_GET['action'] ?? '';
 
 switch ($action) {
@@ -83,30 +76,28 @@ switch ($action) {
         $password     = $body['password'] ?? '';
         $businessName = trim($body['businessName'] ?? 'My Business');
 
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) jsonResponse(['error' => 'Invalid email'], 400);
-        if (strlen($password) < 6) jsonResponse(['error' => 'Password must be at least 6 characters'], 400);
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL))
+            jsonResponse(['error' => 'Invalid email address'], 400);
+        if (strlen($password) < 6)
+            jsonResponse(['error' => 'Password must be at least 6 characters'], 400);
 
-        // Check duplicate
-        $chk = $pdo->prepare("SELECT id FROM User WHERE email = ? LIMIT 1");
+        $chk = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
         $chk->execute([$email]);
         if ($chk->fetch()) jsonResponse(['error' => 'An account with that email already exists'], 409);
 
-        $userId    = uniqid('u_', true);
+        $userId    = bin2hex(random_bytes(9)); // 18-char unique id
         $hash      = password_hash($password, PASSWORD_BCRYPT);
         $now       = date('Y-m-d H:i:s');
 
-        // Insert user
-        $pdo->prepare("INSERT INTO User (id, email, password, role, createdAt, updatedAt) VALUES (?, ?, ?, 'user', ?, ?)")
+        $pdo->prepare("INSERT INTO users (id, email, password, role, created_at, updated_at) VALUES (?, ?, ?, 'Company', ?, ?)")
             ->execute([$userId, $email, $hash, $now, $now]);
 
-        // Create company
-        $companyId = uniqid('co_', true);
-        $pdo->prepare("INSERT INTO Company (id, name, currency, createdAt, updatedAt) VALUES (?, ?, 'NGN', ?, ?)")
+        $companyId = bin2hex(random_bytes(9));
+        $pdo->prepare("INSERT INTO companies (id, name, default_currency, created_at, updated_at) VALUES (?, ?, 'NGN', ?, ?)")
             ->execute([$companyId, $businessName, $now, $now]);
 
-        // Link user ↔ company
-        $pdo->prepare("INSERT INTO CompanyUser (id, userId, companyId, role, createdAt, updatedAt) VALUES (?, ?, ?, 'OWNER', ?, ?)")
-            ->execute([uniqid(), $userId, $companyId, $now, $now]);
+        $pdo->prepare("INSERT INTO company_users (id, user_id, company_id, role, status, created_at, updated_at) VALUES (?, ?, ?, 'OWNER', 'ACTIVE', ?, ?)")
+            ->execute([bin2hex(random_bytes(9)), $userId, $companyId, $now, $now]);
 
         $token = createJWT(['sub' => $userId, 'email' => $email, 'company' => $companyId]);
         jsonResponse(['ok' => true, 'token' => $token, 'user' => ['id' => $userId, 'email' => $email]]);
@@ -117,7 +108,9 @@ switch ($action) {
         $email    = trim($body['email'] ?? '');
         $password = $body['password'] ?? '';
 
-        $stmt = $pdo->prepare("SELECT id, password FROM User WHERE email = ? LIMIT 1");
+        if (!$email || !$password) jsonResponse(['error' => 'Email and password are required'], 400);
+
+        $stmt = $pdo->prepare("SELECT id, password FROM users WHERE email = ? LIMIT 1");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
@@ -125,16 +118,15 @@ switch ($action) {
             jsonResponse(['error' => 'Invalid email or password'], 401);
         }
 
-        $companyStmt = $pdo->prepare("SELECT companyId FROM CompanyUser WHERE userId = ? LIMIT 1");
-        $companyStmt->execute([$user['id']]);
-        $cu = $companyStmt->fetch();
+        $cuStmt = $pdo->prepare("SELECT company_id FROM company_users WHERE user_id = ? LIMIT 1");
+        $cuStmt->execute([$user['id']]);
+        $cu = $cuStmt->fetch();
 
-        $token = createJWT(['sub' => $user['id'], 'email' => $email, 'company' => $cu['companyId'] ?? null]);
+        $token = createJWT(['sub' => $user['id'], 'email' => $email, 'company' => $cu['company_id'] ?? null]);
         jsonResponse(['ok' => true, 'token' => $token, 'user' => ['id' => $user['id'], 'email' => $email]]);
         break;
 
     case 'logout':
-        // Stateless JWT: client just discards the token. Nothing to do server-side.
         jsonResponse(['ok' => true]);
         break;
 

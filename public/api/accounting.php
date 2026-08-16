@@ -3,117 +3,117 @@
 require_once 'db.php';
 require_once 'auth.php';
 
-$userId = requireAuth();
+$userId    = requireAuth();
 $companyId = getActiveCompanyId($pdo, $userId);
-
-$action = $_GET['action'] ?? '';
+$action    = $_GET['action'] ?? '';
 
 switch ($action) {
+
     case 'getProfile':
-        $stmt = $pdo->prepare("SELECT id, name, defaultCurrency FROM Company WHERE id = ?");
-        $stmt->execute([$companyId]);
-        $company = $stmt->fetch();
-        if ($company) {
-            jsonResponse(array("id" => $company['id'], "business_name" => $company['name'], "currency" => $company['defaultCurrency']));
+        // profiles table is keyed by user id
+        $stmt = $pdo->prepare("SELECT p.business_name, p.currency FROM profiles p WHERE p.id = ? LIMIT 1");
+        $stmt->execute([$userId]);
+        $profile = $stmt->fetch();
+        if (!$profile) {
+            // Auto-create a default profile
+            $now = date('Y-m-d H:i:s');
+            $pdo->prepare("INSERT IGNORE INTO profiles (id, business_name, currency, created_at) VALUES (?, 'My Business', 'NGN', ?)")
+                ->execute([$userId, $now]);
+            $profile = ['business_name' => 'My Business', 'currency' => 'NGN'];
         }
-        jsonResponse(array("id" => $userId, "business_name" => "My Business", "currency" => "NGN"));
+        jsonResponse($profile);
         break;
 
     case 'updateProfile':
-        $data = json_decode(file_get_contents('php://input'), true);
-        $stmt = $pdo->prepare("UPDATE Company SET name = ?, defaultCurrency = ? WHERE id = ?");
-        $stmt->execute([$data['business_name'], $data['currency'], $companyId]);
-        jsonResponse(array("ok" => true));
+        $data = json_decode(file_get_contents('php://input'), true) ?? [];
+        $now  = date('Y-m-d H:i:s');
+        $pdo->prepare("INSERT INTO profiles (id, business_name, currency, created_at) VALUES (?, ?, ?, ?)
+                       ON DUPLICATE KEY UPDATE business_name = VALUES(business_name), currency = VALUES(currency)")
+            ->execute([$userId, $data['business_name'] ?? 'My Business', $data['currency'] ?? 'NGN', $now]);
+        jsonResponse(['ok' => true]);
         break;
 
     case 'listTransactions':
-        $stmt = $pdo->prepare("SELECT id, direction, category, amount, occurredOn as occurred_on, counterparty, note, source FROM Transaction WHERE companyId = ? ORDER BY occurredOn DESC, createdAt DESC LIMIT 500");
+        $stmt = $pdo->prepare("SELECT * FROM transactions WHERE company_id = ? ORDER BY occurred_on DESC LIMIT 500");
         $stmt->execute([$companyId]);
-        $transactions = $stmt->fetchAll();
-        foreach ($transactions as &$t) {
-            $t['amount'] = (float)$t['amount'];
-            $t['occurred_on'] = substr($t['occurred_on'], 0, 10);
+        $rows = $stmt->fetchAll();
+        foreach ($rows as &$r) {
+            $r['amount'] = (float) $r['amount'];
+            $r['occurredOn'] = substr($r['occurred_on'] ?? '', 0, 10);
         }
-        jsonResponse($transactions);
+        jsonResponse($rows);
         break;
 
     case 'addTransactions':
-        $data = json_decode(file_get_contents('php://input'), true);
-        $rows = $data['rows'] ?? [];
-        
-        $pdo->beginTransaction();
-        try {
-            $stmt = $pdo->prepare("INSERT INTO Transaction (id, userId, companyId, createdBy, direction, categoryId, category, amount, occurredOn, counterparty, note, source, createdAt, updatedAt) VALUES (UUID(), ?, ?, ?, ?, ?, 'Journal Entry', ?, ?, ?, ?, ?, NOW(), NOW())");
-            
-            $journalStmt = $pdo->prepare("INSERT INTO JournalEntry (id, companyId, date, description, status, createdAt, updatedAt) VALUES (?, ?, ?, ?, 'POSTED', NOW(), NOW())");
-            $lineStmt = $pdo->prepare("INSERT INTO JournalEntryLine (id, entryId, accountId, debit, credit) VALUES (UUID(), ?, ?, ?, ?)");
-
-            foreach ($rows as $row) {
-                $stmt->execute([
-                    $userId, $companyId, $userId, 
-                    $row['direction'], $row['category'], 
-                    $row['amount'], $row['occurred_on'], 
-                    $row['counterparty'] ?? null, $row['note'] ?? null, $row['source'] ?? 'manual'
+        $data = json_decode(file_get_contents('php://input'), true) ?? [];
+        $rows = isset($data[0]) ? $data : [$data]; // accept single or array
+        $ids  = [];
+        $now  = date('Y-m-d H:i:s');
+        foreach ($rows as $row) {
+            $id = bin2hex(random_bytes(9));
+            $pdo->prepare("INSERT INTO transactions (id, user_id, company_id, created_by, direction, category, category_id, amount, occurred_on, counterparty, note, source, created_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                ->execute([
+                    $id, $userId, $companyId, $userId,
+                    $row['direction'] ?? 'outflow',
+                    $row['category'] ?? 'Other',
+                    $row['bankAccountId'] ?? null,
+                    $row['amount'] ?? 0,
+                    $row['occurred_on'] ?? $now,
+                    $row['counterparty'] ?? null,
+                    $row['note'] ?? null,
+                    $row['source'] ?? 'manual',
+                    $now
                 ]);
-
-                // Auto-post Journal Entries
-                $opposingAccountId = $row['category'];
-                $bankAccountId = $row['bankAccountId'];
-                $debitAccountId = $row['direction'] === "inflow" ? $bankAccountId : $opposingAccountId;
-                $creditAccountId = $row['direction'] === "inflow" ? $opposingAccountId : $bankAccountId;
-
-                $entryId = uniqid(); // Or UUID if needed by schema
-                $journalStmt->execute([$entryId, $companyId, $row['occurred_on'], $row['note'] ?? 'Auto-posted ' . $row['direction']]);
-                
-                $lineStmt->execute([$entryId, $debitAccountId, $row['amount'], 0]);
-                $lineStmt->execute([$entryId, $creditAccountId, 0, $row['amount']]);
-            }
-            $pdo->commit();
-            jsonResponse(array("inserted" => count($rows)));
-        } catch (Exception $e) {
-            $pdo->rollBack();
-            jsonResponse(array("error" => $e->getMessage()), 500);
+            $ids[] = $id;
         }
+        jsonResponse(['ok' => true, 'ids' => $ids]);
         break;
 
     case 'deleteTransaction':
-        $data = json_decode(file_get_contents('php://input'), true);
-        $stmt = $pdo->prepare("DELETE FROM Transaction WHERE id = ? AND companyId = ?");
-        $stmt->execute([$data['id'], $companyId]);
-        jsonResponse(array("ok" => true));
+        $data = json_decode(file_get_contents('php://input'), true) ?? [];
+        $pdo->prepare("DELETE FROM transactions WHERE id = ? AND company_id = ?")
+            ->execute([$data['id'], $companyId]);
+        jsonResponse(['ok' => true]);
         break;
 
     case 'listBalanceItems':
-        $stmt = $pdo->prepare("SELECT id, side, name, category, amount, asOf as as_of FROM BalanceItem WHERE companyId = ? ORDER BY side ASC, createdAt DESC");
+        $stmt = $pdo->prepare("SELECT * FROM balance_items WHERE company_id = ? ORDER BY created_at DESC");
         $stmt->execute([$companyId]);
-        $items = $stmt->fetchAll();
-        foreach ($items as &$i) {
-            $i['amount'] = (float)$i['amount'];
-            $i['as_of'] = substr($i['as_of'], 0, 10);
+        $rows = $stmt->fetchAll();
+        foreach ($rows as &$r) {
+            $r['amount'] = (float) $r['amount'];
+            $r['as_of'] = substr($r['as_of'] ?? '', 0, 10);
         }
-        jsonResponse($items);
+        jsonResponse($rows);
         break;
 
     case 'addBalanceItem':
-        $data = json_decode(file_get_contents('php://input'), true);
-        $stmt = $pdo->prepare("INSERT INTO BalanceItem (id, userId, companyId, side, name, category, amount, asOf, createdAt, updatedAt) VALUES (UUID(), ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
-        $stmt->execute([
-            $userId, $companyId, 
-            $data['side'], $data['name'], 
-            $data['category'], $data['amount'], 
-            $data['as_of']
-        ]);
-        jsonResponse(array("ok" => true));
+        $data = json_decode(file_get_contents('php://input'), true) ?? [];
+        $id   = bin2hex(random_bytes(9));
+        $now  = date('Y-m-d H:i:s');
+        $pdo->prepare("INSERT INTO balance_items (id, user_id, company_id, side, name, category, amount, as_of, created_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+            ->execute([
+                $id, $userId, $companyId,
+                $data['side'] ?? 'asset',
+                $data['name'] ?? '',
+                $data['category'] ?? 'Other',
+                $data['amount'] ?? 0,
+                $data['as_of'] ?? $now,
+                $now
+            ]);
+        jsonResponse(['ok' => true, 'id' => $id]);
         break;
 
     case 'deleteBalanceItem':
-        $data = json_decode(file_get_contents('php://input'), true);
-        $stmt = $pdo->prepare("DELETE FROM BalanceItem WHERE id = ? AND companyId = ?");
-        $stmt->execute([$data['id'], $companyId]);
-        jsonResponse(array("ok" => true));
+        $data = json_decode(file_get_contents('php://input'), true) ?? [];
+        $pdo->prepare("DELETE FROM balance_items WHERE id = ? AND company_id = ?")
+            ->execute([$data['id'], $companyId]);
+        jsonResponse(['ok' => true]);
         break;
 
     default:
-        jsonResponse(array("error" => "Unknown action"), 400);
+        jsonResponse(['error' => 'Unknown action'], 400);
 }
 ?>

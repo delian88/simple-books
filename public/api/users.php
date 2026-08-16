@@ -3,45 +3,35 @@
 require_once 'db.php';
 require_once 'auth.php';
 
-$userId = requireAuth();
-
-// requireAdmin logic
-$stmt = $pdo->prepare("SELECT role FROM User WHERE id = ?");
-$stmt->execute([$userId]);
-$user = $stmt->fetch();
-if (!$user || $user['role'] !== 'admin') {
-    jsonResponse(array("error" => "Forbidden"), 403);
-}
-
-$action = $_GET['action'] ?? '';
+$userId    = requireAuth();
+$companyId = getActiveCompanyId($pdo, $userId);
+$action    = $_GET['action'] ?? '';
 
 switch ($action) {
     case 'listUsers':
-        $stmt = $pdo->prepare("SELECT u.*, p.firstName, p.lastName, p.avatarUrl FROM User u LEFT JOIN UserProfile p ON u.id = p.userId ORDER BY u.createdAt DESC");
-        $stmt->execute();
-        $users = $stmt->fetchAll();
-        jsonResponse($users);
+        $stmt = $pdo->prepare(
+            "SELECT u.id, u.email, u.role, cu.role as company_role, cu.status, u.created_at
+             FROM users u
+             JOIN company_users cu ON cu.user_id = u.id
+             WHERE cu.company_id = ?
+             ORDER BY u.created_at DESC"
+        );
+        $stmt->execute([$companyId]);
+        jsonResponse($stmt->fetchAll());
         break;
 
     case 'listActivities':
-        $data = json_decode(file_get_contents('php://input'), true);
-        $filterUserId = $data['userId'] ?? null;
-        
-        $sql = "SELECT a.*, u.email, u.role FROM ActivityLog a LEFT JOIN User u ON a.userId = u.id";
-        $params = [];
-        if ($filterUserId) {
-            $sql .= " WHERE a.userId = ?";
-            $params[] = $filterUserId;
-        }
-        $sql .= " ORDER BY a.createdAt DESC";
-        
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        $activities = $stmt->fetchAll();
-        jsonResponse($activities);
+        $stmt = $pdo->prepare(
+            "SELECT al.*, u.email FROM activity_logs al
+             LEFT JOIN users u ON u.id = al.user_id
+             WHERE al.company_id = ?
+             ORDER BY al.created_at DESC LIMIT 100"
+        );
+        $stmt->execute([$companyId]);
+        jsonResponse($stmt->fetchAll());
         break;
 
     default:
-        jsonResponse(array("error" => "Unknown action"), 400);
+        jsonResponse(['error' => 'Unknown action'], 400);
 }
 ?>
