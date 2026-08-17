@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // accounts.php
 require_once 'db.php';
 define('AUTH_AS_LIB', true);
@@ -12,7 +12,12 @@ switch ($action) {
     case 'listAccounts':
         $stmt = $pdo->prepare("SELECT * FROM accounts WHERE company_id = ? AND is_archived = 0 ORDER BY type, name");
         $stmt->execute([$companyId]);
-        jsonResponse($stmt->fetchAll());
+        $rows = $stmt->fetchAll();
+        foreach ($rows as &$r) {
+            $r['openingBalance'] = (float)($r['opening_balance'] ?? 0);
+            $r['subType']        = $r['sub_type'] ?? null;
+        }
+        jsonResponse($rows);
         break;
 
     case 'addAccount':

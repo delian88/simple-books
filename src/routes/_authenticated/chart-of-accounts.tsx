@@ -119,7 +119,7 @@ function ChartOfAccounts() {
                       <div className="text-right">
                         <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Opening Balance</p>
                         <p className="font-semibold text-gray-900">
-                          {account.openingBalance.toLocaleString('en-NG', { style: 'currency', currency: 'NGN' })}
+                          {Number(account.openingBalance ?? account.opening_balance ?? 0).toLocaleString('en-NG', { style: 'currency', currency: 'NGN' })}
                         </p>
                       </div>
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
