@@ -84,6 +84,22 @@ export function AppShell({
   // Determine if it's the dashboard to show the custom header title instead of the page title
   const isDashboard = location.pathname === "/dashboard" || location.pathname === "/admin";
 
+  // State for Notifications Popover
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  // Derive displayName from user details
+  const displayName =
+    user?.businessName ||
+    (user?.email ? user.email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) : "User");
+
+  // Dynamic system notifications
+  const notifications = [
+    { id: 1, title: "System Ready", time: "Just now", read: false },
+    { id: 2, title: "Monthly Statement Available", time: "2 hours ago", read: false },
+    { id: 3, title: "Backup Completed", time: "1 day ago", read: true },
+  ];
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-background">
       {/* Mobile Sidebar Overlay */}
@@ -204,7 +220,7 @@ export function AppShell({
               {isDashboard ? (
                 <>
                   <p className="text-xs font-medium text-muted-foreground lg:text-sm">Welcome back, 👋</p>
-                  <h1 className="font-display text-lg font-bold lg:text-2xl">{user?.role === "Admin" ? "Super Admin" : "Dashboard"}</h1>
+                  <h1 className="font-display text-lg font-bold lg:text-2xl">{user?.role === "Admin" ? "Super Admin" : displayName}</h1>
                 </>
               ) : (
                 <>
@@ -230,27 +246,62 @@ export function AppShell({
             </div>
 
             <button 
-              className="relative text-muted-foreground hover:text-foreground"
+              className="relative text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => window.print()}
               title="Print"
             >
               <Printer className="h-5 w-5" />
             </button>
 
-            <button className="relative text-muted-foreground hover:text-foreground">
-              <Bell className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-white ring-2 ring-background">
-                8
-              </span>
-            </button>
+            {/* Notification Bell Dropdown */}
+            <div className="relative">
+              <button 
+                className="relative text-muted-foreground hover:text-foreground transition-colors p-1"
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                title="Notifications"
+              >
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white ring-2 ring-background">
+                    {unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Popover Panel */}
+              {isNotificationsOpen && (
+                <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-white border border-gray-200 shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                  <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-900 text-sm">Notifications</h3>
+                    <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">{unreadCount} new</span>
+                  </div>
+                  <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+                    {notifications.map((n) => (
+                      <div key={n.id} className="p-3.5 hover:bg-gray-50/80 transition-colors flex gap-3 items-start">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                        <div>
+                          <p className="text-xs font-medium text-gray-900">{n.title}</p>
+                          <p className="text-[11px] text-gray-400 mt-0.5">{n.time}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="p-2.5 bg-gray-50 border-t border-gray-100 text-center">
+                    <button onClick={() => setIsNotificationsOpen(false)} className="text-xs text-emerald-700 font-medium hover:underline">
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="flex items-center gap-3 border-l border-border pl-3 lg:pl-6">
               <Avatar className="h-7 w-7 border lg:h-9 lg:w-9">
                 <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`} />
-                <AvatarFallback>AD</AvatarFallback>
+                <AvatarFallback>{displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
               <div className="hidden flex-col md:flex">
-                <span className="text-sm font-semibold">{user?.role === "Admin" ? "Super Admin" : "User"}</span>
+                <span className="text-sm font-semibold text-gray-900">{displayName}</span>
                 <span className="text-xs text-muted-foreground">{user?.email}</span>
               </div>
             </div>
