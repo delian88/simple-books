@@ -57,34 +57,36 @@ async function generate() {
   html = html.replace(/i:" "/g, 'i:"/"');
 
   // ── Convert to a pure SPA shell ─────────────────────────────────────────
-  // TanStack Start SSR embeds dehydrated router state as inline <script> tags.
-  // When Apache serves this same file for ALL routes (/dashboard, /auth, etc.),
-  // React tries to reconcile that state with a fresh client render → #418.
+  // With ssr:false, TanStack Start emits 3 scripts into <body>:
+  //   0. Scroll restoration (reads sessionStorage)
+  //   1. TanStack $tsr-stream-barrier — sets up window.$_TSR needed by Xn()
+  //   2. <script src="/assets/index.js"> — the app bundle
   //
-  // Solution: keep only external <script src="..."> bundles. Strip all inline
-  // scripts (dehydration state), all pre-rendered HTML, all <noscript> etc.
-  // The result is a clean client-only SPA shell.
+  // Stripping scripts 0+1 causes Xn() → "Cannot set properties of undefined".
+  // Keeping them is safe because ssr:false means no page-specific route data
+  // is embedded — $R.tsr stays []. Only the rendered HTML inside <div id="root">
+  // causes React #418, so we clear that and keep everything else.
 
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
   if (bodyMatch) {
     const bodyContent = bodyMatch[1];
 
-    // Collect only <script src="..."> or <script type="module" src="..."> tags
-    const externalScripts = [];
-    const srcScriptRe = /<script([^>]*src=[^>]*)><\/script>/gi;
+    // Collect ALL <script> tags (both inline and src=)
+    const allScripts = [];
+    const scriptRe = /<script[\s\S]*?<\/script>/gi;
     let m;
-    while ((m = srcScriptRe.exec(bodyContent)) !== null) {
-      externalScripts.push(`<script${m[1]}></script>`);
+    while ((m = scriptRe.exec(bodyContent)) !== null) {
+      allScripts.push(m[0]);
     }
 
     html = html.replace(
       /<body[^>]*>[\s\S]*<\/body>/i,
-      `<body>\n<div id="root"></div>\n${externalScripts.join('\n')}\n</body>`
+      `<body>\n<div id="root"></div>\n${allScripts.join('\n')}\n</body>`
     );
   }
 
   fs.writeFileSync('.output/public/index.html', html);
-  console.log('Successfully saved index.html — pure SPA shell (no dehydrated state).');
+  console.log('Saved index.html — SPA shell with scripts, empty #root, no rendered HTML.');
 
   // ── Fix corrupted route IDs in the JS bundle ──────────────────────────────
   // Nitro/Rolldown minification injects spaces into TanStack route ID strings,
