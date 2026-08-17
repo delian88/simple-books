@@ -56,38 +56,35 @@ async function generate() {
   html = html.replace(/i:"  "/g, 'i:"/"');
   html = html.replace(/i:" "/g, 'i:"/"');
 
-  // Strip pre-rendered body content so this becomes a pure SPA shell.
-  // Keeping the full SSR HTML causes React error #418 when .htaccess serves
-  // this same file for /dashboard, /auth etc. (route content mismatch).
+  // ── Convert to a pure SPA shell ─────────────────────────────────────────
+  // TanStack Start SSR embeds dehydrated router state as inline <script> tags.
+  // When Apache serves this same file for ALL routes (/dashboard, /auth, etc.),
+  // React tries to reconcile that state with a fresh client render → #418.
   //
-  // We preserve:
-  //  - Everything in <head> (CSS, meta, preload links)
-  //  - <script> and <link> tags inside <body> (JS bundles, TanStack dehydration)
-  // We remove:
-  //  - All rendered HTML inside <body> (route-specific markup)
+  // Solution: keep only external <script src="..."> bundles. Strip all inline
+  // scripts (dehydration state), all pre-rendered HTML, all <noscript> etc.
+  // The result is a clean client-only SPA shell.
 
-  // Extract body content
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
   if (bodyMatch) {
     const bodyContent = bodyMatch[1];
-    // Keep only <script> and <link> tags from body (strip all other HTML)
-    const keepTags = bodyContent
-      .replace(/<script[\s\S]*?<\/script>/gi, (m) => m) // preserve scripts
-      .replace(/<link[^>]*\/>/gi, (m) => m) // preserve self-closing links
-      .replace(/<link[^>]*><\/link>/gi, (m) => m) // preserve links with close tag
-      // Remove everything that is NOT a script or link tag
-      .split(/(<script[\s\S]*?<\/script>|<link[^>]*\/?>)/gi)
-      .filter((part) => /^<(script|link)/i.test(part.trim()))
-      .join('\n');
+
+    // Collect only <script src="..."> or <script type="module" src="..."> tags
+    const externalScripts = [];
+    const srcScriptRe = /<script([^>]*src=[^>]*)><\/script>/gi;
+    let m;
+    while ((m = srcScriptRe.exec(bodyContent)) !== null) {
+      externalScripts.push(`<script${m[1]}></script>`);
+    }
 
     html = html.replace(
       /<body[^>]*>[\s\S]*<\/body>/i,
-      `<body>\n<div id="root"></div>\n${keepTags}\n</body>`
+      `<body>\n<div id="root"></div>\n${externalScripts.join('\n')}\n</body>`
     );
   }
 
   fs.writeFileSync('.output/public/index.html', html);
-  console.log('Successfully saved index.html from Nitro with SSR data!');
+  console.log('Successfully saved index.html — pure SPA shell (no dehydrated state).');
 }
 
 generate().catch(err => {
