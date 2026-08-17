@@ -83,12 +83,13 @@ if (fs.existsSync(jsBundlePath)) {
   js = js.replace(/i:"  "/g,        'i:"/"');
   js = js.replace(/i:" "/g,         'i:"/"');
 
-  // hydrateRoot target patch — replace hydrateRoot(document, with hydrateRoot(document.getElementById("root"),
-  const before = js.length;
-  js = js.replace(/\.hydrateRoot\)\(document,/g, '.hydrateRoot)(document.getElementById("root"),');
-  const patched = js.length !== before || js.includes('.getElementById("root")');
+  // Replace hydrateRoot with createRoot to disable HTML hydration checks completely
+  js = js.replace(/\.hydrateRoot\)\(document\.getElementById\("root"\),/g, '.createRoot)(document.getElementById("root")).render(');
+  // Also fix closing parenthesis for render call
+  js = js.replace(/\(0,L\.startTransition\)\(\(\)=>\{\(0,Qf\.createRoot\)\(document\.getElementById\("root"\)\)\.render\(\(0,R\.jsx\)\(L\.StrictMode,\{children:\(0,R\.jsx\)\(Xf,\{\}\)\}\)\)\}\);/g,
+    '(0,L.startTransition)(()=>{const r=(0,Qf.createRoot)(document.getElementById("root"));r.render((0,R.jsx)(L.StrictMode,{children:(0,R.jsx)(Xf,{})}))});');
 
   fs.writeFileSync(jsBundlePath, js);
   console.log(`Route-ID patch: done.`);
-  console.log(`hydrateRoot target patch: ${patched ? '✓ document → document.getElementById("root")' : '⚠ pattern not found — verify bundle'}.`);
+  console.log(`Switched hydrateRoot -> createRoot in assets/index.js.`);
 }
