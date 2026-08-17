@@ -54,7 +54,7 @@ function TrialBalance() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {data?.balances.map((acc: any) => (
+                  {(Array.isArray(data?.balances) ? data.balances : []).map((acc: any) => (
                     <tr key={acc.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="py-3 px-6">
                         <div className="flex flex-col">

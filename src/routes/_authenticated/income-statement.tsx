@@ -53,7 +53,7 @@ function IncomeStatement() {
                   <tr>
                     <td className="py-3 font-bold text-gray-900 text-base" colSpan={2}>Revenue</td>
                   </tr>
-                  {isStmt?.details.filter(a => a.type === "REVENUE").map(acc => (
+                  {(Array.isArray(isStmt?.details) ? isStmt.details : []).filter(a => a.type === "REVENUE").map(acc => (
                     <tr key={acc.id} className="border-b border-gray-50 last:border-0">
                       <td className="py-2 pl-4 text-gray-700">{acc.name}</td>
                       <td className="py-2 text-right tabular-nums text-gray-900">{formatCurrency(acc.balance)}</td>
@@ -68,7 +68,7 @@ function IncomeStatement() {
                   <tr>
                     <td className="py-3 pt-6 font-bold text-gray-900 text-base" colSpan={2}>Cost of Goods Sold (COGS)</td>
                   </tr>
-                  {isStmt?.details.filter(a => a.subType === "Cost of Goods Sold").map(acc => (
+                  {(Array.isArray(isStmt?.details) ? isStmt.details : []).filter(a => a.subType === "Cost of Goods Sold").map(acc => (
                     <tr key={acc.id} className="border-b border-gray-50 last:border-0">
                       <td className="py-2 pl-4 text-gray-700">{acc.name}</td>
                       <td className="py-2 text-right tabular-nums text-gray-900">{formatCurrency(acc.balance)}</td>
@@ -91,7 +91,7 @@ function IncomeStatement() {
                   <tr>
                     <td className="py-3 pt-6 font-bold text-gray-900 text-base" colSpan={2}>Operating Expenses</td>
                   </tr>
-                  {isStmt?.details.filter(a => a.type === "EXPENSE" && a.subType !== "Cost of Goods Sold").map(acc => (
+                  {(Array.isArray(isStmt?.details) ? isStmt.details : []).filter(a => a.type === "EXPENSE" && a.subType !== "Cost of Goods Sold").map(acc => (
                     <tr key={acc.id} className="border-b border-gray-50 last:border-0">
                       <td className="py-2 pl-4 text-gray-700">{acc.name}</td>
                       <td className="py-2 text-right tabular-nums text-gray-900">{formatCurrency(acc.balance)}</td>

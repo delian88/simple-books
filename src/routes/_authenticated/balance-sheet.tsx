@@ -62,7 +62,7 @@ function BalanceSheet() {
                   <tbody>
                     {/* Fixed Assets */}
                     <tr><td className="py-2 font-semibold text-gray-900" colSpan={2}>Fixed Assets</td></tr>
-                    {bs?.details.filter(a => a.type === "ASSET" && a.subType === "Fixed Asset").map(acc => (
+                    {(Array.isArray(bs?.details) ? bs.details : []).filter(a => a.type === "ASSET" && a.subType === "Fixed Asset").map(acc => (
                       <tr key={acc.id} className="border-b border-gray-50 last:border-0">
                         <td className="py-1.5 pl-4 text-gray-700">{acc.name}</td>
                         <td className="py-1.5 text-right tabular-nums text-gray-900">{formatCurrency(acc.balance)}</td>
@@ -70,7 +70,7 @@ function BalanceSheet() {
                     ))}
                     {/* Current Assets */}
                     <tr><td className="py-2 pt-4 font-semibold text-gray-900" colSpan={2}>Current Assets</td></tr>
-                    {bs?.details.filter(a => a.type === "ASSET" && a.subType === "Current Asset").map(acc => (
+                    {(Array.isArray(bs?.details) ? bs.details : []).filter(a => a.type === "ASSET" && a.subType === "Current Asset").map(acc => (
                       <tr key={acc.id} className="border-b border-gray-50 last:border-0">
                         <td className="py-1.5 pl-4 text-gray-700">{acc.name}</td>
                         <td className="py-1.5 text-right tabular-nums text-gray-900">{formatCurrency(acc.balance)}</td>
@@ -78,7 +78,7 @@ function BalanceSheet() {
                     ))}
                     {/* Other Assets */}
                     <tr><td className="py-2 pt-4 font-semibold text-gray-900" colSpan={2}>Other Assets</td></tr>
-                    {bs?.details.filter(a => a.type === "ASSET" && a.subType !== "Fixed Asset" && a.subType !== "Current Asset").map(acc => (
+                    {(Array.isArray(bs?.details) ? bs.details : []).filter(a => a.type === "ASSET" && a.subType !== "Fixed Asset" && a.subType !== "Current Asset").map(acc => (
                       <tr key={acc.id} className="border-b border-gray-50 last:border-0">
                         <td className="py-1.5 pl-4 text-gray-700">{acc.name}</td>
                         <td className="py-1.5 text-right tabular-nums text-gray-900">{formatCurrency(acc.balance)}</td>
@@ -102,7 +102,7 @@ function BalanceSheet() {
                   <tbody>
                     {/* Short Term */}
                     <tr><td className="py-2 font-semibold text-gray-900" colSpan={2}>Short Term Liabilities</td></tr>
-                    {bs?.details.filter(a => a.type === "LIABILITY" && a.subType === "Short Term Liability").map(acc => (
+                    {(Array.isArray(bs?.details) ? bs.details : []).filter(a => a.type === "LIABILITY" && a.subType === "Short Term Liability").map(acc => (
                       <tr key={acc.id} className="border-b border-gray-50 last:border-0">
                         <td className="py-1.5 pl-4 text-gray-700">{acc.name}</td>
                         <td className="py-1.5 text-right tabular-nums text-gray-900">{formatCurrency(acc.balance)}</td>
@@ -110,7 +110,7 @@ function BalanceSheet() {
                     ))}
                     {/* Long Term */}
                     <tr><td className="py-2 pt-4 font-semibold text-gray-900" colSpan={2}>Long Term Liabilities</td></tr>
-                    {bs?.details.filter(a => a.type === "LIABILITY" && a.subType === "Long Term Liability").map(acc => (
+                    {(Array.isArray(bs?.details) ? bs.details : []).filter(a => a.type === "LIABILITY" && a.subType === "Long Term Liability").map(acc => (
                       <tr key={acc.id} className="border-b border-gray-50 last:border-0">
                         <td className="py-1.5 pl-4 text-gray-700">{acc.name}</td>
                         <td className="py-1.5 text-right tabular-nums text-gray-900">{formatCurrency(acc.balance)}</td>
@@ -128,7 +128,7 @@ function BalanceSheet() {
                 <h3 className="font-bold text-gray-900 text-lg border-b-2 border-indigo-500 pb-2 mb-4 mt-8">Owners Funds (Equity)</h3>
                 <table className="w-full text-sm">
                   <tbody>
-                    {bs?.details.filter(a => a.type === "EQUITY").map(acc => (
+                    {(Array.isArray(bs?.details) ? bs.details : []).filter(a => a.type === "EQUITY").map(acc => (
                       <tr key={acc.id} className="border-b border-gray-50 last:border-0">
                         <td className="py-1.5 pl-4 text-gray-700">{acc.name}</td>
                         <td className="py-1.5 text-right tabular-nums text-gray-900">{formatCurrency(acc.balance)}</td>
