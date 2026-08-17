@@ -1,6 +1,7 @@
-<?php
+﻿<?php
 // ar.php - Accounts Receivable
 require_once 'db.php';
+define('AUTH_AS_LIB', true);
 require_once 'auth.php';
 
 $userId    = requireAuth();
@@ -9,7 +10,7 @@ $action    = $_GET['action'] ?? '';
 
 switch ($action) {
 
-    // ── CUSTOMERS ──────────────────────────────────────────────
+    // â”€â”€ CUSTOMERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'listCustomers':
         $stmt = $pdo->prepare("SELECT * FROM customers WHERE company_id = ? AND is_archived = 0 ORDER BY name");
         $stmt->execute([$companyId]);
@@ -36,7 +37,7 @@ switch ($action) {
         jsonResponse(['ok' => true]);
         break;
 
-    // ── INVOICES ───────────────────────────────────────────────
+    // â”€â”€ INVOICES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'listInvoices':
         $stmt = $pdo->prepare(
             "SELECT i.*, c.name as customer_name
@@ -88,7 +89,7 @@ switch ($action) {
         jsonResponse(['ok' => true]);
         break;
 
-    // ── PAYMENTS ───────────────────────────────────────────────
+    // â”€â”€ PAYMENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'recordCustomerPayment':
         $data = json_decode(file_get_contents('php://input'), true) ?? [];
         $id   = bin2hex(random_bytes(9));
@@ -101,7 +102,7 @@ switch ($action) {
         jsonResponse(['id' => $id]);
         break;
 
-    // ── REPORTS ────────────────────────────────────────────────
+    // â”€â”€ REPORTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'getCustomerStatement':
         $data   = json_decode(file_get_contents('php://input'), true) ?? [];
         $custId = $data['customerId'] ?? '';

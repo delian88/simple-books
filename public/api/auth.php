@@ -66,7 +66,7 @@ function getActiveCompanyId($pdo, string $userId): string {
 }
 
 // ── ACTIONS — only run when auth.php is accessed directly ───────────────────
-if (realpath($_SERVER['SCRIPT_FILENAME']) === __FILE__) {
+if (!defined('AUTH_AS_LIB')) {
 $action = $_GET['action'] ?? '';
 
 switch ($action) {

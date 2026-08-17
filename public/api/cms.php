@@ -1,6 +1,7 @@
-<?php
+﻿<?php
 // cms.php
 require_once 'db.php';
+define('AUTH_AS_LIB', true);
 require_once 'auth.php';
 
 $action = $_GET['action'] ?? '';

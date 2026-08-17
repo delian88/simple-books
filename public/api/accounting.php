@@ -1,6 +1,7 @@
-<?php
+﻿<?php
 // accounting.php
 require_once 'db.php';
+define('AUTH_AS_LIB', true);
 require_once 'auth.php';
 
 $userId    = requireAuth();
