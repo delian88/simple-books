@@ -94,16 +94,17 @@ function NewInvoiceModal({
       if (lines.some((l) => !l.description)) throw new Error("All line items need a description");
       
       const payload = {
-        customerId,
-        invoiceNumber,
-        issueDate: new Date(issueDate),
-        dueDate: new Date(dueDate),
+        customer_id: customerId,
+        invoice_number: invoiceNumber,
+        issue_date: issueDate,
+        due_date: dueDate,
         notes,
         lines: lines.map((l) => ({
           description: l.description,
           quantity: l.quantity,
-          unitPrice: l.unitPrice,
-          taxRate: l.taxRate,
+          unit_price: l.unitPrice,
+          tax_rate: l.taxRate,
+          amount: l.quantity * l.unitPrice,
         })),
       };
 

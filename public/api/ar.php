@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // ar.php - Accounts Receivable
 require_once 'db.php';
 define('AUTH_AS_LIB', true);
@@ -79,6 +79,28 @@ switch ($action) {
                 ->execute([$lid, $id, $line['description'], $line['quantity'] ?? 1, $line['unit_price'] ?? 0, $line['amount'] ?? 0, $line['tax_rate'] ?? 0, $now]);
         }
         jsonResponse(['id' => $id]);
+        break;
+
+    case 'updateSalesInvoice':
+        $data  = json_decode(file_get_contents('php://input'), true) ?? [];
+        $id    = $data['id'] ?? '';
+        $now   = date('Y-m-d H:i:s');
+        $lines = $data['lines'] ?? [];
+        $subtotal = array_sum(array_column($lines, 'amount'));
+        $tax      = array_sum(array_map(fn($l) => ($l['amount'] ?? 0) * (($l['tax_rate'] ?? 0) / 100), $lines));
+        $total    = $subtotal + $tax;
+
+        $pdo->prepare("UPDATE sales_invoices SET customer_id=?, invoice_number=?, issue_date=?, due_date=?, subtotal=?, tax_amount=?, total_amount=?, notes=?, updated_at=? WHERE id=? AND company_id=?")
+            ->execute([$data['customer_id'], $data['invoice_number'], $data['issue_date'], $data['due_date'], $subtotal, $tax, $total, $data['notes'] ?? null, $now, $id, $companyId]);
+
+        $pdo->prepare("DELETE FROM sales_invoice_lines WHERE invoice_id = ?")->execute([$id]);
+        foreach ($lines as $line) {
+            $lid = bin2hex(random_bytes(9));
+            $pdo->prepare("INSERT INTO sales_invoice_lines (id, invoice_id, description, quantity, unit_price, amount, tax_rate, created_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+                ->execute([$lid, $id, $line['description'], $line['quantity'] ?? 1, $line['unit_price'] ?? 0, $line['amount'] ?? 0, $line['tax_rate'] ?? 0, $now]);
+        }
+        jsonResponse(['ok' => true]);
         break;
 
     case 'updateInvoiceStatus':
