@@ -126,6 +126,56 @@ switch ($action) {
         ]);
         break;
 
+    case 'createJournalTemplate':
+        $raw  = json_decode(file_get_contents('php://input'), true) ?? [];
+        $data = $raw['data'] ?? $raw;
+        $id   = bin2hex(random_bytes(9));
+        $now  = date('Y-m-d H:i:s');
+
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare("INSERT INTO journal_templates (id, company_id, name, description, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute([$id, $companyId, $data['name'] ?? 'Template', $data['description'] ?? null, $now, $now]);
+
+            $lineStmt = $pdo->prepare("INSERT INTO template_lines (id, template_id, account_id, debitRatio, creditRatio, is_fixed_amount, created_at) VALUES (?, ?, ?, ?, ?, 0, ?)");
+            foreach ($data['lines'] ?? [] as $line) {
+                $lid = bin2hex(random_bytes(9));
+                $lineStmt->execute([$lid, $id, $line['accountId'], $line['debitRatio'] ?? 0, $line['creditRatio'] ?? 0, $now]);
+            }
+            $pdo->commit();
+            jsonResponse(["id" => $id]);
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            jsonResponse(["error" => $e->getMessage()], 500);
+        }
+        break;
+
+    case 'listJournalTemplates':
+        $stmt = $pdo->prepare("SELECT * FROM journal_templates WHERE company_id = ? ORDER BY created_at DESC");
+        $stmt->execute([$companyId]);
+        $templates = $stmt->fetchAll();
+
+        $linesStmt = $pdo->prepare("SELECT l.*, a.name as account_name FROM template_lines l LEFT JOIN accounts a ON l.account_id = a.id WHERE template_id IN (SELECT id FROM journal_templates WHERE company_id = ?)");
+        $linesStmt->execute([$companyId]);
+        $lines = $linesStmt->fetchAll();
+
+        $linesByTemplate = [];
+        foreach ($lines as $line) {
+            $linesByTemplate[$line['template_id']][] = [
+                'id' => $line['id'],
+                'accountId' => $line['account_id'],
+                'debitRatio' => (float)$line['debitRatio'],
+                'creditRatio' => (float)$line['creditRatio'],
+                'account' => ['name' => $line['account_name']]
+            ];
+        }
+
+        foreach ($templates as &$t) {
+            $t['templateLines'] = $linesByTemplate[$t['id']] ?? [];
+        }
+        jsonResponse($templates);
+        break;
+
     case 'getTrialBalance':
         jsonResponse(["assets" => [], "liabilities" => [], "equity" => [], "revenue" => [], "expenses" => []]);
         break;
