@@ -115,7 +115,8 @@ switch ($action) {
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
-        if (!$user || !password_verify($password, $user['password'])) {
+        $storedHash = str_replace('$2b$', '$2y$', $user['password'] ?? '');
+        if (!$user || !password_verify($password, $storedHash)) {
             jsonResponse(['error' => 'Invalid email or password'], 401);
         }
 
