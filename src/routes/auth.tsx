@@ -137,7 +137,11 @@ function AuthPage() {
                     variant="ghost"
                     size="icon"
                     className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:bg-transparent"
-                    onClick={() => setShowPassword((prev) => !prev)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowPassword((prev) => !prev);
+                    }}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </Button>
