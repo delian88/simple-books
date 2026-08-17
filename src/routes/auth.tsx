@@ -161,7 +161,11 @@ function AuthPage() {
 
             <button
               type="button"
-              className="w-full text-center text-sm font-medium text-emerald-700 hover:text-emerald-800 underline underline-offset-4 cursor-pointer py-2 transition-colors"
+              className="w-full text-center text-sm font-medium text-emerald-700 hover:text-emerald-800 underline underline-offset-4 cursor-pointer py-2 transition-colors select-none"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setMode((prev) => (prev === "signin" ? "signup" : "signin"));
+              }}
               onClick={(e) => {
                 e.preventDefault();
                 setMode((prev) => (prev === "signin" ? "signup" : "signin"));
