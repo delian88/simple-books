@@ -161,8 +161,11 @@ function AuthPage() {
 
             <button
               type="button"
-              className="w-full text-center text-sm text-muted-foreground underline underline-offset-4"
-              onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+              className="w-full text-center text-sm font-medium text-emerald-700 hover:text-emerald-800 underline underline-offset-4 cursor-pointer py-2 transition-colors"
+              onClick={(e) => {
+                e.preventDefault();
+                setMode((prev) => (prev === "signin" ? "signup" : "signin"));
+              }}
             >
               {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
             </button>
