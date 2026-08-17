@@ -48,6 +48,17 @@ const html = `<!DOCTYPE html>
 </head>
 <body>
 <div id="root"></div>
+<script class="$tsr" id="$tsr-stream-barrier">
+(self.$R=self.$R||{})["tsr"]=[];
+self.$_TSR={
+  h(){this.hydrated=!0,this.c()},
+  e(){this.streamEnded=!0,this.c()},
+  c(){this.hydrated&&this.streamEnded&&(delete self.$_TSR,delete self.$R.tsr)},
+  t: new Map(),
+  buffer: [],
+  router: { matches: [] }
+};
+</script>
 <script type="module" src="${jsPath}"></script>
 </body>
 </html>`;
