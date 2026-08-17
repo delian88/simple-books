@@ -70,7 +70,7 @@ function AccountStatement() {
                 className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2 focus:ring-2 focus:ring-emerald-500 outline-none"
               >
                 <option value="">Select Account...</option>
-                {accounts.map(acc => (
+                {(Array.isArray(accounts) ? accounts : []).map(acc => (
                   <option key={acc.id} value={acc.id}>
                     {acc.code ? `${acc.code} - ` : ''}{acc.name} ({acc.type})
                   </option>

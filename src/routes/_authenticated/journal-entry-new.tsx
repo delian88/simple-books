@@ -172,7 +172,7 @@ function NewJournalEntry() {
                     className="w-full bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm"
                   >
                     <option value="" disabled>Select Account</option>
-                    {accounts.map(acc => (
+                    {(Array.isArray(accounts) ? accounts : []).map(acc => (
                       <option key={acc.id} value={acc.id}>{acc.code ? acc.code + ' - ' : ''}{acc.name} ({acc.type})</option>
                     ))}
                   </select>
