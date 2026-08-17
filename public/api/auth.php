@@ -3,7 +3,7 @@
 require_once 'db.php';
 
 // JWT SECRET — set via .htaccess: SetEnv APP_JWT_SECRET your_secret_here
-define('JWT_SECRET', getenv('APP_JWT_SECRET') ?: 'Mykobobooks_default_secret_change_in_production');
+define('JWT_SECRET', getenv('APP_JWT_SECRET') ?: 'ledgerly_default_secret_change_in_production');
 define('TOKEN_EXPIRY_SECONDS', 60 * 60 * 24 * 7); // 7 days
 
 function b64url_encode(string $data): string {
