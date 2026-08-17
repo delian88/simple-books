@@ -69,17 +69,17 @@ function NewInvoiceModal({
   useEffect(() => {
     if (open) {
       if (invoice) {
-        setCustomerId(invoice.customerId);
-        setInvoiceNumber(invoice.invoiceNumber);
-        setIssueDate(new Date(invoice.issueDate).toISOString().split("T")[0]);
-        setDueDate(new Date(invoice.dueDate).toISOString().split("T")[0]);
+        setCustomerId(invoice.customer_id || invoice.customerId || "");
+        setInvoiceNumber(invoice.invoice_number || invoice.invoiceNumber || "");
+        setIssueDate(new Date(invoice.issue_date || invoice.issueDate).toISOString().split("T")[0]);
+        setDueDate(new Date(invoice.due_date || invoice.dueDate).toISOString().split("T")[0]);
         setNotes(invoice.notes || "");
         setLines(
-          invoice.lines.map((l: any) => ({
+          (invoice.lines || []).map((l: any) => ({
             description: l.description,
             quantity: Number(l.quantity),
-            unitPrice: Number(l.unitPrice),
-            taxRate: Number(l.taxRate),
+            unitPrice: Number(l.unit_price ?? l.unitPrice),
+            taxRate: Number(l.tax_rate ?? l.taxRate),
           }))
         );
       } else {
@@ -354,7 +354,12 @@ function InvoiceDetailModal({
   if (!invoice) return null;
 
   const cfg = STATUS_CONFIG[invoice.status] || STATUS_CONFIG.DRAFT;
-  const currency = invoice.customer?.currency || "NGN";
+  const currency = invoice.customer?.currency || invoice.currency || "NGN";
+  const invNumber = invoice.invoice_number || invoice.invoiceNumber;
+  const custName = invoice.customer_name || invoice.customer?.name || "Customer";
+  const issueDt = invoice.issue_date || invoice.issueDate;
+  const dueDt = invoice.due_date || invoice.dueDate;
+  const totalAmt = Number(invoice.total_amount ?? invoice.totalAmount ?? 0);
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
@@ -363,7 +368,7 @@ function InvoiceDetailModal({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <DialogTitle className="text-xl font-bold text-gray-900">
-                Invoice {invoice.invoiceNumber}
+                Invoice {invNumber}
               </DialogTitle>
               <Badge variant="outline" className={cfg.className}>{cfg.label}</Badge>
             </div>
@@ -426,16 +431,16 @@ function InvoiceDetailModal({
           <div className="flex justify-between items-start mb-8">
             <div>
               <p className="text-sm font-medium text-gray-500 mb-1">Bill To</p>
-              <h3 className="text-lg font-bold text-gray-900">{invoice.customer?.name}</h3>
+              <h3 className="text-lg font-bold text-gray-900">{custName}</h3>
               {invoice.customer?.email && <p className="text-sm text-gray-600">{invoice.customer.email}</p>}
               {invoice.customer?.phone && <p className="text-sm text-gray-600">{invoice.customer.phone}</p>}
             </div>
             <div className="text-right text-sm">
               <div className="grid grid-cols-2 gap-x-4 gap-y-1">
                 <span className="text-gray-500">Issue Date:</span>
-                <span className="font-medium text-gray-900">{new Date(invoice.issueDate).toLocaleDateString()}</span>
+                <span className="font-medium text-gray-900">{new Date(issueDt).toLocaleDateString()}</span>
                 <span className="text-gray-500">Due Date:</span>
-                <span className="font-medium text-gray-900">{new Date(invoice.dueDate).toLocaleDateString()}</span>
+                <span className="font-medium text-gray-900">{new Date(dueDt).toLocaleDateString()}</span>
               </div>
             </div>
           </div>
@@ -479,7 +484,7 @@ function InvoiceDetailModal({
               </div>
               <div className="flex justify-between font-bold text-lg text-gray-900 border-t border-gray-200 pt-2 mt-2">
                 <span>Total</span>
-                <span className="tabular-nums">{fmtCurrency(invoice.totalAmount, currency)}</span>
+                <span className="tabular-nums">{fmtCurrency(totalAmt, currency)}</span>
               </div>
             </div>
           </div>
@@ -520,17 +525,21 @@ function InvoicesPage() {
   
   const filtered = invoicesList.filter(
     (inv: any) =>
-      inv.invoiceNumber?.toLowerCase().includes(search.toLowerCase()) ||
-      inv.customer?.name?.toLowerCase().includes(search.toLowerCase())
+      (inv.invoice_number || inv.invoiceNumber || "")
+        .toLowerCase()
+        .includes(search.toLowerCase()) ||
+      (inv.customer_name || inv.customer?.name || "")
+        .toLowerCase()
+        .includes(search.toLowerCase())
   );
 
   // Summary stats
   const totalOutstanding = invoicesList
     .filter((i: any) => ["SENT", "PARTIAL", "OVERDUE"].includes(i.status))
-    .reduce((s: number, i: any) => s + i.totalAmount, 0);
+    .reduce((s: number, i: any) => s + Number(i.total_amount ?? i.totalAmount ?? 0), 0);
   const totalPaid = invoicesList
     .filter((i: any) => i.status === "PAID")
-    .reduce((s: number, i: any) => s + i.totalAmount, 0);
+    .reduce((s: number, i: any) => s + Number(i.total_amount ?? i.totalAmount ?? 0), 0);
   const overdueCount = invoicesList.filter((i: any) => i.status === "OVERDUE").length;
 
   return (
@@ -616,21 +625,27 @@ function InvoicesPage() {
             ) : (
               filtered.map((inv: any) => {
                 const cfg = STATUS_CONFIG[inv.status] ?? STATUS_CONFIG.DRAFT;
-                const currency = inv.customer?.currency ?? "NGN";
+                const currency = inv.customer?.currency ?? inv.currency ?? "NGN";
+                const invNum = inv.invoice_number || inv.invoiceNumber;
+                const custName = inv.customer_name || inv.customer?.name || "Customer";
+                const issueDt = inv.issue_date || inv.issueDate;
+                const dueDt = inv.due_date || inv.dueDate;
+                const amt = Number(inv.total_amount ?? inv.totalAmount ?? 0);
+
                 return (
                   <TableRow key={inv.id} className="hover:bg-gray-50/60 transition-colors">
-                    <TableCell className="font-semibold text-[#0B3D2B] text-sm">{inv.invoiceNumber}</TableCell>
-                    <TableCell className="text-sm text-gray-700">{inv.customer?.name}</TableCell>
+                    <TableCell className="font-semibold text-[#0B3D2B] text-sm">{invNum}</TableCell>
+                    <TableCell className="text-sm text-gray-700">{custName}</TableCell>
                     <TableCell className="text-sm text-gray-500">
                       <div className="flex items-center gap-1.5">
                         <Calendar className="h-3 w-3" />
-                        {new Date(inv.issueDate).toLocaleDateString("en-NG", { day:"2-digit", month:"short", year:"numeric" })}
+                        {new Date(issueDt).toLocaleDateString("en-NG", { day:"2-digit", month:"short", year:"numeric" })}
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-gray-500">
                       <div className="flex items-center gap-1.5">
                         <Clock className="h-3 w-3" />
-                        {new Date(inv.dueDate).toLocaleDateString("en-NG", { day:"2-digit", month:"short", year:"numeric" })}
+                        {new Date(dueDt).toLocaleDateString("en-NG", { day:"2-digit", month:"short", year:"numeric" })}
                       </div>
                     </TableCell>
                     <TableCell>
@@ -639,7 +654,7 @@ function InvoicesPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-right font-semibold text-gray-800 tabular-nums">
-                      {fmtCurrency(inv.totalAmount, currency)}
+                      {fmtCurrency(amt, currency)}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button 
