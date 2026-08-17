@@ -65,7 +65,8 @@ function getActiveCompanyId($pdo, string $userId): string {
     return $row['company_id'];
 }
 
-// ── ACTIONS ──────────────────────────────────────────────────────────────────
+// ── ACTIONS — only run when auth.php is accessed directly ───────────────────
+if (realpath($_SERVER['SCRIPT_FILENAME']) === __FILE__) {
 $action = $_GET['action'] ?? '';
 
 switch ($action) {
@@ -139,4 +140,5 @@ switch ($action) {
     default:
         jsonResponse(['error' => 'Unknown action'], 400);
 }
+} // end direct-access guard
 ?>
