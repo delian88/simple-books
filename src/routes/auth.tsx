@@ -135,11 +135,10 @@ function AuthPage() {
                   <button
                     type="button"
                     tabIndex={-1}
-                    className="absolute right-0 top-0 z-10 flex h-full items-center justify-center px-3 text-gray-500 hover:text-gray-900 focus:outline-none"
-                    onClick={(e) => {
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 text-muted-foreground hover:text-foreground cursor-pointer p-1"
+                    onMouseDown={(e) => {
                       e.preventDefault();
-                      e.stopPropagation();
-                      setShowPassword(!showPassword);
+                      setShowPassword((prev) => !prev);
                     }}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
