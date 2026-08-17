@@ -10,14 +10,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Database configuration
-// On Namecheap, the database host is usually localhost
-$host = "localhost";
-$db_name = "mykornwi_bookz";
-$username = "mykornwi_bookzuser";
-$password = "bookzuser$1";
+// Checks for DATABASE_URL environment variable (e.g. from local .env / filess.io)
+// Defaults to Namecheap hosting credentials in production.
+$dbUrl = getenv('DATABASE_URL') ?: (file_exists(__DIR__ . '/../../.env') ? parse_ini_file(__DIR__ . '/../../.env')['DATABASE_URL'] ?? null : null);
+
+if ($dbUrl) {
+    $dbParts  = parse_url($dbUrl);
+    $host     = $dbParts['host'] ?? 'localhost';
+    $port     = $dbParts['port'] ?? 3306;
+    $db_name  = ltrim($dbParts['path'] ?? '', '/');
+    $username = $dbParts['user'] ?? '';
+    $password = $dbParts['pass'] ?? '';
+    $dsn      = "mysql:host={$host};port={$port};dbname={$db_name};charset=utf8";
+} else {
+    $host     = "localhost";
+    $db_name  = "mykornwi_bookz";
+    $username = "mykornwi_bookzuser";
+    $password = "bookzuser$1";
+    $dsn      = "mysql:host={$host};dbname={$db_name};charset=utf8";
+}
 
 try {
-    $pdo = new PDO("mysql:host=" . $host . ";dbname=" . $db_name . ";charset=utf8", $username, $password);
+    $pdo = new PDO($dsn, $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 } catch(PDOException $exception) {
