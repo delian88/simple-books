@@ -130,9 +130,9 @@ function AccountStatement() {
               <div className="mt-8">
                 <p className="text-sm text-gray-500">Account Details</p>
                 <p className="font-semibold text-lg text-gray-900 mt-1">
-                  {statementData.accountCode ? `${statementData.accountCode} - ` : ''}{statementData.accountName}
+                  {statementData.account?.code || statementData.accountCode ? `${statementData.account?.code || statementData.accountCode} - ` : ''}{statementData.account?.name || statementData.accountName || 'Account'}
                 </p>
-                <p className="text-sm text-gray-500">{statementData.type}</p>
+                <p className="text-sm text-gray-500">{statementData.account?.type || statementData.type}</p>
               </div>
             </div>
 
@@ -156,24 +156,24 @@ function AccountStatement() {
                     <td className="py-3"></td>
                     <td className="py-3"></td>
                     <td className="py-3 text-right font-medium text-gray-900">
-                      {formatCurrency(statementData.openingBalance)}
+                      {formatCurrency(Number(statementData.account?.openingBalance ?? statementData.openingBalance ?? 0))}
                     </td>
                   </tr>
 
-                  {/* Lines */}
-                  {statementData.lines.map((line: any) => (
+                  {/* Lines / Transactions */}
+                  {(statementData.transactions || statementData.lines || []).map((line: any) => (
                     <tr key={line.id} className="hover:bg-gray-50/50">
-                      <td className="py-3 text-gray-600 whitespace-nowrap">{format(new Date(line.date), "MMM d, yyyy")}</td>
+                      <td className="py-3 text-gray-600 whitespace-nowrap">{line.date ? format(new Date(line.date), "MMM d, yyyy") : '-'}</td>
                       <td className="py-3 text-gray-900">{line.description}</td>
                       <td className="py-3 text-gray-500">{line.reference || '-'}</td>
                       <td className="py-3 text-right text-gray-600">
-                        {line.debit > 0 ? formatCurrency(line.debit) : ''}
+                        {Number(line.debit) > 0 ? formatCurrency(Number(line.debit)) : ''}
                       </td>
                       <td className="py-3 text-right text-gray-600">
-                        {line.credit > 0 ? formatCurrency(line.credit) : ''}
+                        {Number(line.credit) > 0 ? formatCurrency(Number(line.credit)) : ''}
                       </td>
                       <td className="py-3 text-right font-medium text-gray-900 whitespace-nowrap">
-                        {formatCurrency(line.balance)}
+                        {formatCurrency(Number(line.runningBalance ?? line.balance ?? 0))}
                       </td>
                     </tr>
                   ))}
@@ -182,7 +182,7 @@ function AccountStatement() {
                   <tr className="bg-gray-50 border-t-2 border-gray-200">
                     <td className="py-4 font-semibold text-gray-900" colSpan={5}>Closing Balance</td>
                     <td className="py-4 text-right font-bold text-gray-900 text-base whitespace-nowrap">
-                      {formatCurrency(statementData.closingBalance)}
+                      {formatCurrency(Number(statementData.closingBalance ?? 0))}
                     </td>
                   </tr>
                 </tbody>
