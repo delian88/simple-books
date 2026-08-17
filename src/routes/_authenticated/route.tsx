@@ -1,14 +1,37 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { getSession } from "@/lib/auth.functions";
+import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
-    const user = await getSession();
-    if (!user) {
-      throw redirect({ to: "/auth" });
-    }
-    return { user };
-  },
-  component: () => <Outlet />,
+  component: AuthGuard,
 });
+
+function AuthGuard() {
+  const navigate = useNavigate();
+  const { data: user, isLoading } = useQuery({
+    queryKey: ["session"],
+    queryFn: getSession,
+    staleTime: 30_000,
+    retry: false,
+  });
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate({ to: "/auth", replace: true });
+    }
+  }, [user, isLoading, navigate]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-emerald-600" />
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  return <Outlet />;
+}

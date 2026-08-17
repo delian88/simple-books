@@ -85,6 +85,23 @@ async function generate() {
 
   fs.writeFileSync('.output/public/index.html', html);
   console.log('Successfully saved index.html — pure SPA shell (no dehydrated state).');
+
+  // ── Fix corrupted route IDs in the JS bundle ──────────────────────────────
+  // Nitro/Rolldown minification injects spaces into TanStack route ID strings,
+  // e.g.  i:"__root__ "  instead of  i:"__root__"
+  //       i:"  "         instead of  i:"/"
+  // This causes "Cannot set properties of undefined (setting 't')" at runtime.
+  const jsBundlePath = '.output/public/assets/index.js';
+  if (fs.existsSync(jsBundlePath)) {
+    let js = fs.readFileSync(jsBundlePath, 'utf8');
+    const before = js.length;
+    js = js.replace(/i:"__root__ "/g, 'i:"__root__"');
+    js = js.replace(/i:"  "/g,        'i:"/"');
+    js = js.replace(/i:" "/g,         'i:"/"');
+    fs.writeFileSync(jsBundlePath, js);
+    const fixed = before - js.length < 0 ? 'no changes' : `${before - js.length} bytes removed`;
+    console.log(`Fixed route IDs in assets/index.js (${fixed}).`);
+  }
 }
 
 generate().catch(err => {
