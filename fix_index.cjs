@@ -83,13 +83,24 @@ if (fs.existsSync(jsBundlePath)) {
   js = js.replace(/i:"  "/g,        'i:"/"');
   js = js.replace(/i:" "/g,         'i:"/"');
 
-  // Target hydrateRoot to empty container <div id="root"></div> instead of document
-  // This bypasses full document HTML mismatch checks while preserving valid React DOM APIs
+  // 1. Inject e.createRoot export into react-dom client module definition
+  // e.createRoot = function(e,t){ return new qp(fp(e,0,!1,null,null,!1,"",null,Qs,$s,ec,Gp)) }
+  // (matches React DOM 19 internal createRoot implementation)
+  js = js.replace(
+    /e\.hydrateRoot=function\(e,t,n\)\{/g,
+    'e.createRoot=function(e,t){var n=fp(e,0,!1,null,null,!1,t?.identifierPrefix??"",null,t?.onUncaughtError??Qs,t?.onCaughtError??$s,t?.onRecoverableError??ec,Gp);return e[ut]=n.current,Nd(e),new qp(n)};e.hydrateRoot=function(e,t,n){'
+  );
+
+  // 2. Transform (0,Qf.hydrateRoot)(document, ...) to (0,Qf.createRoot)(document.getElementById("root")).render(...)
   const before = js.length;
-  js = js.replace(/\(0,([a-zA-Z0-9_$]+)\.hydrateRoot\)\(document,/g, '(0,$1.hydrateRoot)(document.getElementById("root"),');
-  const patched = js.includes('.hydrateRoot)(document.getElementById("root"),');
+  js = js.replace(/\(0,([a-zA-Z0-9_$]+)\.hydrateRoot\)\(document,/g, '(0,$1.createRoot)(document.getElementById("root")).render(');
+  // Add closing parenthesis to match .render( ... )
+  js = js.replace(/document\.getElementById\("root"\),\s*\(0,([a-zA-Z0-9_$]+)\.jsx\)\(L\.StrictMode,\s*\{children:\(0,\1\.jsx\)\(Zf,\{\}\)\}\)\)/g,
+    'document.getElementById("root")).render((0,$1.jsx)(L.StrictMode,{children:(0,$1.jsx)(Zf,{})}))');
+
+  const patched = js.includes('.createRoot)(document.getElementById("root")).render(');
 
   fs.writeFileSync(jsBundlePath, js);
   console.log(`Route-ID patch: done.`);
-  console.log(`hydrateRoot target patch: ${patched ? '✓ document -> document.getElementById("root")' : '⚠ target patch failed'}.`);
+  console.log(`createRoot patch: ${patched ? '✓ replaced hydrateRoot with createRoot().render()' : '⚠ pattern not matched'}.`);
 }
