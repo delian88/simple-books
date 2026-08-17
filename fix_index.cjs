@@ -83,12 +83,16 @@ if (fs.existsSync(jsBundlePath)) {
   js = js.replace(/i:"  "/g,        'i:"/"');
   js = js.replace(/i:" "/g,         'i:"/"');
 
-  // Replace hydrateRoot(document, with hydrateRoot(document.getElementById("root"),
+  // Transform (0,Qf.hydrateRoot)(document, ...) to (0,Qf.createRoot)(document.getElementById("root")).render(...)
   const before = js.length;
-  js = js.replace(/\(0,([a-zA-Z0-9_$]+)\.hydrateRoot\)\(document,/g, '(0,$1.hydrateRoot)(document.getElementById("root"),');
-  const patched = js.includes('.hydrateRoot)(document.getElementById("root"),');
+  js = js.replace(/\(0,([a-zA-Z0-9_$]+)\.hydrateRoot\)\(document,/g, '(0,$1.createRoot)(document.getElementById("root")).render(');
+  // Add closing parenthesis to match .render( ... )
+  js = js.replace(/document\.getElementById\("root"\),\s*\(0,([a-zA-Z0-9_$]+)\.jsx\)\(L\.StrictMode,\s*\{children:\(0,\1\.jsx\)\(Zf,\{\}\)\}\)\)/g,
+    'document.getElementById("root")).render((0,$1.jsx)(L.StrictMode,{children:(0,$1.jsx)(Zf,{})}))');
+
+  const patched = js.includes('.createRoot)(document.getElementById("root")).render(');
 
   fs.writeFileSync(jsBundlePath, js);
   console.log(`Route-ID patch: done.`);
-  console.log(`hydrateRoot target patch: ${patched ? '✓ document -> document.getElementById("root")' : '⚠ target patch failed'}.`);
+  console.log(`createRoot patch: ${patched ? '✓ replaced hydrateRoot with createRoot().render()' : '⚠ pattern not matched'}.`);
 }
