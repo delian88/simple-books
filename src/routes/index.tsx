@@ -192,10 +192,10 @@ function Landing() {
             ) : (
               <>
                 <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex transition-all hover:scale-105">
-                  <Link to="/auth">Sign in</Link>
+                  <Link to="/auth" search={{ mode: "signin" }}>Sign in</Link>
                 </Button>
                 <Button asChild size="sm" className="hidden md:inline-flex group bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 hover:shadow-lg hover:shadow-emerald-200">
-                  <Link to="/auth">
+                  <Link to="/auth" search={{ mode: "signup" }}>
                     Get started free <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Link>
                 </Button>
@@ -275,12 +275,12 @@ function Landing() {
               ) : (
                 <>
                   <Button asChild className="w-full bg-emerald-600 hover:bg-emerald-700">
-                    <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Link to="/auth" search={{ mode: "signup" }} onClick={() => setIsMobileMenuOpen(false)}>
                       Get started free
                     </Link>
                   </Button>
                   <Button asChild variant="outline" className="w-full">
-                    <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>Sign in</Link>
+                    <Link to="/auth" search={{ mode: "signin" }} onClick={() => setIsMobileMenuOpen(false)}>Sign in</Link>
                   </Button>
                 </>
               )}
@@ -680,12 +680,12 @@ function Landing() {
                 ) : (
                   <>
                     <Button asChild size="default" className="group bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 hover:shadow-xl hover:shadow-emerald-200 sm:text-base">
-                      <Link to="/auth">
+                      <Link to="/auth" search={{ mode: "signup" }}>
                         Start your ledger <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 transition-transform group-hover:translate-x-1" />
                       </Link>
                     </Button>
                     <Button asChild variant="outline" size="default" className="transition-all hover:scale-105 hover:border-emerald-600 hover:text-emerald-600 sm:text-base">
-                      <Link to="/auth">I already have an account</Link>
+                      <Link to="/auth" search={{ mode: "signin" }}>I already have an account</Link>
                     </Button>
                   </>
                 )}
