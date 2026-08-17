@@ -132,19 +132,18 @@ function AuthPage() {
                     className="pr-10"
                     required
                   />
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:bg-transparent"
+                    tabIndex={-1}
+                    className="absolute right-0 top-0 z-10 flex h-full items-center justify-center px-3 text-gray-500 hover:text-gray-900 focus:outline-none"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      setShowPassword((prev) => !prev);
+                      setShowPassword(!showPassword);
                     }}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
+                  </button>
                 </div>
               </div>
 
