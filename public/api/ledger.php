@@ -11,14 +11,16 @@ $action = $_GET['action'] ?? '';
 
 switch ($action) {
     case 'createJournalEntry':
-        $data = json_decode(file_get_contents('php://input'), true)['data'] ?? [];
+        $raw  = json_decode(file_get_contents('php://input'), true) ?? [];
+        $data = $raw['data'] ?? $raw;
         $id   = bin2hex(random_bytes(9));
         $now  = date('Y-m-d H:i:s');
+        $date = !empty($data['date']) ? $data['date'] : $now;
         
         $pdo->beginTransaction();
         try {
             $stmt = $pdo->prepare("INSERT INTO journal_entries (id, company_id, date, description, reference, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'POSTED', ?, ?)");
-            $stmt->execute([$id, $companyId, $data['date'], $data['description'], $data['reference'] ?? null, $now, $now]);
+            $stmt->execute([$id, $companyId, $date, $data['description'] ?? '', $data['reference'] ?? null, $now, $now]);
             
             $lineStmt = $pdo->prepare("INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, created_at) VALUES (?, ?, ?, ?, ?, ?)");
             foreach ($data['lines'] as $line) {
