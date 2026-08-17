@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { BookOpenText, Landmark, Receipt, PieChart, Lock, ArrowRight, CheckCircle2, ChevronDown, MessageCircle, X, Send, Sparkles } from "lucide-react";
+import { BookOpenText, Landmark, Receipt, PieChart, Lock, ArrowRight, CheckCircle2, ChevronDown, MessageCircle, X, Send, Sparkles, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { getSession, logout } from "@/lib/auth.functions";
@@ -60,6 +60,7 @@ const TRUST_LOGOS = [
 
 function Landing() {
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; timestamp: Date }>>([
     { text: "Hi! I'm your AI Assistant. How can I help you today?", isUser: false, timestamp: new Date() }
   ]);
@@ -157,6 +158,7 @@ function Landing() {
             )}
             <span className="font-display text-xl font-semibold">{appName}</span>
           </Link>
+          {/* Desktop nav */}
           <nav className="hidden items-center gap-8 md:flex">
             <Link to="/features" className="group flex items-center gap-1 text-sm font-medium text-gray-700 transition-colors hover:text-gray-900">
               Features <ChevronDown className="h-4 w-4 transition-transform group-hover:translate-y-0.5" />
@@ -175,12 +177,13 @@ function Landing() {
             </Link>
           </nav>
           <div className="flex items-center gap-3">
+            {/* Desktop CTA buttons */}
             {user ? (
               <>
-                <Button variant="ghost" size="sm" onClick={handleLogout} className="transition-all hover:scale-105">
+                <Button variant="ghost" size="sm" onClick={handleLogout} className="hidden md:inline-flex transition-all hover:scale-105">
                   Sign out
                 </Button>
-                <Button asChild size="sm" className="group bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 hover:shadow-lg hover:shadow-emerald-200">
+                <Button asChild size="sm" className="hidden md:inline-flex group bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 hover:shadow-lg hover:shadow-emerald-200">
                   <Link to="/dashboard">
                     Dashboard <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Link>
@@ -188,19 +191,103 @@ function Landing() {
               </>
             ) : (
               <>
-                <Button asChild variant="ghost" size="sm" className="transition-all hover:scale-105">
+                <Button asChild variant="ghost" size="sm" className="hidden md:inline-flex transition-all hover:scale-105">
                   <Link to="/auth">Sign in</Link>
                 </Button>
-                <Button asChild size="sm" className="group bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 hover:shadow-lg hover:shadow-emerald-200">
+                <Button asChild size="sm" className="hidden md:inline-flex group bg-emerald-600 hover:bg-emerald-700 transition-all hover:scale-105 hover:shadow-lg hover:shadow-emerald-200">
                   <Link to="/auth">
                     Get started free <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </Link>
                 </Button>
               </>
             )}
+            {/* Mobile hamburger */}
+            <button
+              className="md:hidden p-2 rounded-lg text-gray-700 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              onClick={() => setIsMobileMenuOpen(true)}
+              aria-label="Open menu"
+            >
+              <Menu className="h-6 w-6" />
+            </button>
           </div>
         </div>
       </header>
+
+      {/* Mobile Menu Drawer */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-[200] md:hidden">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          {/* Drawer */}
+          <div className="absolute top-0 right-0 h-full w-[80vw] max-w-xs bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+            {/* Drawer header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <Link to="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
+                {appLogo ? (
+                  <img src={appLogo} alt={appName} className="h-6 w-6 object-contain" />
+                ) : (
+                  <BookOpenText className="h-6 w-6 text-emerald-600" />
+                )}
+                <span className="font-semibold text-lg">{appName}</span>
+              </Link>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            {/* Drawer nav */}
+            <nav className="flex-1 overflow-y-auto py-4 px-4 space-y-1">
+              {[
+                { to: "/features", label: "Features" },
+                { to: "/how-it-works", label: "How it works" },
+                { to: "/pricing", label: "Pricing" },
+                { to: "/resources", label: "Resources" },
+                { to: "/about", label: "About" },
+              ].map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 rounded-xl px-4 py-3 text-base font-medium text-gray-700 hover:bg-emerald-50 hover:text-emerald-700 transition-colors"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+            {/* Drawer CTA */}
+            <div className="p-4 border-t border-gray-100 flex flex-col gap-3">
+              {user ? (
+                <>
+                  <Button asChild className="w-full bg-emerald-600 hover:bg-emerald-700">
+                    <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                      Dashboard <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button variant="outline" className="w-full" onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }}>
+                    Sign out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button asChild className="w-full bg-emerald-600 hover:bg-emerald-700">
+                    <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>
+                      Get started free
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" className="w-full">
+                    <Link to="/auth" onClick={() => setIsMobileMenuOpen(false)}>Sign in</Link>
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add padding to account for fixed header */}
       <div className="pt-20">
