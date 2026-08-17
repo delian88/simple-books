@@ -39,6 +39,12 @@ function AuthPage() {
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
+    if (search.mode) {
+      setMode(search.mode === "signup" ? "signup" : "signin");
+    }
+  }, [search.mode]);
+
+  useEffect(() => {
     getSession().then((user) => {
       if (user) navigate({ to: "/dashboard" });
     });
