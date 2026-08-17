@@ -79,7 +79,9 @@ function ChartOfAccounts() {
 
   if (isLoading) return <div className="p-8">Loading accounts...</div>;
 
-  const groupedAccounts = accounts.reduce((acc: any, account) => {
+  const accountsList = Array.isArray(accounts) ? accounts : [];
+
+  const groupedAccounts = accountsList.reduce((acc: any, account) => {
     if (!acc[account.type]) acc[account.type] = [];
     acc[account.type].push(account);
     return acc;
@@ -106,7 +108,7 @@ function ChartOfAccounts() {
             </div>
             <div className="divide-y divide-gray-100">
               {groupedAccounts[type]?.length ? (
-                groupedAccounts[type].map((account: any) => (
+                (groupedAccounts[type] || []).map((account: any) => (
                   <div key={account.id} className="flex items-center justify-between p-6 hover:bg-gray-50/50 transition-colors group">
                     <div>
                       <div className="flex items-center gap-3">
