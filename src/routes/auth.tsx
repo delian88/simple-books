@@ -133,53 +133,53 @@ function AuthPage() {
 
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
+                <div className="relative flex items-center">
+                  <input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     minLength={6}
                     autoComplete={mode === "signin" ? "current-password" : "new-password"}
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    className="pr-10"
+                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pr-10 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                     required
                   />
                   <button
                     type="button"
                     tabIndex={-1}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 text-muted-foreground hover:text-foreground cursor-pointer p-1"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      setShowPassword((prev) => !prev);
-                    }}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-gray-900 cursor-pointer select-none rounded-md hover:bg-gray-100 transition-colors"
+                    onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowPassword((v) => !v);
+                      }}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
+
+                {notice ? <p className="text-sm text-accent-foreground">{notice}</p> : null}
+
+                <Button type="submit" className="w-full" disabled={busy}>
+                  {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
+                </Button>
+              </form>
+
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-700 underline underline-offset-4 cursor-pointer p-2 transition-colors"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setMode((v) => (v === "signin" ? "signup" : "signin"));
+                  }}
+                >
+                  {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
+                </button>
               </div>
-
-              {notice ? <p className="text-sm text-accent-foreground">{notice}</p> : null}
-
-              <Button type="submit" className="w-full" disabled={busy}>
-                {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
-              </Button>
-            </form>
-
-            <button
-              type="button"
-              className="w-full text-center text-sm font-medium text-emerald-700 hover:text-emerald-800 underline underline-offset-4 cursor-pointer py-2 transition-colors select-none"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                setMode((prev) => (prev === "signin" ? "signup" : "signin"));
-              }}
-              onClick={(e) => {
-                e.preventDefault();
-                setMode((prev) => (prev === "signin" ? "signup" : "signin"));
-              }}
-            >
-              {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
-            </button>
-          </CardContent>
+            </CardContent>
         </Card>
       </div>
     </div>
