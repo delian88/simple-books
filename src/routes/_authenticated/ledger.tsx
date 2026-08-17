@@ -182,7 +182,7 @@ function Ledger() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {journal.lines.map((line: any) => (
+                    {(Array.isArray(journal.lines) ? journal.lines : []).map((line: any) => (
                       <tr key={line.id} className="hover:bg-gray-50/50 transition-colors">
                         <td className="px-4 py-3">
                           <span className="font-mono text-xs font-medium text-gray-500 mr-2 bg-gray-100 px-1.5 py-0.5 rounded">{line.account.code}</span>

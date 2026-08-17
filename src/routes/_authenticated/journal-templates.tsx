@@ -152,7 +152,7 @@ function JournalTemplates() {
                     <div key={line.id} className="flex gap-3 items-center bg-gray-50/50 p-2 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
                       <select required value={line.accountId} onChange={e => updateLine(line.id, 'accountId', e.target.value)} className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm">
                         <option value="" disabled>Select Account</option>
-                        {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
+                        {(Array.isArray(accounts) ? accounts : []).map(acc => <option key={acc.id} value={acc.id}>{acc.name}</option>)}
                       </select>
                       <input type="number" step="0.01" min="0" placeholder="Debit" value={line.debitRatio} onChange={e => updateLine(line.id, 'debitRatio', e.target.value)} className="w-28 bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm tabular-nums" />
                       <input type="number" step="0.01" min="0" placeholder="Credit" value={line.creditRatio} onChange={e => updateLine(line.id, 'creditRatio', e.target.value)} className="w-28 bg-white border border-gray-200 rounded-lg px-3 py-2.5 text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent text-sm tabular-nums" />
