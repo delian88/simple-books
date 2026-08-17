@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // ledger.php
 require_once 'db.php';
 define('AUTH_AS_LIB', true);
@@ -12,16 +12,18 @@ $action = $_GET['action'] ?? '';
 switch ($action) {
     case 'createJournalEntry':
         $data = json_decode(file_get_contents('php://input'), true)['data'] ?? [];
-        $id = uniqid();
+        $id   = bin2hex(random_bytes(9));
+        $now  = date('Y-m-d H:i:s');
         
         $pdo->beginTransaction();
         try {
-            $stmt = $pdo->prepare("INSERT INTO JournalEntry (id, companyId, date, description, reference, status, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, 'POSTED', NOW(), NOW())");
-            $stmt->execute([$id, $companyId, $data['date'], $data['description'], $data['reference'] ?? null]);
+            $stmt = $pdo->prepare("INSERT INTO journal_entries (id, company_id, date, description, reference, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'POSTED', ?, ?)");
+            $stmt->execute([$id, $companyId, $data['date'], $data['description'], $data['reference'] ?? null, $now, $now]);
             
-            $lineStmt = $pdo->prepare("INSERT INTO JournalEntryLine (id, entryId, accountId, debit, credit) VALUES (UUID(), ?, ?, ?, ?)");
+            $lineStmt = $pdo->prepare("INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, created_at) VALUES (?, ?, ?, ?, ?, ?)");
             foreach ($data['lines'] as $line) {
-                $lineStmt->execute([$id, $line['accountId'], $line['debit'] ?? 0, $line['credit'] ?? 0]);
+                $lid = bin2hex(random_bytes(9));
+                $lineStmt->execute([$lid, $id, $line['accountId'], $line['debit'] ?? 0, $line['credit'] ?? 0, $now]);
             }
             $pdo->commit();
             jsonResponse(["id" => $id]);
@@ -32,19 +34,19 @@ switch ($action) {
         break;
 
     case 'listJournalEntries':
-        $stmt = $pdo->prepare("SELECT * FROM JournalEntry WHERE companyId = ? ORDER BY date DESC, createdAt DESC");
+        $stmt = $pdo->prepare("SELECT * FROM journal_entries WHERE company_id = ? ORDER BY date DESC, created_at DESC");
         $stmt->execute([$companyId]);
         $entries = $stmt->fetchAll();
         
-        $linesStmt = $pdo->prepare("SELECT l.*, a.name as account_name FROM JournalEntryLine l LEFT JOIN Account a ON l.accountId = a.id WHERE entryId IN (SELECT id FROM JournalEntry WHERE companyId = ?)");
+        $linesStmt = $pdo->prepare("SELECT l.*, a.name as account_name FROM journal_lines l LEFT JOIN accounts a ON l.account_id = a.id WHERE journal_entry_id IN (SELECT id FROM journal_entries WHERE company_id = ?)");
         $linesStmt->execute([$companyId]);
         $lines = $linesStmt->fetchAll();
         
         $linesByEntry = [];
         foreach ($lines as $line) {
-            $linesByEntry[$line['entryId']][] = [
+            $linesByEntry[$line['journal_entry_id']][] = [
                 'id' => $line['id'],
-                'accountId' => $line['accountId'],
+                'accountId' => $line['account_id'],
                 'debit' => (float)$line['debit'],
                 'credit' => (float)$line['credit'],
                 'account' => ['name' => $line['account_name']]
