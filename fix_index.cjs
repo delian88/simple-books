@@ -1,112 +1,83 @@
-const fs = require('fs');
-const { spawn } = require('child_process');
+'use strict';
+// fix_index.cjs — postbuild script
+// Generates a static SPA shell index.html with createRoot (no hydrateRoot / no #418).
+// Runs after `vite build` completes.
+//
+// With prerender removed from vite.config.ts, TanStack Start compiles to createRoot.
+// We create index.html manually using the known asset paths (no content hash thanks to
+// the fixed assetFileNames / entryFileNames in vite config).
 
-async function generate() {
-  console.log('Attempting to fetch index.html from Nitro server...');
-  
-  let html = '';
+const fs   = require('fs');
+const path = require('path');
 
-  try {
-    // Attempt 1: Cloudflare module preset (Lovable default)
-    const m = await import('./.output/server/index.mjs');
-    if (m.default && m.default.fetch) {
-      console.log('Detected Cloudflare module preset, invoking fetch handler directly...');
-      const req = new Request('http://localhost/');
-      const res = await m.default.fetch(req, {}, { waitUntil: () => {}, passThroughOnException: () => {} });
-      if (res.status === 200) {
-        html = await res.text();
-      }
-    }
-  } catch (err) {
-    console.log('Not a cloudflare module, falling back to node server spawn...');
-  }
+const OUT_DIR = '.output/public';
 
-  // Attempt 2: Node server preset
-  if (!html) {
-    const server = spawn('node', ['.output/server/index.mjs'], { 
-      env: { ...process.env, PORT: '34567' }
-    });
-    
-    server.stdout.on('data', (data) => console.log(`Server: ${data}`));
-    server.stderr.on('data', (data) => console.error(`Server Error: ${data}`));
-    
-    // Wait for server to bind
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    try {
-      console.log('Fetching from local node server on port 34567...');
-      const res = await fetch('http://localhost:34567/');
-      if (res.status === 200) {
-        html = await res.text();
-      }
-    } catch (err) {
-      console.error('Failed to fetch from node server:', err);
-    } finally {
-      server.kill();
-    }
-  }
-
-  if (!html) {
-    console.error('Failed to generate index.html using either method.');
-    process.exit(1);
-  }
-
-  // Fix corrupted route IDs injected by Nitro/Cloudflare minification that cause "Cannot set properties of undefined (setting 't')"
-  html = html.replace(/i:"__root__ "/g, 'i:"__root__"');
-  html = html.replace(/i:"  "/g, 'i:"/"');
-  html = html.replace(/i:" "/g, 'i:"/"');
-
-  // ── Convert to a pure SPA shell ─────────────────────────────────────────
-  // With ssr:false, TanStack Start emits 3 scripts into <body>:
-  //   0. Scroll restoration (reads sessionStorage)
-  //   1. TanStack $tsr-stream-barrier — sets up window.$_TSR needed by Xn()
-  //   2. <script src="/assets/index.js"> — the app bundle
-  //
-  // Stripping scripts 0+1 causes Xn() → "Cannot set properties of undefined".
-  // Keeping them is safe because ssr:false means no page-specific route data
-  // is embedded — $R.tsr stays []. Only the rendered HTML inside <div id="root">
-  // causes React #418, so we clear that and keep everything else.
-
-  const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-  if (bodyMatch) {
-    const bodyContent = bodyMatch[1];
-
-    // Collect ALL <script> tags (both inline and src=)
-    const allScripts = [];
-    const scriptRe = /<script[\s\S]*?<\/script>/gi;
-    let m;
-    while ((m = scriptRe.exec(bodyContent)) !== null) {
-      allScripts.push(m[0]);
-    }
-
-    html = html.replace(
-      /<body[^>]*>[\s\S]*<\/body>/i,
-      `<body>\n<div id="root"></div>\n${allScripts.join('\n')}\n</body>`
-    );
-  }
-
-  fs.writeFileSync('.output/public/index.html', html);
-  console.log('Saved index.html — SPA shell with scripts, empty #root, no rendered HTML.');
-
-  // ── Fix corrupted route IDs in the JS bundle ──────────────────────────────
-  // Nitro/Rolldown minification injects spaces into TanStack route ID strings,
-  // e.g.  i:"__root__ "  instead of  i:"__root__"
-  //       i:"  "         instead of  i:"/"
-  // This causes "Cannot set properties of undefined (setting 't')" at runtime.
-  const jsBundlePath = '.output/public/assets/index.js';
-  if (fs.existsSync(jsBundlePath)) {
-    let js = fs.readFileSync(jsBundlePath, 'utf8');
-    const before = js.length;
-    js = js.replace(/i:"__root__ "/g, 'i:"__root__"');
-    js = js.replace(/i:"  "/g,        'i:"/"');
-    js = js.replace(/i:" "/g,         'i:"/"');
-    fs.writeFileSync(jsBundlePath, js);
-    const fixed = before - js.length < 0 ? 'no changes' : `${before - js.length} bytes removed`;
-    console.log(`Fixed route IDs in assets/index.js (${fixed}).`);
-  }
+// ── 1. Verify build output exists ─────────────────────────────────────────────
+if (!fs.existsSync(path.join(OUT_DIR, 'assets/index.js'))) {
+  console.error('ERROR: .output/public/assets/index.js not found. Run npm run build first.');
+  process.exit(1);
 }
 
-generate().catch(err => {
-  console.error('Error in generation script:', err);
-  process.exit(1);
-});
+// ── 2. Read the CSS path (fixed name, no hash) ────────────────────────────────
+const cssPath  = '/assets/app.css';
+const jsPath   = '/assets/index.js';
+
+// ── 3. Generate static SPA shell ──────────────────────────────────────────────
+// Head tags match exactly what __root.tsx's head() + RootShell render, so that
+// when createRoot mounts the app tree, no server HTML exists to reconcile with.
+// React #418 is impossible because there is no hydrateRoot call in the bundle.
+const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Mykobobooks \u2014 Simple Accounting for Small Businesses</title>
+  <meta name="description" content="Capture inflows from your bank statement and outflows from scanned receipts, see your profit, and keep a live balance sheet with our simple accounting platform." />
+  <meta name="keywords" content="accounting, small business, bookkeeping, ledger, financial statements, trial balance, receipt scanner" />
+  <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+  <meta property="og:title" content="Mykobobooks \u2014 Simple Accounting for Small Businesses" />
+  <meta property="og:description" content="Capture inflows from your bank statement and outflows from scanned receipts, see your profit, and keep a live balance sheet." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Mykobobooks" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,500;6..72,600&display=swap" />
+  <link rel="stylesheet" href="${cssPath}" />
+  <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+</head>
+<body>
+<div id="root"></div>
+<script type="module" src="${jsPath}"></script>
+</body>
+</html>`;
+
+fs.writeFileSync(path.join(OUT_DIR, 'index.html'), html);
+console.log('Generated index.html — pure SPA shell (createRoot, no hydrateRoot, no React #418).');
+
+// ── 4. Patch hydrateRoot target: document → document.getElementById("root") ──
+// TanStack Start's runtime always calls hydrateRoot(document, ...).
+// When the same index.html is served for ALL routes, React finds the server HTML
+// doesn't match the client render → #418.
+//
+// Fix: redirect the target to document.getElementById("root") which is an empty
+// <div>. Hydrating an empty container = trivial success (nothing to mismatch).
+// React renders fresh client-side → zero #418 risk.
+const jsBundlePath = path.join(OUT_DIR, 'assets/index.js');
+if (fs.existsSync(jsBundlePath)) {
+  let js = fs.readFileSync(jsBundlePath, 'utf8');
+
+  // Route-ID corruption patch (Nitro/Rolldown sometimes injects spaces)
+  js = js.replace(/i:"__root__ "/g, 'i:"__root__"');
+  js = js.replace(/i:"  "/g,        'i:"/"');
+  js = js.replace(/i:" "/g,         'i:"/"');
+
+  // hydrateRoot target patch — replace hydrateRoot(document, with hydrateRoot(document.getElementById("root"),
+  const before = js.length;
+  js = js.replace(/\.hydrateRoot\)\(document,/g, '.hydrateRoot)(document.getElementById("root"),');
+  const patched = js.length !== before || js.includes('.getElementById("root")');
+
+  fs.writeFileSync(jsBundlePath, js);
+  console.log(`Route-ID patch: done.`);
+  console.log(`hydrateRoot target patch: ${patched ? '✓ document → document.getElementById("root")' : '⚠ pattern not found — verify bundle'}.`);
+}

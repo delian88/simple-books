@@ -16,9 +16,6 @@ export default defineConfig({
     server: { 
       preset: 'node-server',
       entry: "server",
-      prerender: {
-        routes: ['/']
-      }
     },
   },
   vite: {
