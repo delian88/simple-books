@@ -59,10 +59,6 @@ const TRUST_LOGOS = [
 ];
 
 function Landing() {
-  const [isVisible, setIsVisible] = useState(false);
-  const [chartHeights, setChartHeights] = useState([40, 65, 45, 70, 55, 80, 60]);
-  const [displayedText, setDisplayedText] = useState("");
-  const [wordIndex, setWordIndex] = useState(0);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [messages, setMessages] = useState<Array<{ text: string; isUser: boolean; timestamp: Date }>>([
     { text: "Hi! I'm your AI Assistant. How can I help you today?", isUser: false, timestamp: new Date() }
@@ -80,8 +76,7 @@ function Landing() {
   const appName = appSettings?.appName || "Ledgerly";
   const appLogo = appSettings?.appLogo || null;
 
-  const heroWords = ["Bookkeeping", "for", "MSMEs", "made", "easy"];
-  const fullText = `Inflows come straight from your bank statement. Outflows come from the receipts already in your pocket. ${appName} turns them into profit and a balance sheet you can actually read.`;
+
 
   // AI Assistant responses
   const getAIResponse = (userMessage: string): string => {
@@ -138,42 +133,6 @@ function Landing() {
     }, 1000 + Math.random() * 1000);
   };
 
-  useEffect(() => {
-    setIsVisible(true);
-
-    // Animate chart bars
-    const interval = setInterval(() => {
-      setChartHeights(prev => prev.map(() => Math.random() * 60 + 40));
-    }, 3000);
-
-    // Typing animation for description - much faster (almost instant)
-    let currentIndex = 0;
-    const typingInterval = setInterval(() => {
-      if (currentIndex <= fullText.length) {
-        setDisplayedText(fullText.slice(0, currentIndex));
-        currentIndex++;
-      } else {
-        clearInterval(typingInterval);
-      }
-    }, 5); // Changed from 15ms to 5ms (3x faster - almost instant)
-
-    // Word by word animation for title - instant reveal
-    const wordInterval = setInterval(() => {
-      setWordIndex(prev => {
-        if (prev < heroWords.length - 1) {
-          return prev + 1;
-        }
-        clearInterval(wordInterval);
-        return prev;
-      });
-    }, 30); // Changed from 100ms to 30ms (instant reveal)
-
-    return () => {
-      clearInterval(interval);
-      clearInterval(typingInterval);
-      clearInterval(wordInterval);
-    };
-  }, []);
 
   useEffect(() => {
     getSession().then(setUser);
@@ -365,8 +324,8 @@ function Landing() {
             }}></div>
           </div>
 
-          {/* Horizontal Scrolling Background Images */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* Horizontal Scrolling Background Images removed for performance */}
+          <div className="hidden">
             {/* Top Scrolling Row */}
             <div className="absolute top-10 left-0 w-full h-32 flex gap-16 animate-scroll-left">
               {/* Image 1: Laptop with Charts */}
@@ -596,7 +555,7 @@ function Landing() {
 
           <div className="relative grid gap-8 lg:grid-cols-2 lg:gap-12">
             {/* Left Column */}
-            <div className={`flex flex-col justify-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12'}`}>
+            <div className="flex flex-col justify-center animate-in fade-in slide-in-from-left duration-500">
               <div className="mb-3 sm:mb-4 inline-flex w-fit items-center gap-2 rounded-full bg-emerald-50 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-emerald-600 animate-in fade-in slide-in-from-left duration-500">
                 <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 animate-in zoom-in duration-300" />
                 <span className="font-medium tracking-wide">
@@ -614,51 +573,15 @@ function Landing() {
                 </span>
               </div>
               <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight text-gray-900 lg:text-6xl">
-                {heroWords.map((word, i) => {
-                  const isHighlighted = i >= 3 && i <= 5;
-                  return (
-                    <span key={i}>
-                      <span
-                        className={`inline-block transition-all duration-300 ${i <= wordIndex
-                          ? 'opacity-100 translate-y-0'
-                          : 'opacity-0 translate-y-4'
-                          } ${isHighlighted ? 'relative text-emerald-600' : ''}`}
-                        style={{
-                          transitionDelay: `${i * 50}ms`,
-                        }}
-                      >
-                        {isHighlighted && i === 3 && (
-                          <span
-                            className="absolute -bottom-2 left-0 h-3 w-full bg-emerald-200 -z-10 transition-all duration-300"
-                            style={{
-                              width: i <= wordIndex ? '100%' : '0%',
-                              transitionDelay: `${(i + 1) * 50}ms`
-                            }}
-                          ></span>
-                        )}
-                        {word.split("").map((char, charIndex) => (
-                          <span
-                            key={charIndex}
-                            className="inline-block hover:text-emerald-500 transition-colors duration-200 hover:scale-110"
-                            style={{
-                              animation: i <= wordIndex ? 'bounce-subtle 0.4s ease-out both' : 'none',
-                              animationDelay: `${i * 50 + charIndex * 15}ms`
-                            }}
-                          >
-                            {char}
-                          </span>
-                        ))}
-                      </span>
-                      {i < heroWords.length - 1 && " "}
-                    </span>
-                  );
-                })}
+                Bookkeeping for{" "}
+                <span className="relative text-emerald-600">
+                  <span className="absolute -bottom-2 left-0 h-3 w-full bg-emerald-200 -z-10"></span>
+                  MSMEs
+                </span>{" "}
+                made easy
               </h1>
-              <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-relaxed text-gray-600 min-h-[100px] sm:min-h-[120px]">
-                <span className="inline-block">
-                  {displayedText}
-                  <span className="inline-block w-0.5 h-5 bg-emerald-600 ml-1 animate-pulse align-middle"></span>
-                </span>
+              <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-relaxed text-gray-600">
+                {appName} turns your bank statements and receipts into profit insights and a live balance sheet — no accounting knowledge needed.
               </p>
               <div className="mt-6 sm:mt-8 flex flex-wrap gap-3 sm:gap-4 animate-in fade-in slide-in-from-left duration-500">
                 {user ? (
@@ -697,7 +620,7 @@ function Landing() {
             </div>
 
             {/* Right Column - Dashboard Preview */}
-            <div className={`relative transition-all duration-1000 delay-300 hidden md:block ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12'}`}>
+            <div className="relative hidden md:block animate-in fade-in slide-in-from-right duration-700 delay-300">
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-100 via-cyan-50 to-blue-100 opacity-60 blur-3xl animate-pulse-slow"></div>
               <div className="relative rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-[1.02] animate-in fade-in zoom-in-95 duration-700 delay-400">
                 <div className="mb-4 flex items-center justify-between border-b pb-4 animate-in fade-in duration-500 delay-500">
@@ -728,10 +651,10 @@ function Landing() {
                     </div>
                   </div>
 
-                  {/* Mock Chart */}
+                  {/* Mock Chart — static bars */}
                   <div className="h-48 rounded-lg bg-gradient-to-br from-emerald-50 to-cyan-50 p-4 animate-in fade-in duration-500 delay-1000">
                     <div className="flex h-full items-end justify-between gap-2">
-                      {chartHeights.map((height, i) => (
+                      {[40, 65, 45, 70, 55, 80, 60].map((height, i) => (
                         <div key={i} className="flex-1 group cursor-pointer">
                           <div
                             className="rounded-t bg-gradient-to-t from-emerald-500 to-emerald-400 transition-all duration-700 ease-out hover:from-emerald-600 hover:to-emerald-500"
