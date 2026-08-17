@@ -106,7 +106,7 @@ export function AppShell({
               </div>
             )}
             <div>
-              <div className="leading-none">{appSettings?.appName || "Ledgerly"}</div>
+              <div className="leading-none">{appSettings?.appName || "Mykobobooks"}</div>
               {user?.role === "Admin" && (
                 <div className="text-[10px] font-medium tracking-widest text-white/50 uppercase mt-1">Super Admin</div>
               )}
@@ -180,7 +180,7 @@ export function AppShell({
           </div>
 
           <div className="px-2 text-[10px] text-white/40 mb-2">
-            <p>© {new Date().getFullYear()} {appSettings?.appName || "Ledgerly"}</p>
+            <p>© {new Date().getFullYear()} {appSettings?.appName || "Mykobobooks"}</p>
             <p>All rights reserved.</p>
           </div>
           <Button variant="ghost" size="sm" onClick={signOut} className="w-full justify-start gap-2 text-white/60 hover:bg-white/10 hover:text-white px-2">

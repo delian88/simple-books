@@ -11,7 +11,7 @@ const STEPS = [
         step: 1,
         icon: Upload,
         title: "Import Your Bank Statements",
-        description: "Connect your bank account or upload statements in CSV format. Ledgerly automatically reads and categorizes your transactions.",
+        description: "Connect your bank account or upload statements in CSV format. Mykobobooks automatically reads and categorizes your transactions.",
         details: [
             "Secure bank connection with 256-bit encryption",
             "Supports all major banks and credit unions",
@@ -35,7 +35,7 @@ const STEPS = [
         step: 3,
         icon: TrendingUp,
         title: "Watch Your Profit Grow",
-        description: "Ledgerly automatically calculates your profit and loss in real-time. No accounting knowledge required.",
+        description: "Mykobobooks automatically calculates your profit and loss in real-time. No accounting knowledge required.",
         details: [
             "Real-time P&L updates",
             "Visual charts and graphs",
@@ -65,7 +65,7 @@ function HowItWorksPage() {
                 <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
                     <Link to="/" className="flex items-center gap-2 group cursor-pointer">
                         <BookOpenText className="h-6 w-6 text-emerald-600 transition-transform group-hover:rotate-12 group-hover:scale-110" />
-                        <span className="font-display text-xl font-semibold">Ledgerly</span>
+                        <span className="font-display text-xl font-semibold">Mykobobooks</span>
                     </Link>
                     <nav className="hidden items-center gap-8 md:flex">
                         <Link to="/features" className="text-sm font-medium text-gray-700 hover:text-gray-900 hover:underline underline-offset-4">
@@ -102,7 +102,7 @@ function HowItWorksPage() {
                         Simple accounting in <span className="text-emerald-600">4 easy steps</span>
                     </h1>
                     <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600">
-                        No accounting degree needed. Ledgerly guides you through every step of managing your books.
+                        No accounting degree needed. Mykobobooks guides you through every step of managing your books.
                     </p>
                 </section>
 
@@ -159,10 +159,10 @@ function HowItWorksPage() {
                 <section className="bg-gray-50 py-20">
                     <div className="mx-auto max-w-7xl px-6 text-center">
                         <h2 className="mb-4 font-display text-3xl font-bold text-gray-900">
-                            See Ledgerly in action
+                            See Mykobobooks in action
                         </h2>
                         <p className="mx-auto mb-12 max-w-2xl text-lg text-gray-600">
-                            Watch how easy it is to manage your books with Ledgerly
+                            Watch how easy it is to manage your books with Mykobobooks
                         </p>
                         <div className="mx-auto aspect-video max-w-4xl overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-100 to-cyan-100 shadow-2xl">
                             <div className="flex h-full items-center justify-center">
@@ -200,7 +200,7 @@ function HowItWorksPage() {
                     <div className="mx-auto max-w-7xl px-6">
                         <div className="flex flex-col items-center gap-3 text-center">
                             <p className="text-sm text-gray-500">
-                                Ledgerly — plain-language bookkeeping for small and medium businesses.
+                                Mykobobooks — plain-language bookkeeping for small and medium businesses.
                             </p>
                             <p className="flex items-center gap-2 text-xs text-gray-400">
                                 Powered by <span className="font-semibold text-emerald-600">Nutech</span>

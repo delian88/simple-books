@@ -35,7 +35,7 @@ function AdminSettings() {
   useEffect(() => {
     if (settings) {
       setFormData({
-        appName: settings.appName || "Ledgerly",
+        appName: settings.appName || "Mykobobooks",
         appLogo: settings.appLogo || "",
         subscriptionPrice: settings.subscriptionPrice || "10",
         smtpEnabled: settings.smtpEnabled === "true",

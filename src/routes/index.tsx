@@ -10,13 +10,13 @@ import { getPublicSettings } from "@/lib/app.functions";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Ledgerly — Simple Accounting for Small Businesses" },
+      { title: "Mykobobooks — Simple Accounting for Small Businesses" },
       {
         name: "description",
         content:
           "Capture inflows from your bank statement, outflows from scanned receipts, see your profit and keep a live balance sheet. Built for SMEs.",
       },
-      { property: "og:title", content: "Ledgerly — Simple Accounting for Small Businesses" },
+      { property: "og:title", content: "Mykobobooks — Simple Accounting for Small Businesses" },
       {
         property: "og:description",
         content: "Bank statement inflows, scanned receipt outflows, profit and balance sheet — in one simple ledger.",
@@ -35,7 +35,7 @@ const FEATURES = [
   {
     icon: Receipt,
     title: "Track your receipts",
-    body: "Snap receipts on the go. Ledgerly extracts the details so you never lose a write-off.",
+    body: "Snap receipts on the go. Mykobobooks extracts the details so you never lose a write-off.",
   },
   {
     icon: PieChart,
@@ -73,7 +73,7 @@ function Landing() {
     queryFn: () => getPublicSettings(),
     staleTime: 1000 * 60 * 5, // cache 5 min
   });
-  const appName = appSettings?.appName || "Ledgerly";
+  const appName = appSettings?.appName || "Mykobobooks";
   const appLogo = appSettings?.appLogo || null;
 
 
@@ -86,7 +86,7 @@ function Landing() {
       return "Our pricing starts at just $10/month for the Starter plan. We also offer Professional ($25/month) and Business ($50/month) plans. All plans include a 14-day free trial with no credit card required!";
     }
     if (lowerMessage.includes("feature") || lowerMessage.includes("what can") || lowerMessage.includes("capabilities")) {
-      return "Ledgerly offers bank statement import, receipt scanning with OCR, real-time profit tracking, balance sheet management, and beautiful financial reports. Everything you need for simple bookkeeping!";
+      return "Mykobobooks offers bank statement import, receipt scanning with OCR, real-time profit tracking, balance sheet management, and beautiful financial reports. Everything you need for simple bookkeeping!";
     }
     if (lowerMessage.includes("how") && lowerMessage.includes("work")) {
       return "It's simple! 1) Import your bank statements, 2) Scan receipts with your phone, 3) Watch your profit update in real-time, 4) Generate reports with one click. No accounting knowledge needed!";
@@ -101,19 +101,19 @@ function Landing() {
       return "We offer email support for all plans, with priority support for Professional users and phone support for Business plans. You can also browse our knowledge base and video tutorials.";
     }
     if (lowerMessage.includes("mobile") || lowerMessage.includes("app") || lowerMessage.includes("phone")) {
-      return "Yes! Ledgerly has mobile apps for both iOS and Android. You can scan receipts, check your profit, and manage transactions on the go.";
+      return "Yes! Mykobobooks has mobile apps for both iOS and Android. You can scan receipts, check your profit, and manage transactions on the go.";
     }
     if (lowerMessage.includes("accountant") || lowerMessage.includes("cpa")) {
-      return "Ledgerly is designed to work seamlessly with your accountant. You can invite them to access your books, export reports in their preferred format, and share real-time data.";
+      return "Mykobobooks is designed to work seamlessly with your accountant. You can invite them to access your books, export reports in their preferred format, and share real-time data.";
     }
     if (lowerMessage.includes("thank") || lowerMessage.includes("thanks")) {
       return "You're welcome! Feel free to ask if you have any other questions. Ready to get started? Click 'Start your ledger' above!";
     }
     if (lowerMessage.includes("hello") || lowerMessage.includes("hi") || lowerMessage.includes("hey")) {
-      return "Hello! 👋 I'm here to help you learn about Ledgerly. What would you like to know?";
+      return "Hello! 👋 I'm here to help you learn about Mykobobooks. What would you like to know?";
     }
 
-    return "Great question! I'd recommend checking out our Features or How It Works pages for more details. Or you can start a free trial to experience Ledgerly firsthand. Is there anything specific you'd like to know?";
+    return "Great question! I'd recommend checking out our Features or How It Works pages for more details. Or you can start a free trial to experience Mykobobooks firsthand. Is there anything specific you'd like to know?";
   };
 
   const handleSendMessage = () => {
@@ -626,7 +626,7 @@ function Landing() {
                 <div className="mb-4 flex items-center justify-between border-b pb-4 animate-in fade-in duration-500 delay-500">
                   <div className="flex items-center gap-2">
                     <BookOpenText className="h-5 w-5 text-emerald-600 animate-in spin-in-0 duration-700 delay-600" />
-                    <span className="font-semibold">Ledgerly</span>
+                    <span className="font-semibold">Mykobobooks</span>
                   </div>
                   <span className="text-sm font-medium text-gray-700">Overview</span>
                 </div>
@@ -749,7 +749,7 @@ function Landing() {
           <div className="mx-auto max-w-7xl px-6">
             <div className="flex flex-col items-center gap-3 text-center">
               <p className="text-sm text-gray-500">
-                Ledgerly — plain-language bookkeeping for small and medium businesses.
+                Mykobobooks — plain-language bookkeeping for small and medium businesses.
               </p>
               <p className="flex items-center gap-2 text-xs text-gray-400">
                 Powered by <span className="font-semibold text-emerald-600">Nutech</span>
@@ -776,7 +776,7 @@ function Landing() {
                 <Sparkles className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="font-semibold">Ledgerly AI</h3>
+                <h3 className="font-semibold">Mykobobooks AI</h3>
                 <p className="text-xs text-emerald-100">Always here to help</p>
               </div>
             </div>
@@ -838,7 +838,7 @@ function Landing() {
               </button>
             </div>
             <p className="mt-2 text-xs text-center text-gray-500">
-              Powered by Ledgerly AI
+              Powered by Mykobobooks AI
             </p>
           </div>
         </div>

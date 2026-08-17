@@ -77,7 +77,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Ledgerly — Simple Accounting for Small Businesses" },
+      { title: "Mykobobooks — Simple Accounting for Small Businesses" },
       {
         name: "description",
         content:
@@ -85,10 +85,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: "keywords", content: "accounting, small business, bookkeeping, ledger, financial statements, trial balance, receipt scanner" },
       { name: "robots", content: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" },
-      { property: "og:title", content: "Ledgerly — Simple Accounting for Small Businesses" },
+      { property: "og:title", content: "Mykobobooks — Simple Accounting for Small Businesses" },
       { property: "og:description", content: "Capture inflows from your bank statement and outflows from scanned receipts, see your profit, and keep a live balance sheet." },
       { property: "og:type", content: "website" },
-      { property: "og:site_name", content: "Ledgerly" },
+      { property: "og:site_name", content: "Mykobobooks" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [

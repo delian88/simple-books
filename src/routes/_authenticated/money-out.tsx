@@ -42,7 +42,7 @@ const moneyOutQuery = queryOptions({
 export const Route = createFileRoute("/_authenticated/money-out")({
   head: () => ({
     meta: [
-      { title: "Money out — Ledgerly" },
+      { title: "Money out — Mykobobooks" },
       { name: "description", content: "Scan third-party receipts to record assets bought, expenses, vendor payments and loan repayments." },
     ],
   }),

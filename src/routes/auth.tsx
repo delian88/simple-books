@@ -13,10 +13,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in — Ledgerly" },
-      { name: "description", content: "Sign in to your Ledgerly books to record inflows, outflows and your balance sheet." },
-      { property: "og:title", content: "Sign in — Ledgerly" },
-      { property: "og:description", content: "Sign in to your Ledgerly books." },
+      { title: "Sign in — Mykobobooks" },
+      { name: "description", content: "Sign in to your Mykobobooks books to record inflows, outflows and your balance sheet." },
+      { property: "og:title", content: "Sign in — Mykobobooks" },
+      { property: "og:description", content: "Sign in to your Mykobobooks books." },
     ],
   }),
   component: AuthPage,
@@ -77,7 +77,7 @@ function AuthPage() {
           ) : (
             <BookOpenText className="h-6 w-6 text-accent" />
           )}
-          {appSettings?.appName || "Ledgerly"}
+          {appSettings?.appName || "Mykobobooks"}
         </Link>
         <Card className="shadow-ledger">
           <CardHeader>

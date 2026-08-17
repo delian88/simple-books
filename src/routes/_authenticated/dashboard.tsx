@@ -50,7 +50,7 @@ const dashboardQuery = queryOptions({
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
-    meta: [{ title: "Dashboard — Ledgerly" }],
+    meta: [{ title: "Dashboard — Mykobobooks" }],
   }),
   component: Dashboard,
 });
