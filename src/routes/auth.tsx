@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { BookOpenText, Eye, EyeOff } from "lucide-react";
+import { BookOpenText, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { login, signup, getSession } from "@/lib/auth.functions";
 import { getPublicSettings } from "@/lib/app.functions";
@@ -81,8 +81,17 @@ function AuthPage() {
   }
 
   return (
-    <div className="ledger-grid flex min-h-screen items-center justify-center px-4 py-12">
+    <div className="ledger-grid flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
+        <div className="mb-6 flex items-center justify-between">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to Home
+          </Link>
+        </div>
+
         <Link to="/" className="mb-6 flex items-center justify-center gap-2 font-display text-2xl">
           {appSettings?.appLogo ? (
             <img src={appSettings.appLogo} alt="App Logo" className="h-8 w-8 object-contain" />
@@ -133,31 +142,37 @@ function AuthPage() {
 
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <div className="relative flex items-center">
-                  <input
+                <div className="relative">
+                  <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     minLength={6}
                     autoComplete={mode === "signin" ? "current-password" : "new-password"}
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 pr-10 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    className="pr-10"
                     required
                   />
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-gray-900 cursor-pointer select-none rounded-md hover:bg-gray-100 transition-colors"
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center p-1.5 text-gray-500 hover:text-gray-900 cursor-pointer select-none rounded-md hover:bg-gray-100 transition-colors z-20"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowPassword(!showPassword);
+                    }}
                     onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setShowPassword((v) => !v);
-                      }}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowPassword(!showPassword);
+                    }}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </div>
                 </div>
+              </div>
 
                 {notice ? <p className="text-sm text-accent-foreground">{notice}</p> : null}
 
