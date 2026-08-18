@@ -177,11 +177,150 @@ switch ($action) {
         break;
 
     case 'getTrialBalance':
-        jsonResponse(["assets" => [], "liabilities" => [], "equity" => [], "revenue" => [], "expenses" => []]);
+        $bals = $pdo->prepare("SELECT l.account_id, SUM(l.debit) as debit, SUM(l.credit) as credit, a.name, a.type, a.sub_type 
+                               FROM journal_lines l 
+                               JOIN journal_entries e ON l.journal_entry_id = e.id 
+                               JOIN accounts a ON l.account_id = a.id
+                               WHERE e.company_id = ? 
+                               GROUP BY l.account_id");
+        $bals->execute([$companyId]);
+        $balances = $bals->fetchAll(PDO::FETCH_ASSOC);
+
+        // Virtualize Sales Invoices
+        $siSum = $pdo->prepare("SELECT SUM(total_amount) as sum FROM sales_invoices WHERE company_id = ? AND status != 'DRAFT'");
+        $siSum->execute([$companyId]);
+        $salesInvoicesTotal = (float)($siSum->fetchColumn() ?: 0);
+        if ($salesInvoicesTotal > 0) {
+            $balances[] = ['id' => 'v-ar', 'name' => 'Accounts Receivable', 'type' => 'ASSET', 'sub_type' => 'Current Asset', 'debit' => $salesInvoicesTotal, 'credit' => 0];
+            $balances[] = ['id' => 'v-sales', 'name' => 'Sales Revenue', 'type' => 'REVENUE', 'sub_type' => 'Operating Revenue', 'debit' => 0, 'credit' => $salesInvoicesTotal];
+        }
+
+        // Virtualize AI Expenses
+        $aiExpSum = $pdo->prepare("SELECT SUM(amount) as sum FROM expenses WHERE company_id = ?");
+        $aiExpSum->execute([$companyId]);
+        $aiExpensesTotal = (float)($aiExpSum->fetchColumn() ?: 0);
+        if ($aiExpensesTotal > 0) {
+            $balances[] = ['id' => 'v-ai-exp', 'name' => 'General Expenses', 'type' => 'EXPENSE', 'sub_type' => 'Operating Expense', 'debit' => $aiExpensesTotal, 'credit' => 0];
+            $balances[] = ['id' => 'v-ai-cash', 'name' => 'Cash/Bank (AI Scanned)', 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => 0, 'credit' => $aiExpensesTotal];
+        }
+
+        // Virtualize Manual Transactions
+        $txSum = $pdo->prepare("SELECT direction, category, SUM(amount) as sum FROM transactions WHERE company_id = ? GROUP BY direction, category");
+        $txSum->execute([$companyId]);
+        foreach ($txSum->fetchAll(PDO::FETCH_ASSOC) as $tx) {
+            $amt = (float)$tx['sum'];
+            if ($amt <= 0) continue;
+            $cat = ucfirst($tx['category']);
+            $id = 'v-tx-' . md5($tx['direction'] . $cat);
+            if ($tx['direction'] === 'inflow') {
+                $balances[] = ['id' => $id.'-cash', 'name' => 'Cash/Bank (Manual)', 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => $amt, 'credit' => 0];
+                $type = (stripos($cat, 'sale') !== false) ? 'REVENUE' : 'EQUITY'; 
+                $balances[] = ['id' => $id.'-cat', 'name' => $cat, 'type' => $type, 'sub_type' => '', 'debit' => 0, 'credit' => $amt];
+            } else {
+                $type = 'EXPENSE';
+                $balances[] = ['id' => $id.'-cat', 'name' => $cat, 'type' => $type, 'sub_type' => '', 'debit' => $amt, 'credit' => 0];
+                $balances[] = ['id' => $id.'-cash', 'name' => 'Cash/Bank (Manual)', 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => 0, 'credit' => $amt];
+            }
+        }
+
+        $totDebit = 0; $totCredit = 0;
+        foreach ($balances as $b) {
+            $totDebit += $b['debit'];
+            $totCredit += $b['credit'];
+        }
+        jsonResponse(['balances' => $balances, 'totalDebit' => $totDebit, 'totalCredit' => $totCredit]);
         break;
 
     case 'getFinancialStatements':
-        jsonResponse(["incomeStatement" => [], "balanceSheet" => []]);
+        $bals = $pdo->prepare("SELECT l.account_id, SUM(l.debit) as debit, SUM(l.credit) as credit, a.name, a.type, a.sub_type 
+                               FROM journal_lines l 
+                               JOIN journal_entries e ON l.journal_entry_id = e.id 
+                               JOIN accounts a ON l.account_id = a.id
+                               WHERE e.company_id = ? 
+                               GROUP BY l.account_id");
+        $bals->execute([$companyId]);
+        $balances = $bals->fetchAll(PDO::FETCH_ASSOC);
+
+        // Add virtuals
+        $siSum = $pdo->prepare("SELECT SUM(total_amount) as sum FROM sales_invoices WHERE company_id = ? AND status != 'DRAFT'");
+        $siSum->execute([$companyId]);
+        $salesInvoicesTotal = (float)($siSum->fetchColumn() ?: 0);
+        if ($salesInvoicesTotal > 0) {
+            $balances[] = ['id' => 'v-ar', 'name' => 'Accounts Receivable', 'type' => 'ASSET', 'sub_type' => 'Current Asset', 'debit' => $salesInvoicesTotal, 'credit' => 0];
+            $balances[] = ['id' => 'v-sales', 'name' => 'Sales Revenue', 'type' => 'REVENUE', 'sub_type' => 'Operating Revenue', 'debit' => 0, 'credit' => $salesInvoicesTotal];
+        }
+
+        $aiExpSum = $pdo->prepare("SELECT SUM(amount) as sum FROM expenses WHERE company_id = ?");
+        $aiExpSum->execute([$companyId]);
+        $aiExpensesTotal = (float)($aiExpSum->fetchColumn() ?: 0);
+        if ($aiExpensesTotal > 0) {
+            $balances[] = ['id' => 'v-ai-exp', 'name' => 'General Expenses', 'type' => 'EXPENSE', 'sub_type' => 'Operating Expense', 'debit' => $aiExpensesTotal, 'credit' => 0];
+            $balances[] = ['id' => 'v-ai-cash', 'name' => 'Cash/Bank', 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => 0, 'credit' => $aiExpensesTotal];
+        }
+
+        $txSum = $pdo->prepare("SELECT direction, category, SUM(amount) as sum FROM transactions WHERE company_id = ? GROUP BY direction, category");
+        $txSum->execute([$companyId]);
+        foreach ($txSum->fetchAll(PDO::FETCH_ASSOC) as $tx) {
+            $amt = (float)$tx['sum'];
+            if ($amt <= 0) continue;
+            $cat = ucfirst($tx['category']);
+            if ($tx['direction'] === 'inflow') {
+                $balances[] = ['id' => uniqid(), 'name' => 'Cash/Bank', 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => $amt, 'credit' => 0];
+                $type = (stripos($cat, 'sale') !== false) ? 'REVENUE' : 'EQUITY'; 
+                $balances[] = ['id' => uniqid(), 'name' => $cat, 'type' => $type, 'sub_type' => '', 'debit' => 0, 'credit' => $amt];
+            } else {
+                $type = 'EXPENSE';
+                $balances[] = ['id' => uniqid(), 'name' => $cat, 'type' => $type, 'sub_type' => '', 'debit' => $amt, 'credit' => 0];
+                $balances[] = ['id' => uniqid(), 'name' => 'Cash/Bank', 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => 0, 'credit' => $amt];
+            }
+        }
+
+        $incStmt = ['revenue' => 0, 'cogs' => 0, 'grossProfit' => 0, 'expenses' => 0, 'netProfit' => 0, 'details' => []];
+        $balSheet = ['assets' => 0, 'liabilities' => 0, 'equity' => 0, 'details' => []];
+
+        foreach ($balances as $b) {
+            $net = $b['debit'] - $b['credit'];
+            $type = strtoupper($b['type'] ?? '');
+            $item = ['id' => $b['id'], 'name' => $b['name'], 'type' => $type, 'subType' => $b['sub_type']];
+            
+            if ($type === 'REVENUE') {
+                $val = $b['credit'] - $b['debit']; // Revenue has credit normal balance
+                $incStmt['revenue'] += $val;
+                $item['balance'] = $val;
+                $incStmt['details'][] = $item;
+            } elseif ($type === 'EXPENSE') {
+                $val = $b['debit'] - $b['credit'];
+                if (stripos($b['sub_type'] ?? '', 'Cost of Goods') !== false) {
+                    $incStmt['cogs'] += $val;
+                } else {
+                    $incStmt['expenses'] += $val;
+                }
+                $item['balance'] = $val;
+                $incStmt['details'][] = $item;
+            } elseif ($type === 'ASSET') {
+                $val = $b['debit'] - $b['credit'];
+                $balSheet['assets'] += $val;
+                $item['balance'] = $val;
+                $balSheet['details'][] = $item;
+            } elseif ($type === 'LIABILITY') {
+                $val = $b['credit'] - $b['debit'];
+                $balSheet['liabilities'] += $val;
+                $item['balance'] = $val;
+                $balSheet['details'][] = $item;
+            } elseif ($type === 'EQUITY') {
+                $val = $b['credit'] - $b['debit'];
+                $balSheet['equity'] += $val;
+                $item['balance'] = $val;
+                $balSheet['details'][] = $item;
+            }
+        }
+
+        $incStmt['grossProfit'] = $incStmt['revenue'] - $incStmt['cogs'];
+        $incStmt['netProfit'] = $incStmt['grossProfit'] - $incStmt['expenses'];
+        
+        $balSheet['equity'] += $incStmt['netProfit']; // Current Year Earnings
+
+        jsonResponse(["incomeStatement" => $incStmt, "balanceSheet" => $balSheet]);
         break;
 
     default:
