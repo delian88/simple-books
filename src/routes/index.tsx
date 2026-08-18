@@ -660,12 +660,12 @@ function Landing() {
                 </span>
               </div>
               <h1 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold leading-tight tracking-tight text-gray-900 lg:text-6xl">
-                Bookkeeping for{" "}
+                Know your business{" "}
                 <span className="relative text-emerald-600">
                   <span className="absolute -bottom-2 left-0 h-3 w-full bg-emerald-200 -z-10"></span>
-                  MSMEs
+                  moni
                 </span>{" "}
-                made easy
+                to the last kobo
               </h1>
               <p className="mt-4 sm:mt-6 text-base sm:text-lg leading-relaxed text-gray-600">
                 {appName} turns your bank statements and receipts into profit insights and a live balance sheet — no accounting knowledge needed.
