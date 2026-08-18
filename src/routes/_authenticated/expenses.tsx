@@ -150,8 +150,8 @@ function ExpensesPage() {
     }
   };
 
-  const recognitionRef = React.useRef<any>(null);
-  const voiceTextRef = React.useRef<string>("");
+  const recognitionRef = useRef<any>(null);
+  const voiceTextRef = useRef<string>("");
 
   const handleVoiceEntry = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
