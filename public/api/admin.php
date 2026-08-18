@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // admin.php
 require_once 'db.php';
 define('AUTH_AS_LIB', true);
@@ -6,14 +6,14 @@ require_once 'auth.php';
 
 $action = $_GET['action'] ?? '';
 
-// Admin check â€” user must have role = 'admin' in users table
+// Admin check — user must have role = 'admin' in users table
 function ensureAdmin($pdo): string {
     $userId = requireAuth();
     $stmt = $pdo->prepare("SELECT role FROM users WHERE id = ? LIMIT 1");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
     if (!$user || $user['role'] !== 'admin') {
-        jsonResponse(['error' => 'Forbidden â€” admin only'], 403);
+        jsonResponse(['error' => 'Forbidden — admin only'], 403);
     }
     return $userId;
 }
@@ -31,14 +31,14 @@ function upsertSetting($pdo, string $key, string $value): void {
 switch ($action) {
 
     case 'getSettings':
-        // Public-ish â€” no strict admin check so the landing page can call it too
+        // Public-ish — no strict admin check so the landing page can call it too
         $stmt = $pdo->query("SELECT `key`, `value` FROM system_settings");
         $map  = [];
         foreach ($stmt->fetchAll() as $row) {
             $map[$row['key']] = $row['value'];
         }
         jsonResponse([
-            'appName'            => $map['app_name']            ?? 'Mykobobooks',
+            'appName'            => $map['app_name']            ?? 'My Kobobooks',
             'appLogo'            => $map['app_logo']            ?? null,
             'appTagline'         => $map['app_tagline']         ?? '',
             'subscriptionPrice'  => $map['subscription_price']  ?? '10',

@@ -1,4 +1,4 @@
-const TOKEN_KEY = 'Mykobobooks_token';
+const TOKEN_KEY = 'My Kobobooks_token';
 
 /** Save the auth token returned by PHP to localStorage */
 export function saveToken(token: string) {

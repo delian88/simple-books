@@ -14,7 +14,7 @@ function AboutPage() {
                 <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
                     <Link to="/" className="flex items-center gap-2 group cursor-pointer">
                         <BookOpenText className="h-6 w-6 text-emerald-600 transition-transform group-hover:rotate-12 group-hover:scale-110" />
-                        <span className="font-display text-xl font-semibold">Mykobobooks</span>
+                        <span className="font-display text-xl font-semibold">My Kobobooks</span>
                     </Link>
                     <nav className="hidden items-center gap-8 md:flex">
                         <Link to="/features" className="text-sm font-medium text-gray-700 hover:text-gray-900 hover:underline underline-offset-4">
@@ -98,16 +98,16 @@ function AboutPage() {
                         </h2>
                         <div className="space-y-6 text-lg text-gray-700">
                             <p>
-                                Mykobobooks was born from a simple frustration: why is accounting software so complicated? As small business owners ourselves, we struggled with traditional accounting tools that required deep financial knowledge and hours of training.
+                                My Kobobooks was born from a simple frustration: why is accounting software so complicated? As small business owners ourselves, we struggled with traditional accounting tools that required deep financial knowledge and hours of training.
                             </p>
                             <p>
                                 We realized that most small business owners don't need complex double-entry bookkeeping systems. They need to know three things: how much money came in, how much went out, and what's left over. Everything else is just noise.
                             </p>
                             <p>
-                                So we built Mykobobooks—accounting software that speaks plain English, not accounting jargon. No debits and credits. No confusing journal entries. Just simple, straightforward bookkeeping that anyone can understand.
+                                So we built My Kobobooks—accounting software that speaks plain English, not accounting jargon. No debits and credits. No confusing journal entries. Just simple, straightforward bookkeeping that anyone can understand.
                             </p>
                             <p>
-                                Today, Mykobobooks serves thousands of small businesses worldwide, helping them stay on top of their finances without keeping an accountant on retainer.
+                                Today, My Kobobooks serves thousands of small businesses worldwide, helping them stay on top of their finances without keeping an accountant on retainer.
                             </p>
                         </div>
                     </div>
@@ -146,7 +146,7 @@ function AboutPage() {
                             Have questions? We'd love to hear from you. Send us a message and we'll respond as soon as possible.
                         </p>
                         <Button asChild size="lg" variant="secondary">
-                            <a href="mailto:hello@Mykobobooks.app">
+                            <a href="mailto:hello@My Kobobooks.app">
                                 Contact us <ArrowRight className="ml-2 h-5 w-5" />
                             </a>
                         </Button>
@@ -158,7 +158,7 @@ function AboutPage() {
                     <div className="mx-auto max-w-7xl px-6">
                         <div className="flex flex-col items-center gap-3 text-center">
                             <p className="text-sm text-gray-500">
-                                Mykobobooks — plain-language bookkeeping for small and medium businesses.
+                                My Kobobooks — plain-language bookkeeping for small and medium businesses.
                             </p>
                             <p className="flex items-center gap-2 text-xs text-gray-400">
                                 Powered by <span className="font-semibold text-emerald-600">Nutech</span>

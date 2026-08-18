@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Login Test</title>
+  <style>
+    body { font-family: sans-serif; max-width: 400px; margin: 60px auto; padding: 20px; }
+    input { display:block; width:100%; margin:8px 0; padding:10px; font-size:16px; border:1px solid #ccc; border-radius:6px; }
+    button { display:block; width:100%; padding:12px; font-size:16px; background:#1a6b3a; color:white; border:none; border-radius:6px; cursor:pointer; margin-top:12px; }
+    button:hover { background:#155c31; }
+    #result { margin-top:20px; padding:12px; border-radius:6px; white-space:pre-wrap; font-size:14px; }
+    .ok { background:#d4edda; color:#155724; }
+    .err { background:#f8d7da; color:#721c24; }
+  </style>
+</head>
+<body>
+  <h2>My KoboBooks – Direct Login Test</h2>
+  <p style="color:#666;font-size:13px">This page tests the login API directly, bypassing React entirely.</p>
+  <label>Email</label>
+  <input type="email" id="email" value="nutech2025@gmail.com"/>
+  <label>Password</label>
+  <input type="password" id="password" value="Admin@webmaster$1"/>
+  <button id="btn" onclick="doLogin()">Test Login</button>
+  <div id="result"></div>
+
+  <script>
+    async function doLogin() {
+      const btn = document.getElementById('btn');
+      const result = document.getElementById('result');
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      btn.textContent = 'Testing…';
+      btn.disabled = true;
+      result.textContent = '';
+      result.className = '';
+
+      try {
+        const res = await fetch('/api/auth.php?action=login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const json = await res.json();
+        if (res.ok && json.token) {
+          localStorage.setItem('My Kobobooks_token', json.token);
+          result.textContent = '✅ LOGIN SUCCESS!\n\nToken saved. Redirecting to /dashboard in 2s…\n\n' + JSON.stringify(json, null, 2);
+          result.className = 'ok';
+          setTimeout(() => { window.location.href = '/dashboard'; }, 2000);
+        } else {
+          result.textContent = '❌ Login failed:\n' + JSON.stringify(json, null, 2);
+          result.className = 'err';
+        }
+      } catch(e) {
+        result.textContent = '❌ Network error: ' + e.message;
+        result.className = 'err';
+      } finally {
+        btn.textContent = 'Test Login';
+        btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

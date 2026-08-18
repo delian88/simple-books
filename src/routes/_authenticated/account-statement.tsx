@@ -118,7 +118,7 @@ function AccountStatement() {
               <div className="flex justify-between items-start">
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900 font-display">General Ledger</h1>
-                  <p className="text-gray-500 mt-1">Mykobobooks Systems Inc.</p>
+                  <p className="text-gray-500 mt-1">My Kobobooks Systems Inc.</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-500">Period</p>
@@ -192,7 +192,7 @@ function AccountStatement() {
             {/* Print Footer */}
             <div className="hidden print:block mt-12 text-center text-sm text-gray-500">
               <p>Generated on {format(new Date(), "MMM d, yyyy 'at' h:mm a")}</p>
-              <p>Powered by Mykobobooks</p>
+              <p>Powered by My Kobobooks</p>
             </div>
           </div>
         )}

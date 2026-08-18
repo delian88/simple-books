@@ -7,7 +7,7 @@ import { aiChatQuery } from "@/lib/ai.functions";
 export function AIChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{ role: string; content: string }[]>([
-    { role: "assistant", content: "Hi! I'm your Mykobobooks AI assistant. Ask me anything about your finances or accounting!" }
+    { role: "assistant", content: "Hi! I'm your My Kobobooks AI assistant. Ask me anything about your finances or accounting!" }
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -58,7 +58,7 @@ export function AIChatWidget() {
       <div className="bg-[#0B3D2B] text-white p-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Bot className="h-5 w-5" />
-          <span className="font-semibold">Mykobobooks AI</span>
+          <span className="font-semibold">My Kobobooks AI</span>
         </div>
         <button onClick={() => setIsOpen(false)} className="text-white/80 hover:text-white">
           <X className="h-5 w-5" />

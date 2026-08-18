@@ -16,7 +16,7 @@ function AboutPage() {
                 <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
                     <Link to="/" className="flex items-center gap-2 group cursor-pointer">
                         <BookOpenText className="h-6 w-6 text-emerald-600 transition-transform group-hover:rotate-12 group-hover:scale-110" />
-                        <span className="font-display text-xl font-semibold">Mykobobooks</span>
+                        <span className="font-display text-xl font-semibold">My Kobobooks</span>
                     </Link>
                     <nav className="hidden items-center gap-8 md:flex">
                         <Link to="/features" className="text-sm font-medium text-gray-700 hover:text-gray-900 hover:underline underline-offset-4">
@@ -115,7 +115,7 @@ function AboutPage() {
                     <div className="mx-auto max-w-7xl px-6">
                         <div className="flex flex-col items-center gap-3 text-center">
                             <p className="text-sm text-gray-500">
-                                Mykobobooks — plain-language bookkeeping for small and medium businesses.
+                                My Kobobooks — plain-language bookkeeping for small and medium businesses.
                             </p>
                             <p className="flex items-center gap-2 text-xs text-gray-400">
                                 Powered by <span className="font-semibold text-emerald-600">Nutech</span>
