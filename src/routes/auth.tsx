@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpenText, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -19,9 +19,7 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in — My KoboBooks" },
-      { name: "description", content: "Sign in to your My KoboBooks books to record inflows, outflows and your balance sheet." },
-      { property: "og:title", content: "Sign in — My KoboBooks" },
-      { property: "og:description", content: "Sign in to your My KoboBooks books." },
+      { name: "description", content: "Sign in to your My KoboBooks account." },
     ],
   }),
   component: AuthPage,
@@ -29,23 +27,32 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const search = Route.useSearch();
-  const [mode, setMode] = useState<"signin" | "signup">(search.mode === "signup" ? "signup" : "signin");
+  const [mode, setMode] = useState<"signin" | "signup">(
+    search.mode === "signup" ? "signup" : "signin"
+  );
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const isMounted = useRef(true);
 
   useEffect(() => {
-    if (search.mode) {
-      setMode(search.mode === "signup" ? "signup" : "signin");
-    }
+    isMounted.current = true;
+    return () => { isMounted.current = false; };
+  }, []);
+
+  useEffect(() => {
+    setMode(search.mode === "signup" ? "signup" : "signin");
   }, [search.mode]);
 
+  // Redirect if already logged in
   useEffect(() => {
     getSession().then((user) => {
-      if (user) window.location.href = "/dashboard";
+      if (user && isMounted.current) {
+        window.location.replace("/dashboard");
+      }
     });
   }, []);
 
@@ -54,37 +61,58 @@ function AuthPage() {
     queryFn: () => getPublicSettings(),
   });
 
-  async function handleLogin() {
-    console.log("🔵 handleLogin fired, mode:", mode, "email:", email);
-    setBusy(true);
-    setNotice("");
+  async function handleSignIn() {
+    console.log("🔵 handleSignIn called", { email, password: password ? "***" : "(empty)" });
+    if (!email || !password) {
+      setErrorMsg("Please enter your email and password.");
+      return;
+    }
+    setLoading(true);
+    setErrorMsg("");
     try {
-      if (mode === "signup") {
-        await signup({ data: { email, password, businessName: businessName.trim() || "My Business" } });
-        toast.success("Account created! 14-day free trial started.");
-        window.location.replace("/dashboard");
-      } else {
-        console.log("🔵 Calling login API...");
-        const res = await login({ data: { email, password } });
-        console.log("🔵 Login API response:", res);
-        if (!res || !res.token) throw new Error("No token returned from server");
-        console.log("✅ Login success, redirecting to dashboard...");
-        toast.success("Welcome back!");
-        window.location.replace("/dashboard");
-      }
-    } catch (error) {
-      console.error("❌ Login error:", error);
-      const msg = error instanceof Error ? error.message : "Something went wrong.";
+      console.log("🔵 Calling login API...");
+      const res = await login({ data: { email, password } });
+      console.log("🔵 Login API response:", res);
+      if (!res?.token) throw new Error("No token returned from server.");
+      console.log("✅ Login success! Redirecting...");
+      toast.success("Welcome back!");
+      window.location.replace("/dashboard");
+    } catch (err) {
+      console.error("❌ Login failed:", err);
+      const msg = err instanceof Error ? err.message : "Sign in failed. Please try again.";
+      setErrorMsg(msg);
       toast.error(msg);
-      setNotice(msg);
-      setBusy(false);
+      setLoading(false);
     }
   }
+
+  async function handleSignUp() {
+    if (!email || !password) {
+      setErrorMsg("Please enter your email and password.");
+      return;
+    }
+    setLoading(true);
+    setErrorMsg("");
+    try {
+      await signup({ data: { email, password, businessName: businessName.trim() || "My Business" } });
+      toast.success("Account created! Welcome to My KoboBooks.");
+      window.location.replace("/dashboard");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Sign up failed. Please try again.";
+      setErrorMsg(msg);
+      toast.error(msg);
+      setLoading(false);
+    }
+  }
+
+  const handleSubmit = mode === "signin" ? handleSignIn : handleSignUp;
 
   return (
     <div className="ledger-grid flex min-h-screen flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="mb-6 flex items-center justify-between">
+
+        {/* Back to Home */}
+        <div className="mb-6">
           <Link
             to="/"
             className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -93,6 +121,7 @@ function AuthPage() {
           </Link>
         </div>
 
+        {/* App Logo */}
         <Link to="/" className="mb-6 flex items-center justify-center gap-2 font-display text-2xl">
           {appSettings?.appLogo ? (
             <img src={appSettings.appLogo} alt="App Logo" className="h-8 w-8 object-contain" />
@@ -101,6 +130,7 @@ function AuthPage() {
           )}
           {appSettings?.appName || "My KoboBooks"}
         </Link>
+
         <Card className="shadow-ledger">
           <CardHeader>
             <CardTitle className="font-display text-2xl">
@@ -112,96 +142,95 @@ function AuthPage() {
                 : "Create an account — your ledger stays private to you."}
             </CardDescription>
           </CardHeader>
+
           <CardContent className="space-y-4">
-
-
-            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
-              {mode === "signup" ? (
-                <div className="grid gap-2">
-                  <Label htmlFor="business">Business name</Label>
-                  <Input
-                    id="business"
-                    maxLength={120}
-                    placeholder="Adaeze Trading Ltd"
-                    value={businessName}
-                    onChange={(event) => setBusinessName(event.target.value)}
-                  />
-                </div>
-              ) : null}
-
+            {/* Business name (signup only) */}
+            {mode === "signup" && (
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="business">Business name</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  required
+                  id="business"
+                  maxLength={120}
+                  placeholder="Adaeze Trading Ltd"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
                 />
               </div>
+            )}
 
-              <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    minLength={6}
-                    autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    className="pr-10"
-                    required
-                  />
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center p-1.5 text-gray-500 hover:text-gray-900 cursor-pointer select-none rounded-md hover:bg-gray-100 transition-colors z-20"
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowPassword(!showPassword);
-                    }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowPassword(!showPassword);
-                    }}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </div>
-                </div>
+            {/* Email */}
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            {/* Password */}
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-gray-500 hover:text-gray-900 cursor-pointer rounded-md hover:bg-gray-100 transition-colors"
+                  onClick={() => setShowPassword((v) => !v)}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
               </div>
+            </div>
 
-                {notice ? <p className="text-sm text-accent-foreground">{notice}</p> : null}
+            {/* Error message */}
+            {errorMsg && (
+              <p className="text-sm text-red-600 font-medium">{errorMsg}</p>
+            )}
 
-                <Button type="button" className="w-full" disabled={busy} onClick={handleLogin}>
-                  {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
-                </Button>
-              </form>
+            {/* Submit button */}
+            <Button
+              type="button"
+              className="w-full"
+              disabled={loading}
+              onClick={handleSubmit}
+            >
+              {loading ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
+            </Button>
 
-              <div className="pt-2 text-center">
-                {mode === "signin" ? (
-                  <Link
-                    to="/auth"
-                    search={{ mode: "signup" }}
-                    className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-700 underline underline-offset-4 cursor-pointer p-2 transition-colors"
-                  >
-                    New here? Create an account
-                  </Link>
-                ) : (
-                  <Link
-                    to="/auth"
-                    search={{ mode: "signin" }}
-                    className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-700 underline underline-offset-4 cursor-pointer p-2 transition-colors"
-                  >
-                    Already have an account? Sign in
-                  </Link>
-                )}
-              </div>
-            </CardContent>
+            {/* Mode switch */}
+            <div className="pt-2 text-center">
+              {mode === "signin" ? (
+                <Link
+                  to="/auth"
+                  search={{ mode: "signup" }}
+                  className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-700 underline underline-offset-4 transition-colors"
+                >
+                  New here? Create an account
+                </Link>
+              ) : (
+                <Link
+                  to="/auth"
+                  search={{ mode: "signin" }}
+                  className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-700 underline underline-offset-4 transition-colors"
+                >
+                  Already have an account? Sign in
+                </Link>
+              )}
+            </div>
+          </CardContent>
         </Card>
       </div>
     </div>
