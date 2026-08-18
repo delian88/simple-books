@@ -150,6 +150,9 @@ function ExpensesPage() {
     }
   };
 
+  const recognitionRef = React.useRef<any>(null);
+  const voiceTextRef = React.useRef<string>("");
+
   const handleVoiceEntry = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -158,8 +161,12 @@ function ExpensesPage() {
     }
 
     const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
+    voiceTextRef.current = "";
+
     recognition.lang = 'en-US';
-    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.interimResults = true;
     recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
@@ -169,69 +176,86 @@ function ExpensesPage() {
       setUploadProgress("Listening... Speak your expense clearly.");
     };
 
-    recognition.onresult = async (event: any) => {
-      setIsRecording(false);
-      const text = event.results[0][0].transcript;
-      
-      if (!text || text.trim().length === 0) {
-        toast.error("Didn't catch any speech. Please try again.");
-        setUploadModalOpen(false);
-        return;
-      }
-      
-      setIsUploading(true);
-      setUploadProgress(`Heard: "${text}"... Detecting transaction details...`);
-      
-      try {
-        const result = await doVoice({ data: { text } });
-        setUploadProgress("Recording transaction automatically...");
-        
-        // Try to find a matching account based on category name
-        const matchedAccount = expenseAccounts.find((a: any) => 
-          a.label.toLowerCase().includes((result.category || '').toLowerCase())
-        );
-        const accountId = result.accountId || matchedAccount?.value || expenseAccounts[0]?.value;
-
-        const saveRes = await doSave({
-          data: {
-            vendor: result.vendor,
-            amount: Number(result.amount),
-            date: new Date(result.date).toISOString().split('T')[0],
-            accountId: accountId,
-            bankAccountId: selectedBankId || bankAccounts[0]?.value,
-            description: `Voice note: "${text}"`
-          }
-        });
-        qc.invalidateQueries({ queryKey: ["expenses"] });
-        qc.invalidateQueries({ queryKey: ["money-out"] });
-        qc.invalidateQueries({ queryKey: ["transactions"] });
-        if (saveRes.isFlagged) {
-          toast.warning(`Auto-recorded with flag: ${saveRes.flagReason}`, { duration: 8000 });
-          addNotification({ type: "warning", title: "⚠️ Receipt flagged", body: `${result.vendor} — ${saveRes.flagReason}` });
+    recognition.onresult = (event: any) => {
+      let finalStr = '';
+      let interimStr = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalStr += event.results[i][0].transcript + ' ';
         } else {
-          toast.success(`Transaction detected & recorded: ${result.vendor} (₦${Number(result.amount).toLocaleString()})`);
-          addNotification({ type: "success", title: "🎤 Voice expense recorded", body: `${result.vendor} — ₦${Number(result.amount).toLocaleString()}` });
+          interimStr += event.results[i][0].transcript;
         }
-        setParsedData({ ...result, description: `Voice note: "${text}"`, recorded: true, expenseId: saveRes.expenseId });
-      } catch (err: any) {
-        console.error("Voice Entry Error:", err);
-        toast.error(`Failed to process voice entry: ${err.message || 'Unknown error'}`);
-        setUploadModalOpen(false);
-      } finally {
-        setIsUploading(false);
       }
+      voiceTextRef.current += finalStr;
+      setUploadProgress(`Heard: "${voiceTextRef.current}${interimStr}"`);
     };
 
     recognition.onerror = (event: any) => {
-      setIsRecording(false);
-      toast.error("Voice recognition failed: " + event.error);
+      if (event.error !== 'no-speech') {
+        toast.error("Voice recognition failed: " + event.error);
+      }
     };
 
     recognition.onend = () => {
-      setIsRecording(false);
+      // Don't auto close if they just paused, let the user click stop.
+      // But if it ends unexpectedly, we just keep isRecording true so they can hit stop.
+      // Actually we should set it false if they closed the modal.
     };
 
     recognition.start();
+  };
+
+  const handleStopAndAnalyze = async () => {
+    recognitionRef.current?.stop();
+    setIsRecording(false);
+    
+    const text = voiceTextRef.current.trim();
+    if (!text || text.length === 0) {
+      toast.error("Didn't catch any speech. Please try again.");
+      setUploadModalOpen(false);
+      return;
+    }
+    
+    setIsUploading(true);
+    setUploadProgress(`Analyzing: "${text}"...`);
+    
+    try {
+      const result = await doVoice({ data: { text } });
+      setUploadProgress("Recording transaction automatically...");
+      
+      const matchedAccount = expenseAccounts.find((a: any) => 
+        a.label.toLowerCase().includes((result.category || '').toLowerCase())
+      );
+      const accountId = result.accountId || matchedAccount?.value || expenseAccounts[0]?.value;
+
+      const saveRes = await doSave({
+        data: {
+          vendor: result.vendor,
+          amount: Number(result.amount),
+          date: new Date(result.date).toISOString().split('T')[0],
+          accountId: accountId,
+          bankAccountId: selectedBankId || bankAccounts[0]?.value,
+          description: `Voice note: "${text}"`
+        }
+      });
+      qc.invalidateQueries({ queryKey: ["expenses"] });
+      qc.invalidateQueries({ queryKey: ["money-out"] });
+      qc.invalidateQueries({ queryKey: ["transactions"] });
+      if (saveRes.isFlagged) {
+        toast.warning(`Auto-recorded with flag: ${saveRes.flagReason}`, { duration: 8000 });
+        addNotification({ type: "warning", title: "⚠️ Receipt flagged", body: `${result.vendor} — ${saveRes.flagReason}` });
+      } else {
+        toast.success(`Transaction detected & recorded: ${result.vendor} (₦${Number(result.amount).toLocaleString()})`);
+        addNotification({ type: "success", title: "🎤 Voice expense recorded", body: `${result.vendor} — ₦${Number(result.amount).toLocaleString()}` });
+      }
+      setParsedData({ ...result, description: `Voice note: "${text}"`, recorded: true, expenseId: saveRes.expenseId });
+    } catch (err: any) {
+      console.error("Voice Entry Error:", err);
+      toast.error(`Failed to process voice entry: ${err.message || 'Unknown error'}`);
+      setUploadModalOpen(false);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -667,8 +691,14 @@ function ExpensesPage() {
                       <div className="text-center">
                         <p className="text-lg font-medium text-gray-900 animate-pulse">Listening...</p>
                         <p className="text-sm text-gray-500 mt-1">Speak your expense details clearly.</p>
-                        <p className="text-xs text-gray-400 mt-1">"I spent 5000 naira on lunch at McDonald's"</p>
+                        <p className="text-xs text-emerald-600 font-medium mt-3">{uploadProgress}</p>
                       </div>
+                      <Button 
+                        onClick={handleStopAndAnalyze} 
+                        className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full px-8 shadow-md"
+                      >
+                        Stop & Analyze
+                      </Button>
                     </div>
                   ) : (
                     <div
