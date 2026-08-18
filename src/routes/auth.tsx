@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpenText, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -36,21 +36,17 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-  const isMounted = useRef(true);
-
-  useEffect(() => {
-    isMounted.current = true;
-    return () => { isMounted.current = false; };
-  }, []);
 
   useEffect(() => {
     setMode(search.mode === "signup" ? "signup" : "signin");
+    // Reset loading whenever mode changes (guard against stuck state)
+    setLoading(false);
   }, [search.mode]);
 
   // Redirect if already logged in
   useEffect(() => {
     getSession().then((user) => {
-      if (user && isMounted.current) {
+      if (user) {
         window.location.replace("/dashboard");
       }
     });
