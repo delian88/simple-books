@@ -249,12 +249,12 @@ export function AppShell({
       {/* Main Content */}
       <div className="flex h-full flex-1 min-w-0 flex-col lg:pl-64 print:pl-0">
         {/* Main Header */}
-        <header className="flex h-14 w-full shrink-0 items-center justify-between border-b border-border/40 bg-background/95 px-4 lg:h-20 lg:px-8 print:hidden">
-          <div className="flex items-center gap-3">
-            <button className="lg:hidden text-muted-foreground hover:text-foreground" onClick={() => setIsMobileMenuOpen(true)}>
+        <header className="flex min-h-[3.5rem] py-3 lg:h-20 lg:py-0 w-full shrink-0 items-center justify-between border-b border-border/40 bg-background/95 px-4 lg:px-8 print:hidden">
+          <div className="flex items-center gap-3 min-w-0">
+            <button className="lg:hidden shrink-0 text-muted-foreground hover:text-foreground" onClick={() => setIsMobileMenuOpen(true)}>
               <Menu className="h-5 w-5" />
             </button>
-            <div>
+            <div className="min-w-0">
               {isDashboard ? (
                 <>
                   <p className="text-xs font-medium text-muted-foreground lg:text-sm">Welcome back, 👋</p>
