@@ -75,6 +75,25 @@ export function AppShell({
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
+  // Theme state
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("theme") === "dark" || 
+        (!localStorage.getItem("theme") && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [isDarkMode]);
 
   async function signOut() {
     await logout();
@@ -187,11 +206,17 @@ export function AppShell({
           )}
 
           <div className="flex items-center rounded-full bg-black/20 p-1 mb-6">
-            <button className="flex-1 rounded-full bg-[#145C42] py-1.5 text-xs font-medium flex items-center justify-center gap-1.5">
+            <button 
+              onClick={() => setIsDarkMode(false)}
+              className={`flex-1 rounded-full py-1.5 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${!isDarkMode ? "bg-[#145C42] text-white" : "text-white/60 hover:text-white"}`}
+            >
               <Sun className="h-3.5 w-3.5" />
               Light
             </button>
-            <button className="flex-1 rounded-full py-1.5 text-xs font-medium text-white/60 flex items-center justify-center gap-1.5 hover:text-white">
+            <button 
+              onClick={() => setIsDarkMode(true)}
+              className={`flex-1 rounded-full py-1.5 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${isDarkMode ? "bg-[#145C42] text-white" : "text-white/60 hover:text-white"}`}
+            >
               <Moon className="h-3.5 w-3.5" />
               Dark
             </button>
