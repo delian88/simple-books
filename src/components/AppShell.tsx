@@ -27,6 +27,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AIChatWidget } from "@/components/AIChatWidget";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 const MAIN_NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -75,6 +77,7 @@ export function AppShell({
   const navigate = useNavigate();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   
   // Theme state
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -95,6 +98,17 @@ export function AppShell({
     }
   }, [isDarkMode]);
 
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsSearchOpen((open) => !open);
+      }
+    };
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
+
   async function signOut() {
     await logout();
     navigate({ to: "/auth" });
@@ -102,9 +116,6 @@ export function AppShell({
 
   // Determine if it's the dashboard to show the custom header title instead of the page title
   const isDashboard = location.pathname === "/dashboard" || location.pathname === "/admin";
-
-  // State for Notifications Popover
-  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
   // Derive displayName from user details
   const displayName =
@@ -262,9 +273,11 @@ export function AppShell({
               <Input 
                 type="search" 
                 placeholder="Search anything..." 
-                className="pl-9 bg-muted/30 border-muted rounded-full h-9 focus-visible:ring-1" 
+                className="pl-9 bg-muted/30 border-muted rounded-full h-9 focus-visible:ring-1 cursor-pointer" 
+                onClick={() => setIsSearchOpen(true)}
+                readOnly
               />
-              <div className="absolute right-3 top-2.5 flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
+              <div className="absolute right-3 top-2.5 flex items-center gap-1 text-[10px] text-muted-foreground font-medium pointer-events-none">
                 <kbd className="rounded border bg-muted px-1">⌘</kbd>
                 <kbd className="rounded border bg-muted px-1">K</kbd>
               </div>
@@ -279,31 +292,29 @@ export function AppShell({
             </button>
 
             {/* Notification Bell Dropdown */}
-            <div className="relative">
-              <button 
-                className="relative text-muted-foreground hover:text-foreground transition-colors p-1"
-                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                title="Notifications"
-              >
-                <Bell className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white ring-2 ring-background">
-                    {unreadCount}
-                  </span>
-                )}
-              </button>
-
-              {/* Notification Popover Panel */}
-              {isNotificationsOpen && (
-                <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-white border border-gray-200 shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-                  <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-                    <h3 className="font-semibold text-gray-900 text-sm">Notifications</h3>
-                    <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">{unreadCount} new</span>
-                  </div>
-                  <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto">
-                    {notifications.map((n) => (
-                      <div key={n.id} className="p-3.5 hover:bg-gray-50/80 transition-colors flex gap-3 items-start">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+            <Popover>
+              <PopoverTrigger asChild>
+                <button 
+                  className="relative text-muted-foreground hover:text-foreground transition-colors p-1"
+                  title="Notifications"
+                >
+                  <Bell className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white ring-2 ring-background">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0 rounded-2xl border-border/40 shadow-xl" align="end">
+                <div className="p-4 border-b border-border/40 flex items-center justify-between bg-card text-card-foreground rounded-t-2xl">
+                  <h3 className="font-semibold text-sm">Notifications</h3>
+                  <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">{unreadCount} new</span>
+                </div>
+                <div className="divide-y divide-border/40 max-h-80 overflow-y-auto bg-card text-card-foreground">
+                  {notifications.map((n) => (
+                    <div key={n.id} className="p-3.5 hover:bg-muted/50 transition-colors flex gap-3 items-start">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
                         <div>
                           <p className="text-xs font-medium text-gray-900">{n.title}</p>
                           <p className="text-[11px] text-gray-400 mt-0.5">{n.time}</p>
@@ -311,14 +322,14 @@ export function AppShell({
                       </div>
                     ))}
                   </div>
-                  <div className="p-2.5 bg-gray-50 border-t border-gray-100 text-center">
-                    <button onClick={() => setIsNotificationsOpen(false)} className="text-xs text-emerald-700 font-medium hover:underline">
+                  <div className="p-2.5 bg-muted/30 border-t border-border/40 text-center rounded-b-2xl">
+                    <button onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))} className="text-xs text-emerald-700 font-medium hover:underline">
                       Close
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
+              </PopoverContent>
+            </Popover>
 
             <div className="flex items-center gap-3 border-l border-border pl-3 lg:pl-6">
               <Avatar className="h-7 w-7 border lg:h-9 lg:w-9">
@@ -326,11 +337,38 @@ export function AppShell({
                 <AvatarFallback>{displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
               </Avatar>
               <div className="hidden flex-col md:flex">
-                <span className="text-sm font-semibold text-gray-900">{displayName}</span>
+                <span className="text-sm font-semibold text-foreground">{displayName}</span>
                 <span className="text-xs text-muted-foreground">{user?.email}</span>
               </div>
             </div>
           </div>
+
+          <CommandDialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
+            <CommandInput placeholder="Type a command or search..." />
+            <CommandList>
+              <CommandEmpty>No results found.</CommandEmpty>
+              <CommandGroup heading="Suggestions">
+                <CommandItem onSelect={() => { navigate({to: '/dashboard'}); setIsSearchOpen(false); }}>
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  <span>Dashboard</span>
+                </CommandItem>
+                <CommandItem onSelect={() => { navigate({to: '/money-in'}); setIsSearchOpen(false); }}>
+                  <ArrowDownLeft className="mr-2 h-4 w-4" />
+                  <span>Record Inflows</span>
+                </CommandItem>
+                <CommandItem onSelect={() => { navigate({to: '/expenses'}); setIsSearchOpen(false); }}>
+                  <ArrowUpRight className="mr-2 h-4 w-4" />
+                  <span>Scan Receipts</span>
+                </CommandItem>
+              </CommandGroup>
+              <CommandGroup heading="Settings">
+                <CommandItem onSelect={() => { navigate({to: '/admin/settings'}); setIsSearchOpen(false); }}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Account Settings</span>
+                </CommandItem>
+              </CommandGroup>
+            </CommandList>
+          </CommandDialog>
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 lg:p-8 print:p-0">
