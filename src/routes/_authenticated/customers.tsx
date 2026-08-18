@@ -153,7 +153,7 @@ function NewCustomerModal({ open, onClose }: { open: boolean; onClose: () => voi
           </div>
         </DialogHeader>
 
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
           {/* Preview Avatar */}
           <div className="flex items-center gap-3 pb-2">
             <div className={`h-12 w-12 rounded-full flex items-center justify-center text-base font-bold ${name ? getAvatarColor(name) : "bg-gray-100 text-gray-400"}`}>
@@ -261,7 +261,7 @@ function CustomerDetailModal({ customer, onClose }: { customer: any; onClose: ()
             </button>
           </div>
         </DialogHeader>
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 max-h-[60vh] overflow-y-auto">
           {/* Avatar + name */}
           <div className="flex items-center gap-4">
             <div className={`h-14 w-14 rounded-full flex items-center justify-center text-xl font-bold flex-shrink-0 ${getAvatarColor(customer.name)}`}>
