@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { BookOpenText, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { login, signup, getSession } from "@/lib/auth.functions";
 import { getPublicSettings } from "@/lib/app.functions";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,8 +28,6 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const search = Route.useSearch();
   const [mode, setMode] = useState<"signin" | "signup">(search.mode === "signup" ? "signup" : "signin");
   const [businessName, setBusinessName] = useState("");
@@ -47,9 +45,9 @@ function AuthPage() {
 
   useEffect(() => {
     getSession().then((user) => {
-      if (user) navigate({ to: "/dashboard" });
+      if (user) window.location.href = "/dashboard";
     });
-  }, [navigate]);
+  }, []);
 
   const { data: appSettings } = useQuery({
     queryKey: ["app_settings"],
@@ -64,26 +62,21 @@ function AuthPage() {
       if (mode === "signup") {
         await signup({ data: { email, password, businessName: businessName.trim() || "My Business" } });
         toast.success("Account created! 14-day free trial started.");
-        await queryClient.invalidateQueries({ queryKey: ["session"] });
-        window.location.href = "/dashboard";
+        window.location.replace("/dashboard");
       } else {
         const res = await login({ data: { email, password } });
-        console.log("Login response:", res);
+        if (!res || !res.token) throw new Error("No token returned from server");
+        console.log("✅ Login success, redirecting to dashboard...");
         toast.success("Welcome back!");
-        await queryClient.invalidateQueries({ queryKey: ["session"] });
-        window.location.href = "/dashboard";
+        window.location.replace("/dashboard");
       }
     } catch (error) {
-      console.error("Login error:", error);
-      toast.error(error instanceof Error ? error.message : "Something went wrong.");
-      setNotice(error instanceof Error ? error.message : "Failed to sign in.");
-    } finally {
+      console.error("❌ Login error:", error);
+      const msg = error instanceof Error ? error.message : "Something went wrong.";
+      toast.error(msg);
+      setNotice(msg);
       setBusy(false);
     }
-  }
-
-  async function onGoogle() {
-    toast.error("Google sign-in is not supported on the custom backend.");
   }
 
   return (
