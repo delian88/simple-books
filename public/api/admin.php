@@ -38,15 +38,17 @@ switch ($action) {
             $map[$row['key']] = $row['value'];
         }
         jsonResponse([
-            'appName'            => $map['app_name']            ?? 'My Kobobooks',
-            'appLogo'            => $map['app_logo']            ?? null,
-            'appTagline'         => $map['app_tagline']         ?? '',
-            'subscriptionPrice'  => $map['subscription_price']  ?? '10',
-            'smtpEnabled'        => $map['smtp_enabled']        ?? 'false',
-            'smtpHost'           => $map['smtp_host']           ?? '',
-            'smtpPort'           => $map['smtp_port']           ?? '587',
-            'smtpUser'           => $map['smtp_user']           ?? '',
-            'smtpPass'           => $map['smtp_pass']           ?? '',
+            'appName'                  => $map['app_name']                   ?? 'My Kobobooks',
+            'appLogo'                  => $map['app_logo']                   ?? null,
+            'appTagline'               => $map['app_tagline']                ?? '',
+            'subscriptionCurrency'     => $map['subscription_currency']      ?? 'NGN',
+            'subscriptionPrice'        => $map['subscription_price']         ?? '10',
+            'subscriptionPriceYearly'  => $map['subscription_price_yearly']  ?? '100',
+            'smtpEnabled'              => $map['smtp_enabled']               ?? 'false',
+            'smtpHost'                 => $map['smtp_host']                  ?? '',
+            'smtpPort'                 => $map['smtp_port']                  ?? '587',
+            'smtpUser'                 => $map['smtp_user']                  ?? '',
+            'smtpPass'                 => $map['smtp_pass']                  ?? '',
         ]);
         break;
 
@@ -56,15 +58,17 @@ switch ($action) {
         $body = $data['data'] ?? $data; // support both wrapped and flat
 
         $map = [
-            'appName'           => 'app_name',
-            'appLogo'           => 'app_logo',
-            'appTagline'        => 'app_tagline',
-            'subscriptionPrice' => 'subscription_price',
-            'smtpEnabled'       => 'smtp_enabled',
-            'smtpHost'          => 'smtp_host',
-            'smtpPort'          => 'smtp_port',
-            'smtpUser'          => 'smtp_user',
-            'smtpPass'          => 'smtp_pass',
+            'appName'                 => 'app_name',
+            'appLogo'                 => 'app_logo',
+            'appTagline'              => 'app_tagline',
+            'subscriptionCurrency'    => 'subscription_currency',
+            'subscriptionPrice'       => 'subscription_price',
+            'subscriptionPriceYearly' => 'subscription_price_yearly',
+            'smtpEnabled'             => 'smtp_enabled',
+            'smtpHost'                => 'smtp_host',
+            'smtpPort'                => 'smtp_port',
+            'smtpUser'                => 'smtp_user',
+            'smtpPass'                => 'smtp_pass',
         ];
 
         foreach ($map as $jsKey => $dbKey) {

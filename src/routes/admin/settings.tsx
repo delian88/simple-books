@@ -24,7 +24,9 @@ function AdminSettings() {
   const [formData, setFormData] = useState({
     appName: "",
     appLogo: "",
+    subscriptionCurrency: "NGN",
     subscriptionPrice: "",
+    subscriptionPriceYearly: "",
     smtpEnabled: false,
     smtpHost: "",
     smtpPort: "",
@@ -37,7 +39,9 @@ function AdminSettings() {
       setFormData({
         appName: settings.appName || "My Kobobooks",
         appLogo: settings.appLogo || "",
+        subscriptionCurrency: settings.subscriptionCurrency || "NGN",
         subscriptionPrice: settings.subscriptionPrice || "10",
+        subscriptionPriceYearly: settings.subscriptionPriceYearly || "100",
         smtpEnabled: settings.smtpEnabled === "true",
         smtpHost: settings.smtpHost || "",
         smtpPort: settings.smtpPort || "587",
@@ -135,17 +139,44 @@ function AdminSettings() {
         <Card>
           <CardHeader>
             <CardTitle>Subscription Pricing</CardTitle>
-            <CardDescription>Set the monthly subscription price (in your local currency) applied after the 14-day trial.</CardDescription>
+            <CardDescription>Set the subscription base currency and prices applied after the 14-day trial.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="grid gap-2">
-              <Label htmlFor="price">Monthly Price</Label>
-              <Input
-                id="price"
-                type="number"
-                value={formData.subscriptionPrice}
-                onChange={e => setFormData({ ...formData, subscriptionPrice: e.target.value })}
-              />
+              <Label htmlFor="currency">Base Currency</Label>
+              <select 
+                id="currency"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={formData.subscriptionCurrency}
+                onChange={e => setFormData({ ...formData, subscriptionCurrency: e.target.value })}
+              >
+                <option value="NGN">Naira (₦)</option>
+                <option value="USD">US Dollar ($)</option>
+                <option value="EUR">Euro (€)</option>
+                <option value="GBP">British Pound (£)</option>
+                <option value="GHS">Ghana Cedi (GH₵)</option>
+                <option value="KES">Kenyan Shilling (KSh)</option>
+              </select>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-2">
+                <Label htmlFor="priceMonthly">Monthly Price</Label>
+                <Input
+                  id="priceMonthly"
+                  type="number"
+                  value={formData.subscriptionPrice}
+                  onChange={e => setFormData({ ...formData, subscriptionPrice: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="priceYearly">Yearly Price</Label>
+                <Input
+                  id="priceYearly"
+                  type="number"
+                  value={formData.subscriptionPriceYearly}
+                  onChange={e => setFormData({ ...formData, subscriptionPriceYearly: e.target.value })}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -193,7 +224,9 @@ function AdminSettings() {
             const dataToSave = {
               appName: formData.appName,
               appLogo: formData.appLogo,
+              subscriptionCurrency: formData.subscriptionCurrency,
               subscriptionPrice: formData.subscriptionPrice,
+              subscriptionPriceYearly: formData.subscriptionPriceYearly,
               smtpEnabled: String(formData.smtpEnabled),
               smtpHost: formData.smtpHost,
               smtpPort: formData.smtpPort,
