@@ -280,7 +280,7 @@ function Dashboard() {
       </div>
 
       <div className="grid gap-6 mb-6">
-        <Card className="shadow-sm border-border">
+        <Card className="shadow-sm border-border overflow-hidden w-full">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-8">
               <h2 className="flex items-center gap-2 text-xl font-bold font-display">
