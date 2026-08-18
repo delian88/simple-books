@@ -4,7 +4,7 @@ import { BookOpenText, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { login, signup, getSession } from "@/lib/auth.functions";
 import { getPublicSettings } from "@/lib/app.functions";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const search = Route.useSearch();
   const [mode, setMode] = useState<"signin" | "signup">(search.mode === "signup" ? "signup" : "signin");
   const [businessName, setBusinessName] = useState("");
@@ -63,13 +64,13 @@ function AuthPage() {
       if (mode === "signup") {
         await signup({ data: { email, password, businessName: businessName.trim() || "My Business" } });
         toast.success("Account created! 14-day free trial started.");
-        navigate({ to: "/dashboard" });
+        await queryClient.invalidateQueries({ queryKey: ["session"] });
         window.location.href = "/dashboard";
       } else {
         const res = await login({ data: { email, password } });
         console.log("Login response:", res);
         toast.success("Welcome back!");
-        navigate({ to: "/dashboard" });
+        await queryClient.invalidateQueries({ queryKey: ["session"] });
         window.location.href = "/dashboard";
       }
     } catch (error) {
