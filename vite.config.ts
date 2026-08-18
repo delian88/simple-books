@@ -13,6 +13,9 @@ process.env.NITRO_PRESET = 'node-server';
 export default defineConfig({
   tanstackStart: {
     ssr: false,
+    client: {
+      entry: "src/client.tsx",
+    },
     server: { 
       preset: 'node-server',
       entry: "server",
