@@ -189,7 +189,7 @@ function ExpensesPage() {
           data: {
             vendor: result.vendor,
             amount: Number(result.amount),
-            date: new Date(result.date),
+            date: new Date(result.date).toISOString().split('T')[0],
             accountId: accountId,
             bankAccountId: selectedBankId || bankAccounts[0]?.value,
             description: `Voice note: "${text}"`
@@ -207,7 +207,9 @@ function ExpensesPage() {
         }
         setParsedData({ ...result, description: `Voice note: "${text}"`, recorded: true, expenseId: saveRes.expenseId });
       } catch (err: any) {
-        toast.error("Failed to process voice entry.");
+        console.error("Voice Entry Error:", err);
+        toast.error(`Failed to process voice entry: ${err.message || 'Unknown error'}`);
+        setUploadModalOpen(false);
       } finally {
         setIsUploading(false);
       }
@@ -252,7 +254,7 @@ function ExpensesPage() {
               documentId: result.documentId,
               vendor: result.vendor,
               amount: Number(result.amount),
-              date: new Date(result.date || new Date().toISOString().split('T')[0]),
+              date: new Date(result.date || new Date().toISOString().split('T')[0]).toISOString().split('T')[0],
               accountId: result.accountId || expenseAccounts[0]?.value,
               bankAccountId: selectedBankId || bankAccounts[0]?.value,
               description: result.description || `Scanned receipt: ${file.name}`
@@ -305,8 +307,9 @@ function ExpensesPage() {
       id: selectedExpense.id,
       vendor: selectedExpense.vendor,
       amount: Number(selectedExpense.amount),
-      date: new Date(selectedExpense.date),
-      category: selectedExpense.category,
+      date: new Date(selectedExpense.date).toISOString().split('T')[0],
+      accountId: selectedExpense.accountId,
+      bankAccountId: selectedExpense.bankAccountId,
       description: selectedExpense.description
     });
   };
