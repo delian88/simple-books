@@ -247,7 +247,7 @@ export function AppShell({
       </aside>
 
       {/* Main Content */}
-      <div className="flex h-full flex-1 flex-col lg:pl-64 print:pl-0">
+      <div className="flex h-full flex-1 min-w-0 flex-col lg:pl-64 print:pl-0">
         {/* Main Header */}
         <header className="flex h-14 w-full shrink-0 items-center justify-between border-b border-border/40 bg-background/95 px-4 lg:h-20 lg:px-8 print:hidden">
           <div className="flex items-center gap-3">
