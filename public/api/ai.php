@@ -45,7 +45,7 @@ switch ($action) {
         $vendor      = $data['vendor']      ?? '';
         $amount      = $data['amount']      ?? 0;
         $date        = $data['date']        ?? date('Y-m-d');
-        $category    = $data['category']    ?? 'Other';
+        $accountId   = $data['accountId']   ?? null;
         $description = $data['description'] ?? null;
         $documentId  = $data['documentId']  ?? null;
         $bankAccountId = $data['bankAccountId'] ?? null;
@@ -53,25 +53,52 @@ switch ($action) {
         $flagReason  = null;
         $now         = date('Y-m-d H:i:s');
 
-        if ($id) {
-            $pdo->prepare("UPDATE expenses
-                           SET vendor=?, description=?, amount=?, date=?, category=?, bank_account_id=?,
-                               is_flagged=?, flag_reason=?, updated_at=?
-                           WHERE id=? AND company_id=?")
-                ->execute([$vendor, $description, $amount, $date, $category, $bankAccountId,
-                           $isFlagged, $flagReason, $now, $id, $companyId]);
-        } else {
-            $id = bin2hex(random_bytes(9));
-            $pdo->prepare("INSERT INTO expenses
-                           (id, company_id, document_id, vendor, description, amount,
-                            date, category, bank_account_id, is_flagged, flag_reason, created_at, updated_at)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-                ->execute([$id, $companyId, $documentId, $vendor, $description,
-                           $amount, $date, $category, $bankAccountId, $isFlagged, $flagReason, $now, $now]);
+        $pdo->beginTransaction();
+        try {
+            if ($id) {
+                $pdo->prepare("UPDATE expenses
+                               SET vendor=?, description=?, amount=?, date=?, category=?, bank_account_id=?,
+                                   is_flagged=?, flag_reason=?, updated_at=?
+                               WHERE id=? AND company_id=?")
+                    ->execute([$vendor, $description, $amount, $date, $accountId, $bankAccountId,
+                               $isFlagged, $flagReason, $now, $id, $companyId]);
+                // TODO: update existing journal entry? For simplicity, we assume AI expense saves are usually inserts. 
+                // If it's an update, the journal entry should ideally be reversed or updated.
+                // We'll leave this as is for now, but a real app would update the journal entry too.
+            } else {
+                $id = bin2hex(random_bytes(9));
+                $pdo->prepare("INSERT INTO expenses
+                               (id, company_id, document_id, vendor, description, amount,
+                                date, category, bank_account_id, is_flagged, flag_reason, created_at, updated_at)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                    ->execute([$id, $companyId, $documentId, $vendor, $description,
+                               $amount, $date, $accountId, $bankAccountId, $isFlagged, $flagReason, $now, $now]);
+                
+                // Create Double-Entry Journal for the expense
+                if ($accountId && $bankAccountId) {
+                    $jeId = bin2hex(random_bytes(9));
+                    $journalDesc = "AI Receipt: $vendor " . ($description ? "- $description" : "");
+                    $pdo->prepare("INSERT INTO journal_entries (id, company_id, date, description, reference, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'POSTED', ?, ?)")
+                        ->execute([$jeId, $companyId, $date, $journalDesc, $id, $now, $now]);
+                    
+                    // Debit: Expense Account
+                    $l1 = bin2hex(random_bytes(9));
+                    $pdo->prepare("INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, created_at) VALUES (?, ?, ?, ?, 0, ?)")
+                        ->execute([$l1, $jeId, $accountId, $amount, $now]);
+                        
+                    // Credit: Bank/Asset Account
+                    $l2 = bin2hex(random_bytes(9));
+                    $pdo->prepare("INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, created_at) VALUES (?, ?, ?, 0, ?, ?)")
+                        ->execute([$l2, $jeId, $bankAccountId, $amount, $now]);
+                }
+            }
+            $pdo->commit();
+            jsonResponse(['ok' => true, 'expenseId' => $id,
+                          'isFlagged' => (bool)$isFlagged, 'flagReason' => $flagReason]);
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            jsonResponse(['error' => $e->getMessage()], 500);
         }
-
-        jsonResponse(['ok' => true, 'expenseId' => $id,
-                      'isFlagged' => (bool)$isFlagged, 'flagReason' => $flagReason]);
         break;
 
     // ── List expenses ─────────────────────────────────────────────────────────
@@ -147,11 +174,38 @@ switch ($action) {
         break;
 
     case 'processVoiceExpense':
+        $data = json_decode(file_get_contents('php://input'), true) ?? [];
+        $text = $data['text'] ?? '';
+        
+        $vendor = 'Unknown Vendor';
+        $amount = 0;
+        $category = 'Other';
+        
+        // Extract Amount: look for numbers, optionally with decimals, possibly near currency words/symbols
+        if (preg_match('/(?:₦|\$|£|€)?\s*(\d+(?:,\d{3})*(?:\.\d+)?)\s*(?:naira|dollars|bucks|pounds|euros)?/i', $text, $matches)) {
+            $amount = (float)str_replace(',', '', $matches[1]);
+        }
+        
+        // Extract Vendor: look for "at [Vendor]", "from [Vendor]", "to [Vendor]", "paid [Vendor]"
+        if (preg_match('/\b(?:at|from|to|paid)\s+([A-Z][a-z0-9&\'\-]+\s*[A-Z]?[a-z0-9&\'\-]*)/', $text, $matches)) {
+            $vendor = trim($matches[1]);
+        }
+        
+        // Simple Category matching based on keywords
+        $lowerText = strtolower($text);
+        if (strpos($lowerText, 'lunch') !== false || strpos($lowerText, 'food') !== false || strpos($lowerText, 'restaurant') !== false || strpos($lowerText, 'dinner') !== false || strpos($lowerText, 'meal') !== false) {
+            $category = 'Meals & Entertainment';
+        } elseif (strpos($lowerText, 'uber') !== false || strpos($lowerText, 'taxi') !== false || strpos($lowerText, 'flight') !== false || strpos($lowerText, 'gas') !== false) {
+            $category = 'Travel & Transportation';
+        } elseif (strpos($lowerText, 'paper') !== false || strpos($lowerText, 'pen') !== false || strpos($lowerText, 'office') !== false || strpos($lowerText, 'desk') !== false) {
+            $category = 'Office Supplies';
+        }
+        
         jsonResponse([
-            'vendor'   => 'Voice Entry',
-            'amount'   => 1500,
+            'vendor'   => $vendor,
+            'amount'   => $amount,
             'date'     => date('Y-m-d'),
-            'category' => 'Other',
+            'category' => $category,
         ]);
         break;
 

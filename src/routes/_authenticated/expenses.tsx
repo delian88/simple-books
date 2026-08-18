@@ -72,6 +72,13 @@ function ExpensesPage() {
       value: a.id,
       label: `${a.code ? a.code + ' - ' : ''}${a.name}`
     }));
+
+  const expenseAccounts = (accountsQuery.data || [])
+    .filter((a: any) => a.type === "EXPENSE")
+    .map((a: any) => ({
+      value: a.id,
+      label: `${a.code ? a.code + ' - ' : ''}${a.name}`
+    }));
   
   // Full details viewer state
   const [selectedExpense, setSelectedExpense] = useState<any>(null);
@@ -171,12 +178,19 @@ function ExpensesPage() {
       try {
         const result = await doVoice({ data: { text } });
         setUploadProgress("Recording transaction automatically...");
+        
+        // Try to find a matching account based on category name
+        const matchedAccount = expenseAccounts.find((a: any) => 
+          a.label.toLowerCase().includes((result.category || '').toLowerCase())
+        );
+        const accountId = result.accountId || matchedAccount?.value || expenseAccounts[0]?.value;
+
         const saveRes = await doSave({
           data: {
             vendor: result.vendor,
             amount: Number(result.amount),
             date: new Date(result.date),
-            category: result.category,
+            accountId: accountId,
             bankAccountId: selectedBankId || bankAccounts[0]?.value,
             description: `Voice note: "${text}"`
           }
@@ -239,7 +253,7 @@ function ExpensesPage() {
               vendor: result.vendor,
               amount: Number(result.amount),
               date: new Date(result.date || new Date().toISOString().split('T')[0]),
-              category: result.category,
+              accountId: result.accountId || expenseAccounts[0]?.value,
               bankAccountId: selectedBankId || bankAccounts[0]?.value,
               description: result.description || `Scanned receipt: ${file.name}`
             }
@@ -706,11 +720,17 @@ function ExpensesPage() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label className="text-gray-700 font-medium">Category</Label>
-                      <Input
-                        value={parsedData.category}
-                        onChange={(e) => setParsedData({ ...parsedData, category: e.target.value })}
-                      />
+                      <Label className="text-gray-700 font-medium">Expense Account</Label>
+                      <select 
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={parsedData.accountId || ""}
+                        onChange={(e) => setParsedData({ ...parsedData, accountId: e.target.value })}
+                      >
+                        <option value="">Select an expense account...</option>
+                        {expenseAccounts.map((a: any) => (
+                          <option key={a.value} value={a.value}>{a.label}</option>
+                        ))}
+                      </select>
                     </div>
 
                     <div className="space-y-1.5">
