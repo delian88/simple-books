@@ -110,14 +110,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const router = useRouter();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <HeadContent />
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
-      <Toaster richColors position="top-center" />
-    </QueryClientProvider>
+    <html lang="en">
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        <QueryClientProvider client={queryClient}>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+          <Toaster richColors position="top-center" />
+        </QueryClientProvider>
+        <Scripts />
+      </body>
+    </html>
   );
 }
