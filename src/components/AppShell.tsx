@@ -17,7 +17,8 @@ import {
   FileText,
   Menu,
   X,
-  Printer
+  Printer,
+  BarChart3,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { logout, getSession } from "@/lib/auth.functions";
@@ -44,6 +45,7 @@ const MAIN_NAV = [
   { to: "/trial-balance", label: "Trial Balance", icon: Scale },
   { to: "/income-statement", label: "Income Statement", icon: Scale },
   { to: "/balance-sheet", label: "Balance Sheet", icon: Scale },
+  { to: "/reports", label: "Reports Hub", icon: BarChart3 },
   { to: "/journal-templates", label: "Journal Templates", icon: FileText },
 ] as const;
 
@@ -208,9 +210,11 @@ export function AppShell({
               </div>
               <p className="text-xs font-medium text-white pr-6">Manage with power.</p>
               <p className="mt-1 text-[11px] text-white/60">Monitor, control and grow your business from one place.</p>
-              <Button variant="outline" size="sm" className="w-full mt-3 bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white h-8 text-xs">
-                View Reports &rarr;
-              </Button>
+              <Link to="/reports" className="block w-full mt-3">
+                <Button variant="outline" size="sm" className="w-full bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white h-8 text-xs">
+                  View Reports &rarr;
+                </Button>
+              </Link>
             </div>
           )}
 
@@ -365,6 +369,20 @@ export function AppShell({
                 <CommandItem onSelect={() => { navigate({to: '/expenses'}); setIsSearchOpen(false); }}>
                   <ArrowUpRight className="mr-2 h-4 w-4" />
                   <span>Scan Receipts</span>
+                </CommandItem>
+              </CommandGroup>
+              <CommandGroup heading="Reports">
+                <CommandItem onSelect={() => { navigate({to: '/reports'}); setIsSearchOpen(false); }}>
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  <span>Reports Hub</span>
+                </CommandItem>
+                <CommandItem onSelect={() => { navigate({to: '/income-statement'}); setIsSearchOpen(false); }}>
+                  <Scale className="mr-2 h-4 w-4" />
+                  <span>Income Statement</span>
+                </CommandItem>
+                <CommandItem onSelect={() => { navigate({to: '/trial-balance'}); setIsSearchOpen(false); }}>
+                  <Scale className="mr-2 h-4 w-4" />
+                  <span>Trial Balance</span>
                 </CommandItem>
               </CommandGroup>
               <CommandGroup heading="Settings">

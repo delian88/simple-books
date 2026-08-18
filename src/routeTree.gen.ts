@@ -30,6 +30,7 @@ import { Route as AuthenticatedJournalTemplatesRouteImport } from './routes/_aut
 import { Route as AuthenticatedLedgerRouteImport } from './routes/_authenticated/ledger'
 import { Route as AuthenticatedMoneyInRouteImport } from './routes/_authenticated/money-in'
 import { Route as AuthenticatedMoneyOutRouteImport } from './routes/_authenticated/money-out'
+import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedTrialBalanceRouteImport } from './routes/_authenticated/trial-balance'
 import { Route as AdminCmsRouteImport } from './routes/admin/cms'
 import { Route as AdminPaymentsRouteImport } from './routes/admin/payments'
@@ -147,6 +148,11 @@ const AuthenticatedMoneyOutRoute = AuthenticatedMoneyOutRouteImport.update({
   path: '/money-out',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTrialBalanceRoute =
   AuthenticatedTrialBalanceRouteImport.update({
     id: '/trial-balance',
@@ -201,6 +207,7 @@ export interface FileRoutesByFullPath {
   '/ledger': typeof AuthenticatedLedgerRoute
   '/money-in': typeof AuthenticatedMoneyInRoute
   '/money-out': typeof AuthenticatedMoneyOutRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/trial-balance': typeof AuthenticatedTrialBalanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/payments': typeof AdminPaymentsRoute
@@ -229,6 +236,7 @@ export interface FileRoutesByTo {
   '/ledger': typeof AuthenticatedLedgerRoute
   '/money-in': typeof AuthenticatedMoneyInRoute
   '/money-out': typeof AuthenticatedMoneyOutRoute
+  '/reports': typeof AuthenticatedReportsRoute
   '/trial-balance': typeof AuthenticatedTrialBalanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/payments': typeof AdminPaymentsRoute
@@ -259,6 +267,7 @@ export interface FileRoutesById {
   '/_authenticated/ledger': typeof AuthenticatedLedgerRoute
   '/_authenticated/money-in': typeof AuthenticatedMoneyInRoute
   '/_authenticated/money-out': typeof AuthenticatedMoneyOutRoute
+  '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/trial-balance': typeof AuthenticatedTrialBalanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/payments': typeof AdminPaymentsRoute
@@ -289,6 +298,7 @@ export interface FileRouteTypes {
     | '/ledger'
     | '/money-in'
     | '/money-out'
+    | '/reports'
     | '/trial-balance'
     | '/admin/cms'
     | '/admin/payments'
@@ -317,6 +327,7 @@ export interface FileRouteTypes {
     | '/ledger'
     | '/money-in'
     | '/money-out'
+    | '/reports'
     | '/trial-balance'
     | '/admin/cms'
     | '/admin/payments'
@@ -346,6 +357,7 @@ export interface FileRouteTypes {
     | '/_authenticated/ledger'
     | '/_authenticated/money-in'
     | '/_authenticated/money-out'
+    | '/_authenticated/reports'
     | '/_authenticated/trial-balance'
     | '/admin/cms'
     | '/admin/payments'
@@ -515,6 +527,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMoneyOutRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reports': {
+      id: '/_authenticated/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AuthenticatedReportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/trial-balance': {
       id: '/_authenticated/trial-balance'
       path: '/trial-balance'
@@ -573,6 +592,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedLedgerRoute: typeof AuthenticatedLedgerRoute
   AuthenticatedMoneyInRoute: typeof AuthenticatedMoneyInRoute
   AuthenticatedMoneyOutRoute: typeof AuthenticatedMoneyOutRoute
+  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedTrialBalanceRoute: typeof AuthenticatedTrialBalanceRoute
   AuthenticatedSalesInvoicesRoute: typeof AuthenticatedSalesInvoicesRoute
 }
@@ -590,6 +610,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLedgerRoute: AuthenticatedLedgerRoute,
   AuthenticatedMoneyInRoute: AuthenticatedMoneyInRoute,
   AuthenticatedMoneyOutRoute: AuthenticatedMoneyOutRoute,
+  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedTrialBalanceRoute: AuthenticatedTrialBalanceRoute,
   AuthenticatedSalesInvoicesRoute: AuthenticatedSalesInvoicesRoute,
 }
