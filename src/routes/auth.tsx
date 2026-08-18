@@ -28,7 +28,6 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const search = Route.useSearch();
-  const [mounted, setMounted] = useState(false);
   const [mode, setMode] = useState<"signin" | "signup">(
     search.mode === "signup" ? "signup" : "signin"
   );
@@ -38,12 +37,6 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-
-  // First effect: mark as mounted so we know React is running
-  useEffect(() => {
-    setMounted(true);
-    console.log("✅ AuthPage mounted — React is running!");
-  }, []);
 
   useEffect(() => {
     setMode(search.mode === "signup" ? "signup" : "signin");
@@ -123,20 +116,6 @@ function AuthPage() {
           >
             <ArrowLeft className="h-4 w-4" /> Back to Home
           </Link>
-        </div>
-
-        {/* React hydration status indicator */}
-        <div style={{
-          padding: '8px 12px',
-          borderRadius: '6px',
-          marginBottom: '12px',
-          fontSize: '13px',
-          fontWeight: 'bold',
-          backgroundColor: mounted ? '#d4edda' : '#f8d7da',
-          color: mounted ? '#155724' : '#721c24',
-          border: `1px solid ${mounted ? '#c3e6cb' : '#f5c6cb'}`
-        }}>
-          {mounted ? '✅ React is running — button should work' : '❌ React NOT hydrated — button will not work'}
         </div>
 
         {/* App Logo */}
