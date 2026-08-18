@@ -135,7 +135,7 @@ switch ($action) {
     case 'session':
         $payload = getAuthPayload();
         if (!$payload) jsonResponse(['error' => 'No session'], 401);
-        $stmt = $pdo->prepare("SELECT u.id, u.email, u.role, p.business_name FROM users u LEFT JOIN profiles p ON p.id = u.id WHERE u.id = ? LIMIT 1");
+        $stmt = $pdo->prepare("SELECT u.id, u.email, u.role, p.business_name, p.profile_picture FROM users u LEFT JOIN profiles p ON p.id = u.id WHERE u.id = ? LIMIT 1");
         $stmt->execute([$payload['sub']]);
         $uData = $stmt->fetch();
         jsonResponse([

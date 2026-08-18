@@ -346,7 +346,7 @@ export function AppShell({
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-3 border-l border-border pl-3 lg:pl-6 hover:opacity-80 transition-opacity focus:outline-none">
                   <Avatar className="h-7 w-7 border lg:h-9 lg:w-9">
-                    <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`} />
+                    <AvatarImage src={user?.profilePicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`} />
                     <AvatarFallback>{displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="hidden flex-col md:flex text-left">
@@ -359,7 +359,7 @@ export function AppShell({
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/admin/settings" className="cursor-pointer flex w-full items-center">
+                  <Link to="/settings" className="cursor-pointer flex w-full items-center">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </Link>
