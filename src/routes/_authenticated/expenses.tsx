@@ -9,6 +9,7 @@ import {
   deleteAIExpense, 
   getExpenseDocument 
 } from "@/lib/ai.functions";
+import { listAccounts } from "@/lib/accounts.functions";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -58,6 +59,19 @@ function ExpensesPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [parsedData, setParsedData] = useState<any>(null);
   const [uploadProgress, setUploadProgress] = useState("");
+  const [selectedBankId, setSelectedBankId] = useState<string>("");
+
+  const accountsQuery = useQuery({
+    queryKey: ["accounts"],
+    queryFn: listAccounts,
+  });
+  
+  const bankAccounts = (accountsQuery.data || [])
+    .filter((a: any) => a.type === "ASSET")
+    .map((a: any) => ({
+      value: a.id,
+      label: `${a.code ? a.code + ' - ' : ''}${a.name}`
+    }));
   
   // Full details viewer state
   const [selectedExpense, setSelectedExpense] = useState<any>(null);
@@ -163,6 +177,7 @@ function ExpensesPage() {
             amount: Number(result.amount),
             date: new Date(result.date),
             category: result.category,
+            bankAccountId: selectedBankId || bankAccounts[0]?.value,
             description: `Voice note: "${text}"`
           }
         });
@@ -225,6 +240,7 @@ function ExpensesPage() {
               amount: Number(result.amount),
               date: new Date(result.date || new Date().toISOString().split('T')[0]),
               category: result.category,
+              bankAccountId: selectedBankId || bankAccounts[0]?.value,
               description: result.description || `Scanned receipt: ${file.name}`
             }
           });
@@ -598,20 +614,38 @@ function ExpensesPage() {
 
             <div className="p-4 space-y-6">
               {!parsedData && !isUploading && (
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-emerald-200 bg-emerald-50/50 rounded-xl p-8 text-center cursor-pointer hover:bg-emerald-50 transition-colors"
-                >
-                  <UploadCloud className="h-10 w-10 text-emerald-500 mx-auto mb-3" />
-                  <p className="text-sm font-medium text-emerald-800 mb-1">Click to upload receipt</p>
-                  <p className="text-xs text-emerald-600/70">JPG, PNG up to 5MB</p>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                  />
+                <div className="space-y-6">
+                  {bankAccounts.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Label className="text-gray-700 font-medium">Pay from Bank Account</Label>
+                      <select 
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={selectedBankId}
+                        onChange={(e) => setSelectedBankId(e.target.value)}
+                      >
+                        <option value="">Select a bank account...</option>
+                        {bankAccounts.map((b: any) => (
+                          <option key={b.value} value={b.value}>{b.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-emerald-200 bg-emerald-50/50 rounded-xl p-8 text-center cursor-pointer hover:bg-emerald-50 transition-colors"
+                  >
+                    <UploadCloud className="h-10 w-10 text-emerald-500 mx-auto mb-3" />
+                    <p className="text-sm font-medium text-emerald-800 mb-1">Click to upload receipt</p>
+                    <p className="text-xs text-emerald-600/70">JPG, PNG up to 5MB</p>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
+                  </div>
                 </div>
               )}
 

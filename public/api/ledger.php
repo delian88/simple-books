@@ -196,30 +196,46 @@ switch ($action) {
         }
 
         // Virtualize AI Expenses
-        $aiExpSum = $pdo->prepare("SELECT SUM(amount) as sum FROM expenses WHERE company_id = ?");
+        $aiExpSum = $pdo->prepare("SELECT e.category, e.bank_account_id, a.name as bank_name, SUM(e.amount) as sum 
+                                   FROM expenses e 
+                                   LEFT JOIN accounts a ON e.bank_account_id = a.id 
+                                   WHERE e.company_id = ? 
+                                   GROUP BY e.category, e.bank_account_id, a.name");
         $aiExpSum->execute([$companyId]);
-        $aiExpensesTotal = (float)($aiExpSum->fetchColumn() ?: 0);
-        if ($aiExpensesTotal > 0) {
-            $balances[] = ['id' => 'v-ai-exp', 'name' => 'General Expenses', 'type' => 'EXPENSE', 'sub_type' => 'Operating Expense', 'debit' => $aiExpensesTotal, 'credit' => 0];
-            $balances[] = ['id' => 'v-ai-cash', 'name' => 'Cash/Bank (AI Scanned)', 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => 0, 'credit' => $aiExpensesTotal];
+        foreach ($aiExpSum->fetchAll(PDO::FETCH_ASSOC) as $exp) {
+            $amt = (float)$exp['sum'];
+            if ($amt <= 0) continue;
+            $cat = ucfirst($exp['category']);
+            $bankName = $exp['bank_name'] ?: 'Cash/Bank (Uncategorized)';
+            $bankId = $exp['bank_account_id'] ?: ('v-ai-cash-' . md5($cat));
+            
+            $balances[] = ['id' => 'v-ai-exp-' . md5($cat), 'name' => $cat, 'type' => 'EXPENSE', 'sub_type' => 'Operating Expense', 'debit' => $amt, 'credit' => 0];
+            $balances[] = ['id' => $bankId, 'name' => $bankName, 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => 0, 'credit' => $amt];
         }
 
         // Virtualize Manual Transactions
-        $txSum = $pdo->prepare("SELECT direction, category, SUM(amount) as sum FROM transactions WHERE company_id = ? GROUP BY direction, category");
+        $txSum = $pdo->prepare("SELECT t.direction, t.category, t.category_id as bank_account_id, a.name as bank_name, SUM(t.amount) as sum 
+                                FROM transactions t 
+                                LEFT JOIN accounts a ON t.category_id = a.id 
+                                WHERE t.company_id = ? 
+                                GROUP BY t.direction, t.category, t.category_id, a.name");
         $txSum->execute([$companyId]);
         foreach ($txSum->fetchAll(PDO::FETCH_ASSOC) as $tx) {
             $amt = (float)$tx['sum'];
             if ($amt <= 0) continue;
             $cat = ucfirst($tx['category']);
-            $id = 'v-tx-' . md5($tx['direction'] . $cat);
+            $bankName = $tx['bank_name'] ?: 'Cash/Bank (Uncategorized)';
+            $bankId = $tx['bank_account_id'] ?: ('v-tx-cash-' . md5($tx['direction'] . $cat));
+            $catId = 'v-tx-cat-' . md5($tx['direction'] . $cat);
+
             if ($tx['direction'] === 'inflow') {
-                $balances[] = ['id' => $id.'-cash', 'name' => 'Cash/Bank (Manual)', 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => $amt, 'credit' => 0];
+                $balances[] = ['id' => $bankId, 'name' => $bankName, 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => $amt, 'credit' => 0];
                 $type = (stripos($cat, 'sale') !== false) ? 'REVENUE' : 'EQUITY'; 
-                $balances[] = ['id' => $id.'-cat', 'name' => $cat, 'type' => $type, 'sub_type' => '', 'debit' => 0, 'credit' => $amt];
+                $balances[] = ['id' => $catId, 'name' => $cat, 'type' => $type, 'sub_type' => '', 'debit' => 0, 'credit' => $amt];
             } else {
                 $type = 'EXPENSE';
-                $balances[] = ['id' => $id.'-cat', 'name' => $cat, 'type' => $type, 'sub_type' => '', 'debit' => $amt, 'credit' => 0];
-                $balances[] = ['id' => $id.'-cash', 'name' => 'Cash/Bank (Manual)', 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => 0, 'credit' => $amt];
+                $balances[] = ['id' => $catId, 'name' => $cat, 'type' => $type, 'sub_type' => '', 'debit' => $amt, 'credit' => 0];
+                $balances[] = ['id' => $bankId, 'name' => $bankName, 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => 0, 'credit' => $amt];
             }
         }
 
@@ -250,28 +266,45 @@ switch ($action) {
             $balances[] = ['id' => 'v-sales', 'name' => 'Sales Revenue', 'type' => 'REVENUE', 'sub_type' => 'Operating Revenue', 'debit' => 0, 'credit' => $salesInvoicesTotal];
         }
 
-        $aiExpSum = $pdo->prepare("SELECT SUM(amount) as sum FROM expenses WHERE company_id = ?");
+        $aiExpSum = $pdo->prepare("SELECT e.category, e.bank_account_id, a.name as bank_name, SUM(e.amount) as sum 
+                                   FROM expenses e 
+                                   LEFT JOIN accounts a ON e.bank_account_id = a.id 
+                                   WHERE e.company_id = ? 
+                                   GROUP BY e.category, e.bank_account_id, a.name");
         $aiExpSum->execute([$companyId]);
-        $aiExpensesTotal = (float)($aiExpSum->fetchColumn() ?: 0);
-        if ($aiExpensesTotal > 0) {
-            $balances[] = ['id' => 'v-ai-exp', 'name' => 'General Expenses', 'type' => 'EXPENSE', 'sub_type' => 'Operating Expense', 'debit' => $aiExpensesTotal, 'credit' => 0];
-            $balances[] = ['id' => 'v-ai-cash', 'name' => 'Cash/Bank', 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => 0, 'credit' => $aiExpensesTotal];
+        foreach ($aiExpSum->fetchAll(PDO::FETCH_ASSOC) as $exp) {
+            $amt = (float)$exp['sum'];
+            if ($amt <= 0) continue;
+            $cat = ucfirst($exp['category']);
+            $bankName = $exp['bank_name'] ?: 'Cash/Bank (Uncategorized)';
+            $bankId = $exp['bank_account_id'] ?: ('v-ai-cash-' . md5($cat));
+            
+            $balances[] = ['id' => 'v-ai-exp-' . md5($cat), 'name' => $cat, 'type' => 'EXPENSE', 'sub_type' => 'Operating Expense', 'debit' => $amt, 'credit' => 0];
+            $balances[] = ['id' => $bankId, 'name' => $bankName, 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => 0, 'credit' => $amt];
         }
 
-        $txSum = $pdo->prepare("SELECT direction, category, SUM(amount) as sum FROM transactions WHERE company_id = ? GROUP BY direction, category");
+        $txSum = $pdo->prepare("SELECT t.direction, t.category, t.category_id as bank_account_id, a.name as bank_name, SUM(t.amount) as sum 
+                                FROM transactions t 
+                                LEFT JOIN accounts a ON t.category_id = a.id 
+                                WHERE t.company_id = ? 
+                                GROUP BY t.direction, t.category, t.category_id, a.name");
         $txSum->execute([$companyId]);
         foreach ($txSum->fetchAll(PDO::FETCH_ASSOC) as $tx) {
             $amt = (float)$tx['sum'];
             if ($amt <= 0) continue;
             $cat = ucfirst($tx['category']);
+            $bankName = $tx['bank_name'] ?: 'Cash/Bank (Uncategorized)';
+            $bankId = $tx['bank_account_id'] ?: ('v-tx-cash-' . md5($tx['direction'] . $cat));
+            $catId = 'v-tx-cat-' . md5($tx['direction'] . $cat);
+
             if ($tx['direction'] === 'inflow') {
-                $balances[] = ['id' => uniqid(), 'name' => 'Cash/Bank', 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => $amt, 'credit' => 0];
+                $balances[] = ['id' => $bankId, 'name' => $bankName, 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => $amt, 'credit' => 0];
                 $type = (stripos($cat, 'sale') !== false) ? 'REVENUE' : 'EQUITY'; 
-                $balances[] = ['id' => uniqid(), 'name' => $cat, 'type' => $type, 'sub_type' => '', 'debit' => 0, 'credit' => $amt];
+                $balances[] = ['id' => $catId, 'name' => $cat, 'type' => $type, 'sub_type' => '', 'debit' => 0, 'credit' => $amt];
             } else {
                 $type = 'EXPENSE';
-                $balances[] = ['id' => uniqid(), 'name' => $cat, 'type' => $type, 'sub_type' => '', 'debit' => $amt, 'credit' => 0];
-                $balances[] = ['id' => uniqid(), 'name' => 'Cash/Bank', 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => 0, 'credit' => $amt];
+                $balances[] = ['id' => $catId, 'name' => $cat, 'type' => $type, 'sub_type' => '', 'debit' => $amt, 'credit' => 0];
+                $balances[] = ['id' => $bankId, 'name' => $bankName, 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => 0, 'credit' => $amt];
             }
         }
 

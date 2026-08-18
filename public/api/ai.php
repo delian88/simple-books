@@ -48,25 +48,26 @@ switch ($action) {
         $category    = $data['category']    ?? 'Other';
         $description = $data['description'] ?? null;
         $documentId  = $data['documentId']  ?? null;
+        $bankAccountId = $data['bankAccountId'] ?? null;
         $isFlagged   = 0;
         $flagReason  = null;
         $now         = date('Y-m-d H:i:s');
 
         if ($id) {
             $pdo->prepare("UPDATE expenses
-                           SET vendor=?, description=?, amount=?, date=?, category=?,
+                           SET vendor=?, description=?, amount=?, date=?, category=?, bank_account_id=?,
                                is_flagged=?, flag_reason=?, updated_at=?
                            WHERE id=? AND company_id=?")
-                ->execute([$vendor, $description, $amount, $date, $category,
+                ->execute([$vendor, $description, $amount, $date, $category, $bankAccountId,
                            $isFlagged, $flagReason, $now, $id, $companyId]);
         } else {
             $id = bin2hex(random_bytes(9));
             $pdo->prepare("INSERT INTO expenses
                            (id, company_id, document_id, vendor, description, amount,
-                            date, category, is_flagged, flag_reason, created_at, updated_at)
-                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                            date, category, bank_account_id, is_flagged, flag_reason, created_at, updated_at)
+                           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
                 ->execute([$id, $companyId, $documentId, $vendor, $description,
-                           $amount, $date, $category, $isFlagged, $flagReason, $now, $now]);
+                           $amount, $date, $category, $bankAccountId, $isFlagged, $flagReason, $now, $now]);
         }
 
         jsonResponse(['ok' => true, 'expenseId' => $id,
@@ -92,6 +93,7 @@ switch ($action) {
                 'amount'      => (float) $exp['amount'],
                 'date'        => substr($exp['date'] ?? '', 0, 10),
                 'category'    => $exp['category'],
+                'bankAccountId' => $exp['bank_account_id'],
                 'description' => $exp['description'],
                 'isFlagged'   => (bool) $exp['is_flagged'],
                 'flagReason'  => $exp['flag_reason'],
