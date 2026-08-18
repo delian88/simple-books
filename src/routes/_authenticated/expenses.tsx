@@ -172,6 +172,13 @@ function ExpensesPage() {
     recognition.onresult = async (event: any) => {
       setIsRecording(false);
       const text = event.results[0][0].transcript;
+      
+      if (!text || text.trim().length === 0) {
+        toast.error("Didn't catch any speech. Please try again.");
+        setUploadModalOpen(false);
+        return;
+      }
+      
       setIsUploading(true);
       setUploadProgress(`Heard: "${text}"... Detecting transaction details...`);
       
