@@ -334,7 +334,9 @@ function Dashboard() {
                 </div>
               </div>
             ) : (
-              <TransactionsTable rows={filteredTxns} currency={currency} />
+              <div className="overflow-x-auto w-full">
+                <TransactionsTable rows={filteredTxns} currency={currency} />
+              </div>
             )}
           </CardContent>
         </Card>
