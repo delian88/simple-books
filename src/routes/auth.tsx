@@ -182,17 +182,23 @@ function AuthPage() {
               </form>
 
               <div className="pt-2 text-center">
-                <button
-                  type="button"
-                  className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-700 underline underline-offset-4 cursor-pointer p-2 transition-colors"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setMode((v) => (v === "signin" ? "signup" : "signin"));
-                  }}
-                >
-                  {mode === "signin" ? "New here? Create an account" : "Already have an account? Sign in"}
-                </button>
+                {mode === "signin" ? (
+                  <Link
+                    to="/auth"
+                    search={{ mode: "signup" }}
+                    className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-700 underline underline-offset-4 cursor-pointer p-2 transition-colors"
+                  >
+                    New here? Create an account
+                  </Link>
+                ) : (
+                  <Link
+                    to="/auth"
+                    search={{ mode: "signin" }}
+                    className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-700 underline underline-offset-4 cursor-pointer p-2 transition-colors"
+                  >
+                    Already have an account? Sign in
+                  </Link>
+                )}
               </div>
             </CardContent>
         </Card>
