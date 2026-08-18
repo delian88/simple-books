@@ -63,14 +63,19 @@ function AuthPage() {
       if (mode === "signup") {
         await signup({ data: { email, password, businessName: businessName.trim() || "My Business" } });
         toast.success("Account created! 14-day free trial started.");
+        navigate({ to: "/dashboard" });
         window.location.href = "/dashboard";
       } else {
-        await login({ data: { email, password } });
+        const res = await login({ data: { email, password } });
+        console.log("Login response:", res);
         toast.success("Welcome back!");
+        navigate({ to: "/dashboard" });
         window.location.href = "/dashboard";
       }
     } catch (error) {
+      console.error("Login error:", error);
       toast.error(error instanceof Error ? error.message : "Something went wrong.");
+      setNotice(error instanceof Error ? error.message : "Failed to sign in.");
     } finally {
       setBusy(false);
     }
