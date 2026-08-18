@@ -374,7 +374,7 @@ function CustomersPage() {
         </div>
       }
     >
-    <div className="space-y-7 animate-in fade-in duration-500">
+    <div className="space-y-7 animate-in fade-in duration-500 min-w-0 w-full">
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -400,7 +400,7 @@ function CustomersPage() {
       </div>
 
       {/* Search + Table */}
-      <Card className="border-gray-200 shadow-sm overflow-hidden">
+      <Card className="border-gray-200 shadow-sm overflow-hidden w-full">
         <div className="p-4 border-b border-gray-100 flex items-center gap-3">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
