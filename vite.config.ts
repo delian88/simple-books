@@ -23,6 +23,10 @@ export default defineConfig({
       // Allow all hosts (for Render deployment and other hosting providers)
       allowedHosts: ['simple-books-06hs.onrender.com', '.onrender.com'],
       host: true,
+      headers: {
+        // Allow eval in dev mode (Vite HMR requires it)
+        'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' ws://localhost:* wss://localhost:* http://localhost:*;",
+      },
       proxy: {
         '/api': {
           target: 'http://localhost:8000',
