@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { addTransactions } from "@/lib/accounting.functions";
+import { useNotifications } from "@/contexts/NotificationContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -58,6 +59,7 @@ export function EntryForm({
   const queryClient = useQueryClient();
   const [error, setError] = useState("");
   const hint = categories.find((c) => c.value === draft.category)?.hint ?? "";
+  const { addNotification } = useNotifications();
 
   const save = useMutation({
     mutationFn: async () => {
@@ -83,6 +85,11 @@ export function EntryForm({
     onSuccess: () => {
       toast.success("Entry recorded");
       setError("");
+      addNotification({
+        type: "success",
+        title: `${direction === "inflow" ? "💰 Inflow" : "💸 Expense"} recorded`,
+        body: `${draft.counterparty || "Entry"} — ${draft.amount}${draft.note ? ` · ${draft.note}` : ""}`,
+      });
       onDraftChange(emptyDraft(draft.category, draft.bankAccountId));
       queryClient.invalidateQueries();
     },

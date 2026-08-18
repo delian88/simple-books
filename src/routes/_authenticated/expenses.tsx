@@ -37,6 +37,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 export const Route = createFileRoute("/_authenticated/expenses")({
   component: ExpensesPage,
@@ -50,6 +51,7 @@ function ExpensesPage() {
   const doDelete = useServerFn(deleteAIExpense);
   const fetchDocument = useServerFn(getExpenseDocument);
   const qc = useQueryClient();
+  const { addNotification } = useNotifications();
 
   const [uploadModalOpen, setUploadModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -82,6 +84,7 @@ function ExpensesPage() {
       qc.invalidateQueries({ queryKey: ["money-out"] });
       qc.invalidateQueries({ queryKey: ["transactions"] });
       toast.success("Expense updated successfully!");
+      addNotification({ type: "success", title: "💸 Expense saved", body: "Receipt expense updated and recorded." });
       setUploadModalOpen(false);
       setSelectedExpense(null);
       setParsedData(null);
@@ -100,6 +103,7 @@ function ExpensesPage() {
       qc.invalidateQueries({ queryKey: ["money-out"] });
       qc.invalidateQueries({ queryKey: ["transactions"] });
       toast.success("Expense deleted successfully");
+      addNotification({ type: "info", title: "🗑️ Expense deleted", body: "Receipt expense removed from records." });
       setSelectedExpense(null);
     },
     onError: (err: any) => {
@@ -167,8 +171,10 @@ function ExpensesPage() {
         qc.invalidateQueries({ queryKey: ["transactions"] });
         if (saveRes.isFlagged) {
           toast.warning(`Auto-recorded with flag: ${saveRes.flagReason}`, { duration: 8000 });
+          addNotification({ type: "warning", title: "⚠️ Receipt flagged", body: `${result.vendor} — ${saveRes.flagReason}` });
         } else {
           toast.success(`Transaction detected & recorded: ${result.vendor} (₦${Number(result.amount).toLocaleString()})`);
+          addNotification({ type: "success", title: "🎤 Voice expense recorded", body: `${result.vendor} — ₦${Number(result.amount).toLocaleString()}` });
         }
         setParsedData({ ...result, description: `Voice note: "${text}"`, recorded: true, expenseId: saveRes.expenseId });
       } catch (err: any) {

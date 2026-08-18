@@ -29,6 +29,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AIChatWidget } from "@/components/AIChatWidget";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { useNotifications, relativeTime } from "@/contexts/NotificationContext";
 
 const MAIN_NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -117,18 +118,15 @@ export function AppShell({
   // Determine if it's the dashboard to show the custom header title instead of the page title
   const isDashboard = location.pathname === "/dashboard" || location.pathname === "/admin";
 
+  // Real notifications from context
+  const { notifications, unreadCount, markAllAsRead } = useNotifications();
+
   // Derive displayName from user details
   const displayName =
     user?.businessName ||
     (user?.email ? user.email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) : "User");
 
-  // Dynamic system notifications
-  const notifications = [
-    { id: 1, title: "System Ready", time: "Just now", read: false },
-    { id: 2, title: "Monthly Statement Available", time: "2 hours ago", read: false },
-    { id: 3, title: "Backup Completed", time: "1 day ago", read: true },
-  ];
-  const unreadCount = notifications.filter((n) => !n.read).length;
+
 
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-background">
@@ -312,18 +310,29 @@ export function AppShell({
                   <span className="text-xs bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-medium">{unreadCount} new</span>
                 </div>
                 <div className="divide-y divide-border/40 max-h-80 overflow-y-auto bg-card text-card-foreground">
-                  {notifications.map((n) => (
-                    <div key={n.id} className="p-3.5 hover:bg-muted/50 transition-colors flex gap-3 items-start">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                      <div>
-                        <p className="text-xs font-medium">{n.title}</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">{n.time}</p>
+                  {notifications.length === 0 ? (
+                    <p className="p-6 text-center text-xs text-muted-foreground">No notifications yet</p>
+                  ) : (
+                    notifications.map((n) => (
+                      <div key={n.id} className="p-3.5 hover:bg-muted/50 transition-colors flex gap-3 items-start">
+                        <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${n.read ? "bg-muted-foreground/30" : "bg-emerald-500"}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-xs font-medium ${n.read ? "text-muted-foreground" : "text-foreground"}`}>{n.title}</p>
+                          {n.body && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{n.body}</p>}
+                          <p className="text-[11px] text-muted-foreground/60 mt-0.5">{relativeTime(n.time)}</p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
                 <div className="p-2.5 bg-muted/30 border-t border-border/40 text-center rounded-b-2xl">
-                  <span className="text-xs text-emerald-700 font-medium">Mark all as read</span>
+                  <button
+                    onClick={markAllAsRead}
+                    disabled={unreadCount === 0}
+                    className="text-xs text-emerald-700 font-medium hover:underline disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Mark all as read
+                  </button>
                 </div>
               </PopoverContent>
             </Popover>

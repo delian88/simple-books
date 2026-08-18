@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
 import { getSession } from "@/lib/auth.functions";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -33,5 +34,9 @@ function AuthGuard() {
 
   if (!user) return null;
 
-  return <Outlet />;
+  return (
+    <NotificationProvider>
+      <Outlet />
+    </NotificationProvider>
+  );
 }

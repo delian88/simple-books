@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useNotifications } from "@/contexts/NotificationContext";
 
 export const Route = createFileRoute("/_authenticated/sales/invoices")({
   component: InvoicesPage,
@@ -54,6 +55,7 @@ function NewInvoiceModal({
   invoice?: any;
 }) {
   const qc = useQueryClient();
+  const { addNotification } = useNotifications();
   const doCreate = useServerFn(createSalesInvoice);
   const doUpdate = useServerFn(updateSalesInvoice);
 
@@ -117,6 +119,11 @@ function NewInvoiceModal({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["salesInvoices"] });
       toast.success(invoice ? "Invoice updated successfully!" : "Invoice created successfully!");
+      addNotification({
+        type: "success",
+        title: invoice ? "📝 Invoice updated" : "🧳 New invoice created",
+        body: invoice ? `Invoice updated.` : `New sales invoice created successfully.`,
+      });
       onClose();
     },
     onError: (err: any) => {
@@ -330,6 +337,7 @@ function InvoiceDetailModal({
   onEdit: (invoice: any) => void;
 }) {
   const qc = useQueryClient();
+  const { addNotification } = useNotifications();
   const doUpdateStatus = useServerFn(updateInvoiceStatus);
 
   const statusMutation = useMutation({
@@ -342,8 +350,10 @@ function InvoiceDetailModal({
       if (status === "SENT") {
         toast.info("Email sending is disabled for now");
         toast.success("Invoice marked as Sent.");
+        addNotification({ type: "info", title: "📧 Invoice marked as Sent", body: `Status updated to SENT.` });
       } else {
         toast.success(`Invoice marked as ${status}.`);
+        addNotification({ type: "info", title: `📄 Invoice status: ${status}`, body: `Invoice status has been updated.` });
       }
     },
     onError: (err: any) => {
