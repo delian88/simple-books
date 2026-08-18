@@ -54,8 +54,8 @@ function AuthPage() {
     queryFn: () => getPublicSettings(),
   });
 
-  async function onSubmit(event: React.FormEvent) {
-    event.preventDefault();
+  async function handleLogin() {
+    console.log("🔵 handleLogin fired, mode:", mode, "email:", email);
     setBusy(true);
     setNotice("");
     try {
@@ -64,7 +64,9 @@ function AuthPage() {
         toast.success("Account created! 14-day free trial started.");
         window.location.replace("/dashboard");
       } else {
+        console.log("🔵 Calling login API...");
         const res = await login({ data: { email, password } });
+        console.log("🔵 Login API response:", res);
         if (!res || !res.token) throw new Error("No token returned from server");
         console.log("✅ Login success, redirecting to dashboard...");
         toast.success("Welcome back!");
@@ -113,7 +115,7 @@ function AuthPage() {
           <CardContent className="space-y-4">
 
 
-            <form className="space-y-4" onSubmit={onSubmit}>
+            <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); handleLogin(); }}>
               {mode === "signup" ? (
                 <div className="grid gap-2">
                   <Label htmlFor="business">Business name</Label>
@@ -175,7 +177,7 @@ function AuthPage() {
 
                 {notice ? <p className="text-sm text-accent-foreground">{notice}</p> : null}
 
-                <Button type="submit" className="w-full" disabled={busy}>
+                <Button type="button" className="w-full" disabled={busy} onClick={handleLogin}>
                   {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
                 </Button>
               </form>
