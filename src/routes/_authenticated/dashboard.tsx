@@ -167,65 +167,6 @@ function Dashboard() {
     >
 
       <div className="grid gap-6 lg:grid-cols-3 mb-6">
-        <Card className="lg:col-span-2 shadow-sm border-border">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="flex items-center gap-2 text-xl font-bold font-display">
-                <CalendarIcon className="h-5 w-5 text-muted-foreground" />
-                Recent Entries
-              </h2>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="text-xs h-8">
-                    {filter === "all" ? "All Transactions" : filter === "inflow" ? "Money In" : "Money Out"} <span className="ml-1 opacity-50">▼</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setFilter("all")}>All Transactions</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilter("inflow")}>Money In</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilter("outflow")}>Money Out</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            {filteredTxns.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <div className="relative mb-6">
-                  <div className="absolute inset-0 -m-4 bg-muted/50 rounded-full animate-pulse-slow"></div>
-                  <div className="relative z-10 flex h-24 w-24 items-center justify-center rounded-full bg-background border shadow-sm">
-                    <FileText className="h-10 w-10 text-muted-foreground/50" />
-                    <div className="absolute -bottom-2 -right-2 bg-background rounded-full p-1 border shadow-sm">
-                      <Search className="h-5 w-5 text-primary" />
-                    </div>
-                  </div>
-                </div>
-                <h3 className="text-lg font-bold font-display">No entries yet</h3>
-                <p className="mt-2 text-sm text-muted-foreground max-w-[250px]">
-                  Start by adding your first money in or money out transaction.
-                </p>
-                <div className="mt-6 flex items-center gap-3">
-                  <Button asChild className="bg-[#0B3D2B] hover:bg-[#0B3D2B]/90 text-white gap-2">
-                    <Link to="/money-in">
-                      <span>+</span> Money In
-                    </Link>
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 gap-2"
-                  >
-                    <Link to="/money-out">
-                      <span>−</span> Money Out
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <TransactionsTable rows={filteredTxns} currency={currency} />
-            )}
-          </CardContent>
-        </Card>
-
         <Card className="shadow-sm border-border">
           <CardContent className="p-6">
             <h2 className="text-xl font-bold font-display mb-6">Profit Breakdown</h2>
@@ -297,11 +238,8 @@ function Dashboard() {
             </div>
           </CardContent>
         </Card>
-      </div>
 
-
-      <div className="grid gap-6 lg:grid-cols-2 mb-6 mt-6">
-        <Card className="shadow-sm border-border">
+        <Card className="lg:col-span-2 shadow-sm border-border">
           <CardContent className="p-6">
             <h2 className="text-xl font-bold font-display mb-6">Income vs. Expenses</h2>
             <div className="h-64 w-full">
@@ -337,6 +275,67 @@ function Dashboard() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 mb-6">
+        <Card className="shadow-sm border-border">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="flex items-center gap-2 text-xl font-bold font-display">
+                <CalendarIcon className="h-5 w-5 text-muted-foreground" />
+                Recent Entries
+              </h2>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-xs h-8">
+                    {filter === "all" ? "All Transactions" : filter === "inflow" ? "Money In" : "Money Out"} <span className="ml-1 opacity-50">▼</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setFilter("all")}>All Transactions</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilter("inflow")}>Money In</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilter("outflow")}>Money Out</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {filteredTxns.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="relative mb-6">
+                  <div className="absolute inset-0 -m-4 bg-muted/50 rounded-full animate-pulse-slow"></div>
+                  <div className="relative z-10 flex h-24 w-24 items-center justify-center rounded-full bg-background border shadow-sm">
+                    <FileText className="h-10 w-10 text-muted-foreground/50" />
+                    <div className="absolute -bottom-2 -right-2 bg-background rounded-full p-1 border shadow-sm">
+                      <Search className="h-5 w-5 text-primary" />
+                    </div>
+                  </div>
+                </div>
+                <h3 className="text-lg font-bold font-display">No entries yet</h3>
+                <p className="mt-2 text-sm text-muted-foreground max-w-[250px]">
+                  Start by adding your first money in or money out transaction.
+                </p>
+                <div className="mt-6 flex items-center gap-3">
+                  <Button asChild className="bg-[#0B3D2B] hover:bg-[#0B3D2B]/90 text-white gap-2">
+                    <Link to="/money-in">
+                      <span>+</span> Money In
+                    </Link>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 gap-2"
+                  >
+                    <Link to="/money-out">
+                      <span>−</span> Money Out
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <TransactionsTable rows={filteredTxns} currency={currency} />
+            )}
           </CardContent>
         </Card>
       </div>
