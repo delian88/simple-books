@@ -142,8 +142,45 @@ switch ($action) {
             'id' => $payload['sub'],
             'email' => $uData['email'] ?? $payload['email'] ?? null,
             'role' => $uData['role'] ?? 'Company',
-            'businessName' => $uData['business_name'] ?? null
+            'businessName' => $uData['business_name'] ?? null,
+            'profilePicture' => $uData['profile_picture'] ?? null
         ]);
+        break;
+
+    case 'updateProfile':
+        $payload = getAuthPayload();
+        if (!$payload) jsonResponse(['error' => 'No session'], 401);
+        $input = json_decode(file_get_contents('php://input'), true);
+        $updates = [];
+        $params = [];
+        if (isset($input['businessName'])) {
+            $updates[] = 'business_name = ?';
+            $params[] = $input['businessName'];
+        }
+        if (isset($input['profilePicture'])) {
+            $updates[] = 'profile_picture = ?';
+            $params[] = $input['profilePicture'];
+        }
+        if (empty($updates)) {
+            jsonResponse(['ok' => true]);
+        }
+        $params[] = $payload['sub'];
+        $sql = 'UPDATE profiles SET ' . implode(', ', $updates) . ' WHERE id = ?';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        jsonResponse(['ok' => true]);
+        break;
+
+    case 'switchRole':
+        $payload = getAuthPayload();
+        if (!$payload) jsonResponse(['error' => 'No session'], 401);
+        $input = json_decode(file_get_contents('php://input'), true);
+        $newRole = $input['role'] === 'Admin' ? 'Admin' : 'Company';
+        
+        $stmt = $pdo->prepare('UPDATE users SET role = ? WHERE id = ?');
+        $stmt->execute([$newRole, $payload['sub']]);
+        
+        jsonResponse(['ok' => true]);
         break;
 
     default:

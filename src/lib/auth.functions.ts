@@ -63,3 +63,27 @@ export const getSession = async () => {
     return null;
   }
 };
+
+export const updateProfile = async ({ data }: { data: { businessName?: string; profilePicture?: string } }) => {
+  const token = getToken();
+  const res = await fetch('/api/auth.php?action=updateProfile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify(data)
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Failed to update profile');
+  return json;
+};
+
+export const switchRole = async ({ data }: { data: { role: string } }) => {
+  const token = getToken();
+  const res = await fetch('/api/auth.php?action=switchRole', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify(data)
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Failed to switch role');
+  return json;
+};
