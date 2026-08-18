@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // accounting.php
 require_once 'db.php';
 define('AUTH_AS_LIB', true);
@@ -35,8 +35,27 @@ switch ($action) {
         break;
 
     case 'listTransactions':
-        $stmt = $pdo->prepare("SELECT * FROM transactions WHERE company_id = ? ORDER BY occurred_on DESC LIMIT 500");
-        $stmt->execute([$companyId]);
+        $sql = "
+            SELECT id, direction, category, amount, occurred_on, counterparty, note, source 
+            FROM transactions 
+            WHERE company_id = ?
+            
+            UNION ALL
+            
+            SELECT id, 'outflow' as direction, category, amount, date as occurred_on, vendor as counterparty, description as note, 'ai_expense' as source 
+            FROM expenses 
+            WHERE company_id = ?
+            
+            UNION ALL
+            
+            SELECT id, 'inflow' as direction, 'sales' as category, total_amount as amount, issue_date as occurred_on, (SELECT name FROM customers WHERE customers.id = sales_invoices.customer_id) as counterparty, notes as note, 'invoice' as source 
+            FROM sales_invoices 
+            WHERE company_id = ?
+            
+            ORDER BY occurred_on DESC LIMIT 500
+        ";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$companyId, $companyId, $companyId]);
         $rows = $stmt->fetchAll();
         foreach ($rows as &$r) {
             $r['amount'] = (float) $r['amount'];
