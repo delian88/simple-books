@@ -618,9 +618,12 @@ function ExpensesPage() {
               <div className="flex items-center justify-between">
                 <DialogTitle className="text-xl font-bold flex items-center gap-2">
                   <Sparkles className="h-5 w-5 text-emerald-600" />
-                  Smart Scan Receipt
+                  {isRecording ? "Voice Entry" : "Smart Scan Receipt"}
                 </DialogTitle>
-                <button onClick={() => setUploadModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => {
+                  setUploadModalOpen(false);
+                  setIsRecording(false);
+                }} className="text-gray-400 hover:text-gray-600">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -645,21 +648,35 @@ function ExpensesPage() {
                     </div>
                   )}
 
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-emerald-200 bg-emerald-50/50 rounded-xl p-8 text-center cursor-pointer hover:bg-emerald-50 transition-colors"
-                  >
-                    <UploadCloud className="h-10 w-10 text-emerald-500 mx-auto mb-3" />
-                    <p className="text-sm font-medium text-emerald-800 mb-1">Click to upload receipt</p>
-                    <p className="text-xs text-emerald-600/70">JPG, PNG up to 5MB</p>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      className="hidden"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                    />
-                  </div>
+                  {isRecording ? (
+                    <div className="flex flex-col items-center justify-center py-12 space-y-6">
+                      <div className="relative flex items-center justify-center h-24 w-24 rounded-full bg-emerald-100">
+                        <div className="absolute inset-0 rounded-full border-4 border-emerald-500 opacity-25 animate-ping"></div>
+                        <Mic className="h-10 w-10 text-emerald-600 animate-pulse" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-lg font-medium text-gray-900 animate-pulse">Listening...</p>
+                        <p className="text-sm text-gray-500 mt-1">Speak your expense details clearly.</p>
+                        <p className="text-xs text-gray-400 mt-1">"I spent 5000 naira on lunch at McDonald's"</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="border-2 border-dashed border-emerald-200 bg-emerald-50/50 rounded-xl p-8 text-center cursor-pointer hover:bg-emerald-50 transition-colors"
+                    >
+                      <UploadCloud className="h-10 w-10 text-emerald-500 mx-auto mb-3" />
+                      <p className="text-sm font-medium text-emerald-800 mb-1">Click to upload receipt</p>
+                      <p className="text-xs text-emerald-600/70">JPG, PNG up to 5MB</p>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 
