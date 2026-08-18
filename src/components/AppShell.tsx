@@ -315,18 +315,15 @@ export function AppShell({
                   {notifications.map((n) => (
                     <div key={n.id} className="p-3.5 hover:bg-muted/50 transition-colors flex gap-3 items-start">
                       <div className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                        <div>
-                          <p className="text-xs font-medium text-gray-900">{n.title}</p>
-                          <p className="text-[11px] text-gray-400 mt-0.5">{n.time}</p>
-                        </div>
+                      <div>
+                        <p className="text-xs font-medium">{n.title}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{n.time}</p>
                       </div>
-                    ))}
-                  </div>
-                  <div className="p-2.5 bg-muted/30 border-t border-border/40 text-center rounded-b-2xl">
-                    <button onClick={() => document.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))} className="text-xs text-emerald-700 font-medium hover:underline">
-                      Close
-                    </button>
-                  </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-2.5 bg-muted/30 border-t border-border/40 text-center rounded-b-2xl">
+                  <span className="text-xs text-emerald-700 font-medium">Mark all as read</span>
                 </div>
               </PopoverContent>
             </Popover>
