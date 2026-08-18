@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getSystemSettings, updateSystemSettings } from "@/lib/admin.functions";
+import { switchRole } from "@/lib/auth.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -80,7 +81,16 @@ function AdminSettings() {
     onError: (e) => toast.error(e.message),
   });
 
-  if (isLoading) return <div>Loading...</div>;
+  const roleMutation = useMutation({
+    mutationFn: (data: { role: string }) => switchRole({ data }),
+    onSuccess: () => {
+      toast.success("Role switched successfully. Refreshing...");
+      setTimeout(() => window.location.reload(), 1000);
+    },
+    onError: (e: any) => toast.error(e.message || "Failed to switch role"),
+  });
+
+  if (isLoading) return <AppShell><div className="p-8 text-center">Loading...</div></AppShell>;
 
   return (
     <AppShell>
