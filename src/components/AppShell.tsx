@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AIChatWidget } from "@/components/AIChatWidget";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useNotifications, relativeTime } from "@/contexts/NotificationContext";
 
@@ -341,16 +342,35 @@ export function AppShell({
               </PopoverContent>
             </Popover>
 
-            <div className="flex items-center gap-3 border-l border-border pl-3 lg:pl-6">
-              <Avatar className="h-7 w-7 border lg:h-9 lg:w-9">
-                <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`} />
-                <AvatarFallback>{displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <div className="hidden flex-col md:flex">
-                <span className="text-sm font-semibold text-foreground">{displayName}</span>
-                <span className="text-xs text-muted-foreground">{user?.email}</span>
-              </div>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-3 border-l border-border pl-3 lg:pl-6 hover:opacity-80 transition-opacity focus:outline-none">
+                  <Avatar className="h-7 w-7 border lg:h-9 lg:w-9">
+                    <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`} />
+                    <AvatarFallback>{displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="hidden flex-col md:flex text-left">
+                    <span className="text-sm font-semibold text-foreground">{displayName}</span>
+                    <span className="text-xs text-muted-foreground">{user?.email}</span>
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 mt-1">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/admin/settings" className="cursor-pointer flex w-full items-center">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut} className="text-red-600 cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           <CommandDialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
