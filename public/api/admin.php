@@ -12,7 +12,7 @@ function ensureAdmin($pdo): string {
     $stmt = $pdo->prepare("SELECT role FROM users WHERE id = ? LIMIT 1");
     $stmt->execute([$userId]);
     $user = $stmt->fetch();
-    if (!$user || $user['role'] !== 'admin') {
+    if (!$user || strtolower($user['role']) !== 'admin') {
         jsonResponse(['error' => 'Forbidden — admin only'], 403);
     }
     return $userId;
