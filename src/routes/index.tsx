@@ -74,7 +74,7 @@ function Landing() {
     queryFn: () => getPublicSettings(),
     staleTime: 1000 * 60 * 5, // cache 5 min
   });
-  const appName = appSettings?.appName || "Mykobobooks";
+  const appName = appSettings?.appName || "My KoboBooks";
   const appLogo = appSettings?.appLogo || null;
 
 

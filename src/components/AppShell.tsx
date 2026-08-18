@@ -122,7 +122,7 @@ export function AppShell({
               </div>
             )}
             <div>
-              <div className="leading-none">{appSettings?.appName || "Mykobobooks"}</div>
+              <div className="leading-none">{appSettings?.appName || "My KoboBooks"}</div>
               {user?.role === "Admin" && (
                 <div className="text-[10px] font-medium tracking-widest text-white/50 uppercase mt-1">Super Admin</div>
               )}

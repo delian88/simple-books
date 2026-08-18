@@ -18,10 +18,10 @@ export const Route = createFileRoute("/auth")({
   },
   head: () => ({
     meta: [
-      { title: "Sign in — Mykobobooks" },
-      { name: "description", content: "Sign in to your Mykobobooks books to record inflows, outflows and your balance sheet." },
-      { property: "og:title", content: "Sign in — Mykobobooks" },
-      { property: "og:description", content: "Sign in to your Mykobobooks books." },
+      { title: "Sign in — My KoboBooks" },
+      { name: "description", content: "Sign in to your My KoboBooks books to record inflows, outflows and your balance sheet." },
+      { property: "og:title", content: "Sign in — My KoboBooks" },
+      { property: "og:description", content: "Sign in to your My KoboBooks books." },
     ],
   }),
   component: AuthPage,
@@ -98,7 +98,7 @@ function AuthPage() {
           ) : (
             <BookOpenText className="h-6 w-6 text-accent" />
           )}
-          {appSettings?.appName || "Mykobobooks"}
+          {appSettings?.appName || "My KoboBooks"}
         </Link>
         <Card className="shadow-ledger">
           <CardHeader>
