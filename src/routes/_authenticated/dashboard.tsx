@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
 import {
@@ -13,6 +13,8 @@ import {
   DatabaseZap,
   Info,
   Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { getProfile, listTransactions, listBalanceItems } from "@/lib/accounting.functions";
 import { AppShell } from "@/components/AppShell";
@@ -65,18 +67,57 @@ function Dashboard() {
   const currency = profile.currency;
   
   const [filter, setFilter] = useState<"all" | "inflow" | "outflow">("all");
-  const filteredTxns = filter === "all" ? txns : txns.filter((t: any) => t.direction === filter);
+
+  // Month navigation
+  const today = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<{ year: number; month: number }>({
+    year: today.getFullYear(),
+    month: today.getMonth(), // 0-indexed
+  });
+
+  const monthLabel = useMemo(() => {
+    const d = new Date(selectedMonth.year, selectedMonth.month, 1);
+    const first = new Date(selectedMonth.year, selectedMonth.month, 1);
+    const last = new Date(selectedMonth.year, selectedMonth.month + 1, 0);
+    const monthName = d.toLocaleString("default", { month: "short" });
+    return `${monthName} ${first.getDate()} - ${monthName} ${last.getDate()}, ${selectedMonth.year}`;
+  }, [selectedMonth]);
+
+  const isCurrentMonth = selectedMonth.year === today.getFullYear() && selectedMonth.month === today.getMonth();
+
+  function goToPrevMonth() {
+    setSelectedMonth(({ year, month }) =>
+      month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 }
+    );
+  }
+
+  function goToNextMonth() {
+    if (isCurrentMonth) return;
+    setSelectedMonth(({ year, month }) =>
+      month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 }
+    );
+  }
+
+  // Filter transactions to selected month
+  const monthTxns = useMemo(() => {
+    return txns.filter((t: any) => {
+      const d = new Date(t.occurred_on || t.createdAt || t.date);
+      return d.getFullYear() === selectedMonth.year && d.getMonth() === selectedMonth.month;
+    });
+  }, [txns, selectedMonth]);
+
+  const filteredTxns = filter === "all" ? monthTxns : monthTxns.filter((t: any) => t.direction === filter);
 
   const sum = (predicate: (c: TxnCategory) => boolean) =>
-    txns.filter((t) => predicate(t.category as TxnCategory)).reduce((acc, t) => acc + t.amount, 0);
+    monthTxns.filter((t) => predicate(t.category as TxnCategory)).reduce((acc, t) => acc + t.amount, 0);
 
   const sales = sum((c) => c === "sales");
   const otherIncome = sum((c) => c === "other_income");
   const totalRevenue = sales + otherIncome;
   const expenses = sum((c) => c === "expense");
   const profit = totalRevenue - expenses;
-  const totalIn = txns.filter((t) => t.direction === "inflow").reduce((a, t) => a + t.amount, 0);
-  const totalOut = txns.filter((t) => t.direction === "outflow").reduce((a, t) => a + t.amount, 0);
+  const totalIn = monthTxns.filter((t) => t.direction === "inflow").reduce((a, t) => a + t.amount, 0);
+  const totalOut = monthTxns.filter((t) => t.direction === "outflow").reduce((a, t) => a + t.amount, 0);
 
   const assets = balanceItems
     .filter((i: any) => i.side === "asset")
@@ -101,9 +142,26 @@ function Dashboard() {
     <AppShell
       title={data.profile.business_name}
       actions={
-        <div className="flex items-center gap-2 rounded-md border bg-background px-3 py-1.5 text-sm font-medium shadow-sm">
-          <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-          <span>Aug 1 - Aug 31, 2025</span>
+        <div className="flex items-center gap-1 rounded-md border bg-background shadow-sm">
+          <button
+            onClick={goToPrevMonth}
+            className="p-1.5 hover:bg-muted rounded-l-md transition-colors text-muted-foreground hover:text-foreground"
+            title="Previous month"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <div className="flex items-center gap-1.5 px-2 py-1.5 text-sm font-medium">
+            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+            <span>{monthLabel}</span>
+          </div>
+          <button
+            onClick={goToNextMonth}
+            disabled={isCurrentMonth}
+            className="p-1.5 hover:bg-muted rounded-r-md transition-colors text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+            title="Next month"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
       }
     >
