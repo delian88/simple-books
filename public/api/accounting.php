@@ -52,10 +52,26 @@ switch ($action) {
             FROM sales_invoices 
             WHERE company_id = ?
             
+            UNION ALL
+            
+            SELECT 
+                je.id, 
+                CASE WHEN a.type = 'REVENUE' THEN 'inflow' ELSE 'outflow' END as direction, 
+                CASE WHEN a.type = 'EXPENSE' THEN 'expense' ELSE 'sales' END as category, 
+                CASE WHEN a.type = 'EXPENSE' THEN jl.debit ELSE jl.credit END as amount, 
+                je.date as occurred_on, 
+                je.reference as counterparty, 
+                je.description as note, 
+                'journal' as source 
+            FROM journal_lines jl
+            JOIN journal_entries je ON je.id = jl.journal_entry_id
+            JOIN accounts a ON a.id = jl.account_id
+            WHERE je.company_id = ? AND a.type IN ('EXPENSE', 'REVENUE')
+            
             ORDER BY occurred_on DESC LIMIT 500
         ";
         $stmt = $pdo->prepare($sql);
-        $stmt->execute([$companyId, $companyId, $companyId]);
+        $stmt->execute([$companyId, $companyId, $companyId, $companyId]);
         $rows = $stmt->fetchAll();
         foreach ($rows as &$r) {
             $r['amount'] = (float) $r['amount'];
