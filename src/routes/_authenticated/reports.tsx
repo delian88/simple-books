@@ -26,7 +26,7 @@ import { Badge } from "@/components/ui/badge";
 export const Route = createFileRoute("/_authenticated/reports")({
   head: () => ({
     meta: [
-      { title: "Reports — My Kobobooks" },
+      { title: "Reports — KoboBooks" },
       { name: "description", content: "View and generate financial reports including income statement, balance sheet, trial balance, and more." },
     ],
   }),

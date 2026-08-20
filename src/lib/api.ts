@@ -11,13 +11,40 @@ import { getToken } from "@/lib/auth.functions";
 export async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
   const token = getToken();
 
+  // Normalize /api/ path formatting to ensure it matches Vite proxy target
+  const normalizedUrl = url.startsWith('/') ? url : `/api/${url}`;
+  
+  // Use a base URL if provided in environment (e.g. for production connecting to a separate PHP host)
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+  const endpoint = baseUrl ? `${baseUrl}${normalizedUrl}` : normalizedUrl;
+
   const headers = new Headers(options.headers ?? {});
-  headers.set("Content-Type", "application/json");
-  if (token) {
+  if (!headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+  if (token && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  return fetch(url, { ...options, headers });
+  // 15 second timeout signal to prevent indefinite hanging
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const res = await fetch(endpoint, {
+      ...options,
+      headers,
+      signal: options.signal || controller.signal,
+    });
+    clearTimeout(id);
+    return res;
+  } catch (err: any) {
+    clearTimeout(id);
+    if (err.name === "AbortError") {
+      throw new Error("Request timed out. Please check your internet connection or server.");
+    }
+    throw err;
+  }
 }
 
 /**

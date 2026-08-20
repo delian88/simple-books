@@ -1,4 +1,7 @@
-const TOKEN_KEY = 'My Kobobooks_token';
+import { apiFetch } from "@/lib/api";
+
+const TOKEN_KEY = 'KoboBooks_token';
+const LEGACY_TOKEN_KEY = 'My Kobobooks_token';
 
 /** Save the auth token returned by PHP to localStorage */
 export function saveToken(token: string) {
@@ -7,34 +10,50 @@ export function saveToken(token: string) {
 
 /** Get the stored auth token */
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
+  return localStorage.getItem(TOKEN_KEY) || localStorage.getItem(LEGACY_TOKEN_KEY);
 }
 
 /** Remove the stored auth token (logout) */
 export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(LEGACY_TOKEN_KEY);
 }
 
 export const login = async ({ data }: { data: { email: string; password: string } }) => {
-  const res = await fetch('/api/auth.php?action=login', {
+  const res = await apiFetch('/api/auth.php?action=login', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || 'Failed to login');
+  const text = await res.text();
+  let json: any = {};
+  try {
+    json = text ? JSON.parse(text) : {};
+  } catch (e) {
+    json = {};
+  }
+  if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error(`PHP server is not running on http://localhost:8000. Please start PHP server with: php -S localhost:8000 -t public`);
+    }
+    throw new Error(json.error || `Login failed (${res.status})`);
+  }
   // Save token for subsequent API calls
   if (json.token) saveToken(json.token);
   return json;
 };
 
 export const signup = async ({ data }: { data: { email: string; password: string; businessName: string } }) => {
-  const res = await fetch('/api/auth.php?action=signup', {
+  const res = await apiFetch('/api/auth.php?action=signup', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
-  const json = await res.json();
+  const text = await res.text();
+  let json: any = {};
+  try {
+    json = text ? JSON.parse(text) : {};
+  } catch (e) {
+    throw new Error(`Server error (${res.status}): ${text.slice(0, 100) || 'Backend API unavailable. Ensure PHP server is running on port 8000.'}`);
+  }
   if (!res.ok) throw new Error(json.error || 'Failed to signup');
   // Save token for subsequent API calls
   if (json.token) saveToken(json.token);
@@ -43,7 +62,7 @@ export const signup = async ({ data }: { data: { email: string; password: string
 
 export const logout = async () => {
   clearToken();
-  await fetch('/api/auth.php?action=logout', { method: 'POST' }).catch(() => {});
+  await apiFetch('/api/auth.php?action=logout', { method: 'POST' }).catch(() => {});
   return { ok: true };
 };
 
@@ -51,9 +70,7 @@ export const getSession = async () => {
   const token = getToken();
   if (!token) return null;
   try {
-    const res = await fetch('/api/auth.php?action=session', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const res = await apiFetch('/api/auth.php?action=session');
     if (!res.ok) {
       clearToken(); // Token is invalid/expired, clean up
       return null;
@@ -65,10 +82,8 @@ export const getSession = async () => {
 };
 
 export const updateProfile = async ({ data }: { data: { businessName?: string; profilePicture?: string } }) => {
-  const token = getToken();
-  const res = await fetch('/api/auth.php?action=updateProfile', {
+  const res = await apiFetch('/api/auth.php?action=updateProfile', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
     body: JSON.stringify(data)
   });
   const json = await res.json();
@@ -77,10 +92,8 @@ export const updateProfile = async ({ data }: { data: { businessName?: string; p
 };
 
 export const switchRole = async ({ data }: { data: { role: string } }) => {
-  const token = getToken();
-  const res = await fetch('/api/auth.php?action=switchRole', {
+  const res = await apiFetch('/api/auth.php?action=switchRole', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
     body: JSON.stringify(data)
   });
   const json = await res.json();

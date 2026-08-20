@@ -45,7 +45,7 @@ switch ($action) {
         $vendor      = $data['vendor']      ?? '';
         $amount      = $data['amount']      ?? 0;
         $date        = $data['date']        ?? date('Y-m-d');
-        $accountId   = $data['accountId']   ?? null;
+        $accountId   = $data['accountId']   ?? 'Other';
         $description = $data['description'] ?? null;
         $documentId  = $data['documentId']  ?? null;
         $bankAccountId = $data['bankAccountId'] ?? null;
@@ -177,21 +177,35 @@ switch ($action) {
         $data = json_decode(file_get_contents('php://input'), true) ?? [];
         $text = $data['text'] ?? '';
         
+        $prompt = "Extract the vendor, amount, date (YYYY-MM-DD), and category from this expense text: '$text'. Return ONLY a valid JSON object with the exact keys: 'vendor', 'amount' (number), 'date' (string), 'category' (string). Do not include markdown formatting or backticks. If you can't find a category, use 'Other'. If you can't find the date, use '" . date('Y-m-d') . "'.";
+        
+        $url = 'https://text.pollinations.ai/' . urlencode($prompt) . '?jsonMode=true';
+        
+        $response = @file_get_contents($url);
+        
+        if ($response) {
+            $parsed = json_decode($response, true);
+            if (is_array($parsed) && isset($parsed['vendor'])) {
+                jsonResponse([
+                    'vendor'   => $parsed['vendor'] ?? 'Unknown Vendor',
+                    'amount'   => (float)($parsed['amount'] ?? 0),
+                    'date'     => $parsed['date'] ?? date('Y-m-d'),
+                    'category' => $parsed['category'] ?? 'Other',
+                ]);
+            }
+        }
+        
+        // Fallback to heuristic parser if API fails or returns invalid JSON
         $vendor = 'Unknown Vendor';
         $amount = 0;
         $category = 'Other';
         
-        // Extract Amount: look for numbers, optionally with decimals, possibly near currency words/symbols
         if (preg_match('/(?:₦|\$|£|€)?\s*(\d+(?:,\d{3})*(?:\.\d+)?)\s*(?:naira|dollars|bucks|pounds|euros)?/i', $text, $matches)) {
             $amount = (float)str_replace(',', '', $matches[1]);
         }
-        
-        // Extract Vendor: look for "at [Vendor]", "from [Vendor]", "to [Vendor]", "paid [Vendor]"
         if (preg_match('/\b(?:at|from|to|paid)\s+([A-Z][a-z0-9&\'\-]+\s*[A-Z]?[a-z0-9&\'\-]*)/', $text, $matches)) {
             $vendor = trim($matches[1]);
         }
-        
-        // Simple Category matching based on keywords
         $lowerText = strtolower($text);
         if (strpos($lowerText, 'lunch') !== false || strpos($lowerText, 'food') !== false || strpos($lowerText, 'restaurant') !== false || strpos($lowerText, 'dinner') !== false || strpos($lowerText, 'meal') !== false) {
             $category = 'Meals & Entertainment';

@@ -1,0 +1,1 @@
+<?php $prompt="Extract the vendor, amount, date (YYYY-MM-DD), and category from this expense text: I spent 5000 naira on lunch at McDonald. Return ONLY a valid JSON object with the exact keys: vendor, amount (number), date (string), category (string). Do not include markdown formatting or backticks."; echo file_get_contents("https://text.pollinations.ai/" . urlencode($prompt));

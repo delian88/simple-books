@@ -42,7 +42,7 @@ const moneyInQuery = queryOptions({
 export const Route = createFileRoute("/_authenticated/money-in")({
   head: () => ({
     meta: [
-      { title: "Money in — My Kobobooks" },
+      { title: "Money in — KoboBooks" },
       { name: "description", content: "Record capital, sales, loans and debtor payments, or import them from a bank statement." },
     ],
   }),

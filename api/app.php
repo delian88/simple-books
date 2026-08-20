@@ -10,7 +10,7 @@ if ($action === 'getPublicSettings' && $_SERVER['REQUEST_METHOD'] === 'GET') {
     $settings = $stmt->fetchAll();
     
     $result = [
-        'appName' => 'Ledgerly',
+        'appName' => 'KoboBooks',
         'appLogo' => ''
     ];
     

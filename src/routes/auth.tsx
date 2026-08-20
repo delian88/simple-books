@@ -12,15 +12,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
-  validateSearch: (search: Record<string, unknown>) => {
-    return {
-      mode: (search.mode as "signin" | "signup") || "signin",
-    };
-  },
+  validateSearch: (search: Record<string, unknown>): { mode?: "signup" | "signin" } => ({
+    mode: search?.mode === "signup" ? "signup" : undefined,
+  }),
   head: () => ({
     meta: [
-      { title: "Sign in — My KoboBooks" },
-      { name: "description", content: "Sign in to your My KoboBooks account." },
+      { title: "Sign in — KoboBooks" },
+      { name: "description", content: "Sign in to your KoboBooks account." },
     ],
   }),
   component: AuthPage,
@@ -28,9 +26,7 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const search = Route.useSearch();
-  const [mode, setMode] = useState<"signin" | "signup">(
-    search.mode === "signup" ? "signup" : "signin"
-  );
+  const mode = search.mode === "signup" ? "signup" : "signin";
   const [businessName, setBusinessName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,24 +34,11 @@ function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  useEffect(() => {
-    setMode(search.mode === "signup" ? "signup" : "signin");
-    // Reset loading whenever mode changes (guard against stuck state)
-    setLoading(false);
-  }, [search.mode]);
-
-  // Redirect if already logged in
-  useEffect(() => {
-    getSession().then((user) => {
-      if (user) {
-        window.location.replace("/dashboard");
-      }
-    });
-  }, []);
-
   const { data: appSettings } = useQuery({
     queryKey: ["app_settings"],
     queryFn: () => getPublicSettings(),
+    staleTime: 5 * 60 * 1000,
+    retry: false,
   });
 
   async function handleSignIn() {
@@ -73,12 +56,13 @@ function AuthPage() {
       if (!res?.token) throw new Error("No token returned from server.");
       console.log("✅ Login success! Redirecting...");
       toast.success("Welcome back!");
-      window.location.replace("/dashboard");
+      window.location.href = "/dashboard";
     } catch (err) {
       console.error("❌ Login failed:", err);
       const msg = err instanceof Error ? err.message : "Sign in failed. Please try again.";
       setErrorMsg(msg);
       toast.error(msg);
+    } finally {
       setLoading(false);
     }
   }
@@ -92,12 +76,13 @@ function AuthPage() {
     setErrorMsg("");
     try {
       await signup({ data: { email, password, businessName: businessName.trim() || "My Business" } });
-      toast.success("Account created! Welcome to My KoboBooks.");
-      window.location.replace("/dashboard");
+      toast.success("Account created! Welcome to KoboBooks.");
+      window.location.href = "/dashboard";
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign up failed. Please try again.";
       setErrorMsg(msg);
       toast.error(msg);
+    } finally {
       setLoading(false);
     }
   }
@@ -125,7 +110,7 @@ function AuthPage() {
           ) : (
             <BookOpenText className="h-6 w-6 text-accent" />
           )}
-          {appSettings?.appName || "My KoboBooks"}
+          {appSettings?.appName || "KoboBooks"}
         </Link>
 
         <Card className="shadow-ledger">
@@ -179,6 +164,7 @@ function AuthPage() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSubmit(); }}
                   className="pr-10"
                 />
                 <button
@@ -200,7 +186,7 @@ function AuthPage() {
             {/* Submit button */}
             <Button
               type="button"
-              className="w-full"
+              className="w-full cursor-pointer"
               disabled={loading}
               onClick={handleSubmit}
             >
@@ -220,7 +206,7 @@ function AuthPage() {
               ) : (
                 <Link
                   to="/auth"
-                  search={{ mode: "signin" }}
+                  search={{}}
                   className="inline-block text-sm font-semibold text-emerald-600 hover:text-emerald-700 underline underline-offset-4 transition-colors"
                 >
                   Already have an account? Sign in

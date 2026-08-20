@@ -8,7 +8,7 @@ import { Printer } from "lucide-react";
 export const Route = createFileRoute("/_authenticated/balance-sheet")({
   head: () => ({
     meta: [
-      { title: "Balance sheet — My Kobobooks" },
+      { title: "Balance sheet — KoboBooks" },
       { name: "description", content: "Record what your business owns and owes, and see your net worth." },
     ],
   }),

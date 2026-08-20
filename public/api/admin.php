@@ -38,7 +38,7 @@ switch ($action) {
             $map[$row['key']] = $row['value'];
         }
         jsonResponse([
-            'appName'                  => $map['app_name']                   ?? 'My Kobobooks',
+            'appName'                  => $map['app_name']                   ?? 'KoboBooks',
             'appLogo'                  => $map['app_logo']                   ?? null,
             'appTagline'               => $map['app_tagline']                ?? '',
             'subscriptionCurrency'     => $map['subscription_currency']      ?? 'NGN',

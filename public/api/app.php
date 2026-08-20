@@ -12,7 +12,7 @@ switch ($action) {
             $map[$row['key']] = $row['value'];
         }
         jsonResponse([
-            'appName'    => $map['app_name']    ?? 'My Kobobooks',
+            'appName'    => $map['app_name']    ?? 'KoboBooks',
             'appLogo'    => $map['app_logo']    ?? null,
             'appTagline' => $map['app_tagline'] ?? 'Simple Accounting for Small Businesses',
         ]);

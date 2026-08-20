@@ -3,7 +3,7 @@ services:
     name: ledgerly
     env: static
     buildCommand: chmod +x build.sh && ./build.sh
-    staticPublishPath: .output/public
+    staticPublishPath: dist/public
     pullRequestPreviewsEnabled: true
     headers:
       - path: /*

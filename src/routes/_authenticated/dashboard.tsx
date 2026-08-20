@@ -52,7 +52,7 @@ const dashboardQuery = queryOptions({
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
-    meta: [{ title: "Dashboard — My Kobobooks" }],
+    meta: [{ title: "Dashboard — KoboBooks" }],
   }),
   component: Dashboard,
 });
@@ -60,7 +60,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 
 function Dashboard() {
-  const { data } = useSuspenseQuery(dashboardQuery);
+  const { data, isLoading } = useQuery(dashboardQuery);
   const profile = data?.profile || { currency: "USD", business_name: "Business" };
   const txns = Array.isArray(data?.transactions) ? data.transactions : [];
   const balanceItems = Array.isArray(data?.balanceItems) ? data.balanceItems : [];

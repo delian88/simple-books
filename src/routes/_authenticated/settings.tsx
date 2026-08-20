@@ -38,7 +38,7 @@ function AdminSettings() {
   useEffect(() => {
     if (settings) {
       setFormData({
-        appName: settings.appName || "My Kobobooks",
+        appName: settings.appName || "KoboBooks",
         appLogo: settings.appLogo || "",
         subscriptionCurrency: settings.subscriptionCurrency || "NGN",
         subscriptionPrice: settings.subscriptionPrice || "10",

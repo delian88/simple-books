@@ -1,0 +1,1 @@
+<?php echo file_get_contents("https://text.pollinations.ai/Extract%20the%20vendor,%20amount,%20date(YYYY-MM-DD),%20and%20category%20from%20this%20expense:%20I%20spent%205000%20naira%20at%20McDonalds%20for%20lunch.%20Return%20ONLY%20valid%20JSON:%20{\"vendor\":\"\",\"amount\":0,\"date\":\"\",\"category\":\"\"}?jsonMode=true");

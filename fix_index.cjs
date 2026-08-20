@@ -12,33 +12,38 @@ const path = require('path');
 
 const OUT_DIR = '.output/public';
 
-// ── 1. Verify build output exists ─────────────────────────────────────────────
-if (!fs.existsSync(path.join(OUT_DIR, 'assets/index.js'))) {
-  console.error('ERROR: .output/public/assets/index.js not found. Run npm run build first.');
+// ── 1. Find main JS asset dynamically ─────────────────────────────────────────────
+const assetsDir = path.join(OUT_DIR, 'assets');
+let jsFile = 'index.js';
+if (fs.existsSync(assetsDir)) {
+  const files = fs.readdirSync(assetsDir);
+  const found = files.find(f => f.endsWith('.js') && f.startsWith('index'));
+  if (found) jsFile = found;
+}
+
+if (!fs.existsSync(path.join(OUT_DIR, 'assets', jsFile))) {
+  console.error(`ERROR: .output/public/assets/${jsFile} not found. Run npm run build first.`);
   process.exit(1);
 }
 
-// ── 2. Read the CSS path (fixed name, no hash) ────────────────────────────────
+// ── 2. Read the CSS path ──────────────────────────────────────────────────────
 const cssPath  = '/assets/app.css';
-const jsPath   = '/assets/index.js';
+const jsPath   = `/assets/${jsFile}`;
 
 // ── 3. Generate static SPA shell ──────────────────────────────────────────────
-// Head tags match exactly what __root.tsx's head() + RootShell render, so that
-// when createRoot mounts the app tree, no server HTML exists to reconcile with.
-// React #418 is impossible because there is no hydrateRoot call in the bundle.
 const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Mykobobooks \u2014 Simple Accounting for Small Businesses</title>
+  <title>KoboBooks — Simple Accounting for Small Businesses</title>
   <meta name="description" content="Capture inflows from your bank statement and outflows from scanned receipts, see your profit, and keep a live balance sheet with our simple accounting platform." />
   <meta name="keywords" content="accounting, small business, bookkeeping, ledger, financial statements, trial balance, receipt scanner" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-  <meta property="og:title" content="Mykobobooks \u2014 Simple Accounting for Small Businesses" />
+  <meta property="og:title" content="KoboBooks — Simple Accounting for Small Businesses" />
   <meta property="og:description" content="Capture inflows from your bank statement and outflows from scanned receipts, see your profit, and keep a live balance sheet." />
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Mykobobooks" />
+  <meta property="og:site_name" content="KoboBooks" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

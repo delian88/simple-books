@@ -31,6 +31,7 @@ import { Route as AuthenticatedLedgerRouteImport } from './routes/_authenticated
 import { Route as AuthenticatedMoneyInRouteImport } from './routes/_authenticated/money-in'
 import { Route as AuthenticatedMoneyOutRouteImport } from './routes/_authenticated/money-out'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTrialBalanceRouteImport } from './routes/_authenticated/trial-balance'
 import { Route as AdminCmsRouteImport } from './routes/admin/cms'
 import { Route as AdminPaymentsRouteImport } from './routes/admin/payments'
@@ -153,6 +154,11 @@ const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedTrialBalanceRoute =
   AuthenticatedTrialBalanceRouteImport.update({
     id: '/trial-balance',
@@ -208,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/money-in': typeof AuthenticatedMoneyInRoute
   '/money-out': typeof AuthenticatedMoneyOutRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/trial-balance': typeof AuthenticatedTrialBalanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/payments': typeof AdminPaymentsRoute
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/money-in': typeof AuthenticatedMoneyInRoute
   '/money-out': typeof AuthenticatedMoneyOutRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/settings': typeof AuthenticatedSettingsRoute
   '/trial-balance': typeof AuthenticatedTrialBalanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/payments': typeof AdminPaymentsRoute
@@ -268,6 +276,7 @@ export interface FileRoutesById {
   '/_authenticated/money-in': typeof AuthenticatedMoneyInRoute
   '/_authenticated/money-out': typeof AuthenticatedMoneyOutRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/trial-balance': typeof AuthenticatedTrialBalanceRoute
   '/admin/cms': typeof AdminCmsRoute
   '/admin/payments': typeof AdminPaymentsRoute
@@ -299,6 +308,7 @@ export interface FileRouteTypes {
     | '/money-in'
     | '/money-out'
     | '/reports'
+    | '/settings'
     | '/trial-balance'
     | '/admin/cms'
     | '/admin/payments'
@@ -328,6 +338,7 @@ export interface FileRouteTypes {
     | '/money-in'
     | '/money-out'
     | '/reports'
+    | '/settings'
     | '/trial-balance'
     | '/admin/cms'
     | '/admin/payments'
@@ -358,6 +369,7 @@ export interface FileRouteTypes {
     | '/_authenticated/money-in'
     | '/_authenticated/money-out'
     | '/_authenticated/reports'
+    | '/_authenticated/settings'
     | '/_authenticated/trial-balance'
     | '/admin/cms'
     | '/admin/payments'
@@ -534,6 +546,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedReportsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/trial-balance': {
       id: '/_authenticated/trial-balance'
       path: '/trial-balance'
@@ -593,6 +612,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMoneyInRoute: typeof AuthenticatedMoneyInRoute
   AuthenticatedMoneyOutRoute: typeof AuthenticatedMoneyOutRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTrialBalanceRoute: typeof AuthenticatedTrialBalanceRoute
   AuthenticatedSalesInvoicesRoute: typeof AuthenticatedSalesInvoicesRoute
 }
@@ -611,6 +631,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMoneyInRoute: AuthenticatedMoneyInRoute,
   AuthenticatedMoneyOutRoute: AuthenticatedMoneyOutRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTrialBalanceRoute: AuthenticatedTrialBalanceRoute,
   AuthenticatedSalesInvoicesRoute: AuthenticatedSalesInvoicesRoute,
 }

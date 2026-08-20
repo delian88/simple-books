@@ -1,0 +1,1 @@
+<?php require "public/api/db.php"; try { $pdo->exec("ALTER TABLE expenses ADD COLUMN bank_account_id varchar(36) NULL AFTER company_id"); echo "Success\n"; } catch (Exception $e) { echo $e->getMessage(); } ?>

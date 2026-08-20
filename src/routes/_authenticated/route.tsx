@@ -19,7 +19,7 @@ function AuthGuard() {
   });
 
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isLoading && !user && typeof window !== "undefined" && !window.location.pathname.startsWith("/auth")) {
       navigate({ to: "/auth", replace: true });
     }
   }, [user, isLoading, navigate]);

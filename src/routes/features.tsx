@@ -62,7 +62,7 @@ function FeaturesPage() {
                 <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
                     <Link to="/" className="flex items-center gap-2 group cursor-pointer">
                         <BookOpenText className="h-6 w-6 text-emerald-600 transition-transform group-hover:rotate-12 group-hover:scale-110" />
-                        <span className="font-display text-xl font-semibold">My Kobobooks</span>
+                        <span className="font-display text-xl font-semibold">KoboBooks</span>
                     </Link>
                     <nav className="hidden items-center gap-8 md:flex">
                         <Link to="/features" className="text-sm font-medium text-emerald-600 hover:underline underline-offset-4">
@@ -103,7 +103,7 @@ function FeaturesPage() {
                         Powerful features for <span className="text-emerald-600">simple accounting</span>
                     </h1>
                     <p className="mx-auto mt-6 max-w-2xl text-lg text-gray-600">
-                        My Kobobooks combines powerful automation with intuitive design to make bookkeeping accessible for everyone.
+                        KoboBooks combines powerful automation with intuitive design to make bookkeeping accessible for everyone.
                     </p>
                 </section>
 
@@ -161,7 +161,7 @@ function FeaturesPage() {
                         Ready to simplify your accounting?
                     </h2>
                     <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-600">
-                        Join thousands of small businesses using My Kobobooks to manage their books.
+                        Join thousands of small businesses using KoboBooks to manage their books.
                     </p>
                     <div className="mt-8 flex flex-wrap justify-center gap-4">
                         <Button asChild size="lg" className="bg-emerald-600 hover:bg-emerald-700">
@@ -180,7 +180,7 @@ function FeaturesPage() {
                     <div className="mx-auto max-w-7xl px-6">
                         <div className="flex flex-col items-center gap-3 text-center">
                             <p className="text-sm text-gray-500">
-                                My Kobobooks — plain-language bookkeeping for small and medium businesses.
+                                KoboBooks — plain-language bookkeeping for small and medium businesses.
                             </p>
                             <p className="flex items-center gap-2 text-xs text-gray-400">
                                 Powered by <span className="font-semibold text-emerald-600">Nutech</span>

@@ -6,11 +6,11 @@
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
-    "postbuild": "node fix_index.cjs",
+    "postbuild": "node fix_index.cjs && node move_to_dist.cjs",
     "build:prod": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
-    "start": "node .output/server/index.mjs",
+    "start": "node dist/server/index.mjs",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
