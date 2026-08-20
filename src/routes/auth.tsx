@@ -12,9 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
-  validateSearch: (search: Record<string, unknown>): { mode?: "signup" | "signin" } => ({
-    mode: search?.mode === "signup" ? "signup" : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { mode?: "signup" | "signin" } => {
+    if (search?.mode === "signup") return { mode: "signup" };
+    if (search?.mode === "signin") return { mode: "signin" };
+    return {};
+  },
   head: () => ({
     meta: [
       { title: "Sign in — KoboBooks" },
