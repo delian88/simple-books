@@ -63,14 +63,13 @@ export default function PaymentsPage() {
       title="Payment Methods" 
       subtitle="Manage accepted payment methods and gateways."
       actions={
-        <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Method
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
+        <>
+          <Button onClick={() => setIsAddModalOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Method
+          </Button>
+          <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+            <DialogContent>
             <DialogHeader>
               <DialogTitle>Add Payment Method</DialogTitle>
             </DialogHeader>
@@ -109,8 +108,9 @@ export default function PaymentsPage() {
                 </Button>
               </div>
             </form>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </>
       }
     >
       <div className="mt-6">

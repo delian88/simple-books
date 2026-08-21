@@ -109,8 +109,8 @@ switch ($action) {
         $filename = uniqid('logo_') . '.' . $ext;
         $dest = __DIR__ . '/uploads/' . $filename;
         if (move_uploaded_file($file['tmp_name'], $dest)) {
-            // Because PHP is serving the root, the path will be /api/uploads/filename
-            $url = 'http://127.0.0.1:8000/api/uploads/' . $filename; 
+            // Return relative path so it works across environments
+            $url = '/api/uploads/' . $filename; 
             jsonResponse(['url' => $url]);
         } else {
             jsonResponse(['error' => 'Failed to save file'], 500);

@@ -1,226 +1,200 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { FileText, Plus, Pencil, Trash2, Globe, Lock } from "lucide-react";
-import { listPages, savePage, deletePage } from "@/lib/cms.functions";
+import { Button } from "@/components/ui/button";
+import { Loader2, Save, Plus, Trash2 } from "lucide-react";
+import { getLandingPageConfig, updateLandingPageConfig, LandingPageConfig } from "@/lib/cms.functions";
 import { toast } from "sonner";
-import { Switch } from "@/components/ui/switch";
 
 export default function CmsPage() {
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
-  
-  const [title, setTitle] = useState("");
-  const [slug, setSlug] = useState("");
-  const [content, setContent] = useState("");
-  const [published, setPublished] = useState(false);
-
-  const { data: pages = [], isLoading } = useQuery({
-    queryKey: ["cms-pages"],
-    queryFn: async () => {
-      const res = await listPages();
-      return Array.isArray(res) ? res : [];
-    }
+  const [formData, setFormData] = useState<LandingPageConfig>({
+    hero_title: "",
+    hero_subtitle: "",
+    features: [],
+    contact_email: ""
   });
 
-  const saveMutation = useMutation({
-    mutationFn: savePage,
+  const { data: config, isLoading } = useQuery({
+    queryKey: ["cms-config"],
+    queryFn: getLandingPageConfig,
+  });
+
+  useEffect(() => {
+    if (config) {
+      setFormData({
+        hero_title: config.hero_title || "",
+        hero_subtitle: config.hero_subtitle || "",
+        features: Array.isArray(config.features) ? config.features : [],
+        contact_email: config.contact_email || ""
+      });
+    }
+  }, [config]);
+
+  const updateMutation = useMutation({
+    mutationFn: (data: LandingPageConfig) => updateLandingPageConfig(data),
     onSuccess: () => {
-      toast.success(editId ? "Page updated" : "Page created");
-      queryClient.invalidateQueries({ queryKey: ["cms-pages"] });
-      setOpen(false);
-      resetForm();
+      queryClient.invalidateQueries({ queryKey: ["cms-config"] });
+      toast.success("Landing page configuration updated");
     },
     onError: (error: any) => {
-      toast.error(error.message || "Failed to save page");
+      toast.error(error.message || "Failed to update configuration");
     }
   });
-
-  const deleteMutation = useMutation({
-    mutationFn: deletePage,
-    onSuccess: () => {
-      toast.success("Page deleted");
-      queryClient.invalidateQueries({ queryKey: ["cms-pages"] });
-    }
-  });
-
-  const resetForm = () => {
-    setEditId(null);
-    setTitle("");
-    setSlug("");
-    setContent("");
-    setPublished(false);
-  };
-
-  const handleCreate = () => {
-    resetForm();
-    setOpen(true);
-  };
-
-  const handleEdit = (page: any) => {
-    setEditId(page.id);
-    setTitle(page.title);
-    setSlug(page.slug);
-    setContent(page.content);
-    setPublished(Boolean(page.published));
-    setOpen(true);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !slug) {
-      toast.error("Title and slug are required");
-      return;
-    }
-    saveMutation.mutate({ data: { id: editId, title, slug, content, published } });
+    updateMutation.mutate(formData);
   };
+
+  const addFeature = () => {
+    setFormData(prev => ({
+      ...prev,
+      features: [...prev.features, { title: "", description: "" }]
+    }));
+  };
+
+  const removeFeature = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      features: prev.features.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateFeature = (index: number, field: "title" | "description", value: string) => {
+    setFormData(prev => {
+      const newFeatures = [...prev.features];
+      newFeatures[index] = { ...newFeatures[index], [field]: value };
+      return { ...prev, features: newFeatures };
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <AppShell title="Content Management" subtitle="Manage your public landing page content.">
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell 
       title="Content Management" 
-      subtitle="Manage pages and content for your application."
-      actions={
-        <Button onClick={handleCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Page
-        </Button>
-      }
+      subtitle="Manage your public landing page content."
     >
-      <Dialog open={open} onOpenChange={(val) => { setOpen(val); if (!val) resetForm(); }}>
-        <DialogContent className="sm:max-w-[800px] h-[80vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle>{editId ? "Edit Page" : "Create Page"}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4 flex-1 flex flex-col pt-4 overflow-y-auto">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Title</Label>
-                <Input required value={title} onChange={e => {
-                  setTitle(e.target.value);
-                  if (!editId && !slug) {
-                    setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''));
-                  }
-                }} placeholder="e.g. Terms of Service" />
-              </div>
-              <div className="space-y-2">
-                <Label>Slug (URL path)</Label>
-                <Input required value={slug} onChange={e => setSlug(e.target.value)} placeholder="e.g. terms-of-service" />
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-2">
-              <Switch id="published" checked={published} onCheckedChange={setPublished} />
-              <Label htmlFor="published">Publish (make available to public)</Label>
-            </div>
-
-            <div className="flex-1 space-y-2 flex flex-col">
-              <Label>Content (Markdown or HTML)</Label>
-              <Textarea 
-                className="flex-1 font-mono resize-none min-h-[300px]" 
-                value={content} 
-                onChange={e => setContent(e.target.value)} 
-                placeholder="Write your page content here..."
+      <form onSubmit={handleSubmit} className="mt-6 space-y-6 max-w-4xl">
+        <Card className="shadow-sm border-border">
+          <CardHeader>
+            <CardTitle>Hero Section</CardTitle>
+            <CardDescription>Main headline and text shown at the top of the landing page.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="hero_title">Hero Title</Label>
+              <Input 
+                id="hero_title" 
+                value={formData.hero_title}
+                onChange={(e) => setFormData({...formData, hero_title: e.target.value})}
+                placeholder="e.g. Simple Accounting for Small Businesses"
               />
             </div>
-
-            <div className="flex justify-end pt-4 mt-auto">
-              <Button type="button" variant="outline" className="mr-2" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? "Saving..." : "Save Page"}
-              </Button>
+            <div className="space-y-2">
+              <Label htmlFor="hero_subtitle">Hero Subtitle</Label>
+              <Textarea 
+                id="hero_subtitle" 
+                value={formData.hero_subtitle}
+                onChange={(e) => setFormData({...formData, hero_subtitle: e.target.value})}
+                placeholder="e.g. Manage your finances effortlessly..."
+                rows={3}
+              />
             </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+          </CardContent>
+        </Card>
 
-      <div className="mt-6">
-        {isLoading ? (
-          <div className="flex h-32 items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        ) : pages.length === 0 ? (
-          <Card className="shadow-sm border-border w-full">
-            <CardContent className="p-0">
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <div className="relative mb-6">
-                  <div className="absolute inset-0 -m-4 bg-muted/50 rounded-full animate-pulse-slow"></div>
-                  <div className="relative z-10 flex h-24 w-24 items-center justify-center rounded-full bg-background border shadow-sm">
-                    <FileText className="h-10 w-10 text-muted-foreground/50" />
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold font-display">No Pages Found</h3>
-                <p className="mt-2 text-muted-foreground max-w-[300px]">Create your first page to get started with the CMS.</p>
-                <Button variant="outline" className="mt-6" onClick={handleCreate}>
-                  <Plus className="mr-2 h-4 w-4" /> Create First Page
-                </Button>
+        <Card className="shadow-sm border-border">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>Features</CardTitle>
+              <CardDescription>List the key features of your business.</CardDescription>
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={addFeature}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Feature
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {formData.features.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground border rounded-lg border-dashed">
+                No features added yet. Click "Add Feature" to create one.
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="shadow-sm border-border">
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Title</TableHead>
-                    <TableHead>Slug</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Last Updated</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pages.map((page: any) => (
-                    <TableRow key={page.id}>
-                      <TableCell className="font-medium">{page.title}</TableCell>
-                      <TableCell className="text-muted-foreground font-mono text-sm">/{page.slug}</TableCell>
-                      <TableCell>
-                        {page.published ? (
-                          <span className="inline-flex items-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
-                            <Globe className="w-3.5 h-3.5" />
-                            Published
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 py-1 px-2 rounded-md text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
-                            <Lock className="w-3.5 h-3.5" />
-                            Draft
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {new Date(page.updated_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(page)}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => {
-                          if (confirm("Are you sure you want to delete this page?")) {
-                            deleteMutation.mutate({ data: { id: page.id } });
-                          }
-                        }}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+            ) : (
+              formData.features.map((feature, index) => (
+                <div key={index} className="flex gap-4 items-start p-4 border rounded-lg bg-muted/20">
+                  <div className="flex-1 space-y-4">
+                    <div className="space-y-2">
+                      <Label>Feature Title</Label>
+                      <Input 
+                        value={feature.title}
+                        onChange={(e) => updateFeature(index, 'title', e.target.value)}
+                        placeholder="e.g. Invoice Generation"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Description</Label>
+                      <Textarea 
+                        value={feature.description}
+                        onChange={(e) => updateFeature(index, 'description', e.target.value)}
+                        placeholder="Briefly describe this feature..."
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                  <Button type="button" variant="ghost" size="icon" className="text-destructive mt-8" onClick={() => removeFeature(index)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm border-border">
+          <CardHeader>
+            <CardTitle>Contact Information</CardTitle>
+            <CardDescription>How customers can reach out to you.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Label htmlFor="contact_email">Contact Email</Label>
+              <Input 
+                id="contact_email" 
+                type="email"
+                value={formData.contact_email}
+                onChange={(e) => setFormData({...formData, contact_email: e.target.value})}
+                placeholder="e.g. support@company.com"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-end">
+          <Button type="submit" disabled={updateMutation.isPending}>
+            {updateMutation.isPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Save className="mr-2 h-4 w-4" />
+            )}
+            Save Changes
+          </Button>
+        </div>
+      </form>
     </AppShell>
   );
 }
