@@ -15,7 +15,7 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
   const normalizedUrl = url.startsWith('/') ? url : `/api/${url}`;
   
   // Use a base URL if provided in environment (e.g. for production connecting to a separate PHP host)
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || '';
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
   const endpoint = baseUrl ? `${baseUrl}${normalizedUrl}` : normalizedUrl;
 
   const headers = new Headers(options.headers ?? {});
@@ -53,6 +53,13 @@ export async function apiFetch(url: string, options: RequestInit = {}): Promise<
 export async function apiGet<T = any>(url: string): Promise<T> {
   const res = await apiFetch(url);
   if (!res.ok) {
+    if (res.status === 401) {
+      if (typeof window !== 'undefined') {
+        const { clearToken } = await import('@/lib/auth.functions');
+        clearToken();
+        window.location.href = '/';
+      }
+    }
     const err = await res.json().catch(() => ({}));
     throw new Error((err as any).error || `Request failed: ${res.status}`);
   }
@@ -62,6 +69,13 @@ export async function apiGet<T = any>(url: string): Promise<T> {
 export async function apiPost<T = any>(url: string, body: unknown): Promise<T> {
   const res = await apiFetch(url, { method: "POST", body: JSON.stringify(body) });
   if (!res.ok) {
+    if (res.status === 401) {
+      if (typeof window !== 'undefined') {
+        const { clearToken } = await import('@/lib/auth.functions');
+        clearToken();
+        window.location.href = '/';
+      }
+    }
     const err = await res.json().catch(() => ({}));
     throw new Error((err as any).error || `Request failed: ${res.status}`);
   }

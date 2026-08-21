@@ -1,51 +1,203 @@
 <?php
-// api/auth.php
-require_once 'config.php';
+// auth.php - Full custom auth using MySQL users table + signed JWT
+require_once 'db.php';
 
-$action = $_GET['action'] ?? '';
-$input = json_decode(file_get_contents('php://input'), true);
+// JWT SECRET — set via .htaccess: SetEnv APP_JWT_SECRET your_secret_here
+define('JWT_SECRET', getenv('APP_JWT_SECRET') ?: 'ledgerly_default_secret_change_in_production');
+define('TOKEN_EXPIRY_SECONDS', 60 * 60 * 24 * 7); // 7 days
 
-if ($action === 'login' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $input['data']['email'] ?? '';
-    $password = $input['data']['password'] ?? '';
-    
-    $stmt = $pdo->prepare("SELECT id, password, role FROM users WHERE email = ?");
-    $stmt->execute([$email]);
-    $user = $stmt->fetch();
-    
-    if ($user && password_verify($password, $user['password'])) {
-        // Log activity
-        $logStmt = $pdo->prepare("INSERT INTO activity_logs (id, user_id, action, description, created_at) VALUES (UUID(), ?, 'LOGIN', 'User logged in to the platform.', NOW())");
-        $logStmt->execute([$user['id']]);
-        
-        $token = generate_jwt(['userId' => $user['id'], 'role' => $user['role'], 'exp' => time() + 86400]);
-        setcookie('ledgerly_auth', $token, time() + 86400, '/');
-        sendResponse(['ok' => true]);
-    } else {
-        http_response_code(400);
-        sendResponse(['error' => 'Invalid email or password']);
+function b64url_encode(string $data): string {
+    return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
+}
+function b64url_decode(string $data): string {
+    $pad = strlen($data) % 4;
+    if ($pad) $data .= str_repeat('=', 4 - $pad);
+    return base64_decode(strtr($data, '-_', '+/'));
+}
+function createJWT(array $payload): string {
+    $h = b64url_encode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));
+    $payload['iat'] = time();
+    $payload['exp'] = time() + TOKEN_EXPIRY_SECONDS;
+    $p = b64url_encode(json_encode($payload));
+    $s = b64url_encode(hash_hmac('sha256', "$h.$p", JWT_SECRET, true));
+    return "$h.$p.$s";
+}
+function verifyJWT(string $token): ?array {
+    $parts = explode('.', $token);
+    if (count($parts) !== 3) return null;
+    [$h, $p, $s] = $parts;
+    $expected = b64url_encode(hash_hmac('sha256', "$h.$p", JWT_SECRET, true));
+    if (!hash_equals($expected, $s)) return null;
+    $payload = json_decode(b64url_decode($p), true);
+    if (!$payload || (isset($payload['exp']) && $payload['exp'] < time())) return null;
+    return $payload;
+}
+function getAuthPayload(): ?array {
+    $headers = function_exists('apache_request_headers') ? apache_request_headers() : [];
+    foreach ($_SERVER as $k => $v) {
+        if (strpos($k, 'HTTP_') === 0) {
+            $key = str_replace('_', '-', ucwords(strtolower(substr($k, 5)), '_'));
+            if (!isset($headers[$key])) $headers[$key] = $v;
+        }
     }
-} 
-elseif ($action === 'logout' && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    setcookie('ledgerly_auth', '', time() - 3600, '/');
-    sendResponse(['ok' => true]);
+    $auth = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+    if (strpos($auth, 'Bearer ') === 0) {
+        return verifyJWT(substr($auth, 7));
+    }
+    return null;
 }
-elseif ($action === 'session' && $_SERVER['REQUEST_METHOD'] === 'GET') {
-    $token = $_COOKIE['ledgerly_auth'] ?? null;
-    if (!$token) sendResponse(null);
-    
-    $payload = verify_jwt($token);
-    if (!$payload || $payload['exp'] < time()) sendResponse(null);
-    
-    $stmt = $pdo->prepare("SELECT id, email, role FROM users WHERE id = ?");
-    $stmt->execute([$payload['userId']]);
-    $user = $stmt->fetch();
-    
-    sendResponse($user ?: null);
+
+// Returns userId string or sends 401
+function requireAuth(): string {
+    $payload = getAuthPayload();
+    if (!$payload || empty($payload['sub'])) {
+        jsonResponse(['error' => 'Unauthorized'], 401);
+    }
+    return $payload['sub'];
 }
-// Signup is omitted for brevity in this step, it requires handling many tables.
-else {
-    http_response_code(404);
-    sendResponse(['error' => 'Not found']);
+
+// Returns company_id string or sends 403
+function getActiveCompanyId($pdo, string $userId): string {
+    $stmt = $pdo->prepare("SELECT company_id FROM company_users WHERE user_id = ? LIMIT 1");
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch();
+    if (!$row) jsonResponse(['error' => 'User has no company'], 403);
+    return $row['company_id'];
 }
+
+// ── ACTIONS — only run when auth.php is accessed directly ───────────────────
+if (!defined('AUTH_AS_LIB')) {
+$action = $_GET['action'] ?? '';
+
+switch ($action) {
+
+    case 'signup':
+        $body = json_decode(file_get_contents('php://input'), true) ?? [];
+        $email        = trim($body['email'] ?? '');
+        $password     = $body['password'] ?? '';
+        $businessName = trim($body['businessName'] ?? 'My Business');
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL))
+            jsonResponse(['error' => 'Invalid email address'], 400);
+        if (strlen($password) < 6)
+            jsonResponse(['error' => 'Password must be at least 6 characters'], 400);
+
+        $chk = $pdo->prepare("SELECT id FROM users WHERE email = ? LIMIT 1");
+        $chk->execute([$email]);
+        if ($chk->fetch()) jsonResponse(['error' => 'An account with that email already exists'], 409);
+
+        $userId    = bin2hex(random_bytes(9)); // 18-char unique id
+        $hash      = password_hash($password, PASSWORD_BCRYPT);
+        $now       = date('Y-m-d H:i:s');
+
+        $pdo->prepare("INSERT INTO users (id, email, password, role, created_at, updated_at) VALUES (?, ?, ?, 'Company', ?, ?)")
+            ->execute([$userId, $email, $hash, $now, $now]);
+
+        $companyId = bin2hex(random_bytes(9));
+        $pdo->prepare("INSERT INTO companies (id, name, default_currency, created_at, updated_at) VALUES (?, ?, 'NGN', ?, ?)")
+            ->execute([$companyId, $businessName, $now, $now]);
+
+        $pdo->prepare("INSERT INTO company_users (id, user_id, company_id, role, status, created_at, updated_at) VALUES (?, ?, ?, 'OWNER', 'ACTIVE', ?, ?)")
+            ->execute([bin2hex(random_bytes(9)), $userId, $companyId, $now, $now]);
+
+        $token = createJWT(['sub' => $userId, 'email' => $email, 'company' => $companyId]);
+        jsonResponse(['ok' => true, 'token' => $token, 'user' => ['id' => $userId, 'email' => $email]]);
+        break;
+
+    case 'login':
+        $body     = json_decode(file_get_contents('php://input'), true) ?? [];
+        $email    = trim($body['email'] ?? '');
+        $password = $body['password'] ?? '';
+
+        if (!$email || !$password) jsonResponse(['error' => 'Email and password are required'], 400);
+
+        $stmt = $pdo->prepare("SELECT id, password FROM users WHERE email = ? LIMIT 1");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+
+        $storedHash = str_replace('$2b$', '$2y$', $user['password'] ?? '');
+        if (!$user || !password_verify($password, $storedHash)) {
+            jsonResponse(['error' => 'Invalid email or password'], 401);
+        }
+
+        $cuStmt = $pdo->prepare("SELECT company_id FROM company_users WHERE user_id = ? LIMIT 1");
+        $cuStmt->execute([$user['id']]);
+        $cu = $cuStmt->fetch();
+
+        $token = createJWT(['sub' => $user['id'], 'email' => $email, 'company' => $cu['company_id'] ?? null]);
+        jsonResponse(['ok' => true, 'token' => $token, 'user' => ['id' => $user['id'], 'email' => $email]]);
+        break;
+
+    case 'logout':
+        jsonResponse(['ok' => true]);
+        break;
+
+    case 'session':
+        $payload = getAuthPayload();
+        if (!$payload) jsonResponse(['error' => 'No session'], 401);
+        $stmt = $pdo->prepare("
+            SELECT u.id, u.email, u.role, c.name as business_name, NULL as profile_picture 
+            FROM users u 
+            LEFT JOIN company_users cu ON cu.user_id = u.id 
+            LEFT JOIN companies c ON c.id = cu.company_id 
+            WHERE u.id = ? LIMIT 1
+        ");
+        $stmt->execute([$payload['sub']]);
+        $uData = $stmt->fetch();
+        jsonResponse([
+            'id' => $payload['sub'],
+            'email' => $uData['email'] ?? $payload['email'] ?? null,
+            'role' => $uData['role'] ?? 'Company',
+            'businessName' => $uData['business_name'] ?? null,
+            'profilePicture' => $uData['profile_picture'] ?? null
+        ]);
+        break;
+
+    case 'updateProfile':
+        $payload = getAuthPayload();
+        if (!$payload) jsonResponse(['error' => 'No session'], 401);
+        $input = json_decode(file_get_contents('php://input'), true);
+        $updates = [];
+        $params = [];
+        if (isset($input['businessName'])) {
+            $updates[] = 'name = ?';
+            $params[] = $input['businessName'];
+        }
+        if (isset($input['profilePicture'])) {
+            // $updates[] = 'logo_url = ?';
+            // $params[] = $input['profilePicture'];
+        }
+        if (empty($updates)) {
+            jsonResponse(['ok' => true]);
+        }
+        
+        $cuStmt = $pdo->prepare("SELECT company_id FROM company_users WHERE user_id = ? LIMIT 1");
+        $cuStmt->execute([$payload['sub']]);
+        $cu = $cuStmt->fetch();
+        
+        if ($cu && !empty($cu['company_id'])) {
+            $params[] = $cu['company_id'];
+            $sql = 'UPDATE companies SET ' . implode(', ', $updates) . ' WHERE id = ?';
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+        }
+        jsonResponse(['ok' => true]);
+        break;
+
+    case 'switchRole':
+        $payload = getAuthPayload();
+        if (!$payload) jsonResponse(['error' => 'No session'], 401);
+        $input = json_decode(file_get_contents('php://input'), true);
+        $newRole = $input['role'] === 'Admin' ? 'Admin' : 'Company';
+        
+        $stmt = $pdo->prepare('UPDATE users SET role = ? WHERE id = ?');
+        $stmt->execute([$newRole, $payload['sub']]);
+        
+        jsonResponse(['ok' => true]);
+        break;
+
+    default:
+        jsonResponse(['error' => 'Unknown action'], 400);
+}
+} // end direct-access guard
 ?>

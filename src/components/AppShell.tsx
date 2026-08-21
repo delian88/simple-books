@@ -1,4 +1,5 @@
-import { Link, useNavigate, useLocation } from "@tanstack/react-router";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { 
   BookOpenText, 
@@ -78,8 +79,8 @@ export function AppShell({
     queryFn: () => getPublicSettings(),
   });
 
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   
@@ -115,11 +116,11 @@ export function AppShell({
 
   async function signOut() {
     await logout();
-    navigate({ to: "/auth" });
+    router.push("/auth");
   }
 
   // Determine if it's the dashboard to show the custom header title instead of the page title
-  const isDashboard = location.pathname === "/dashboard" || location.pathname === "/admin";
+  const isDashboard = pathname === "/dashboard" || pathname === "/admin";
 
   // Real notifications from context
   const { notifications, unreadCount, markAllAsRead } = useNotifications();
@@ -144,7 +145,7 @@ export function AppShell({
       {/* Sidebar */}
       <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#0B3D2B] text-white transition-transform duration-200 ease-in-out lg:translate-x-0 print:hidden ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex h-14 lg:h-20 items-center justify-between px-6">
-          <Link to="/dashboard" className="flex items-center gap-3 font-display text-xl font-bold">
+          <Link href="/dashboard" className="flex items-center gap-3 font-display text-xl font-bold">
             {appSettings?.appLogo ? (
               <img src={appSettings.appLogo} alt="App Logo" className="h-8 w-8 object-contain" />
             ) : (
@@ -172,10 +173,13 @@ export function AppShell({
             {MAIN_NAV.map((item) => (
               <Link
                 key={item.to}
-                to={item.to}
+                href={item.to}
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-                activeProps={{ className: "bg-[#145C42] text-white font-semibold" }}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                  pathname === item.to 
+                    ? "bg-[#145C42] text-white font-semibold" 
+                    : "text-white/70 hover:bg-white/10 hover:text-white"
+                }`}
               >
                 <item.icon className="h-5 w-5" />
                 {item.label}
@@ -188,10 +192,13 @@ export function AppShell({
                 {ADMIN_NAV.map((item) => (
                   <Link
                     key={item.to}
-                    to={item.to}
+                    href={item.to}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-                    activeProps={{ className: "bg-[#145C42] text-white font-semibold" }}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                      pathname === item.to 
+                        ? "bg-[#145C42] text-white font-semibold" 
+                        : "text-white/70 hover:bg-white/10 hover:text-white"
+                    }`}
                   >
                     <item.icon className="h-5 w-5" />
                     {item.label}
@@ -211,7 +218,7 @@ export function AppShell({
               </div>
               <p className="text-xs font-medium text-white pr-6">Manage with power.</p>
               <p className="mt-1 text-[11px] text-white/60">Monitor, control and grow your business from one place.</p>
-              <Link to="/reports" className="block w-full mt-3">
+              <Link href="/reports" className="block w-full mt-3">
                 <Button variant="outline" size="sm" className="w-full bg-transparent border-white/20 text-white hover:bg-white/10 hover:text-white h-8 text-xs">
                   View Reports &rarr;
                 </Button>
@@ -359,7 +366,7 @@ export function AppShell({
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link to="/settings" className="cursor-pointer flex w-full items-center">
+                  <Link href="/settings" className="cursor-pointer flex w-full items-center">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </Link>
@@ -378,35 +385,35 @@ export function AppShell({
             <CommandList>
               <CommandEmpty>No results found.</CommandEmpty>
               <CommandGroup heading="Suggestions">
-                <CommandItem onSelect={() => { navigate({to: '/dashboard'}); setIsSearchOpen(false); }}>
+                <CommandItem onSelect={() => { router.push('/dashboard'); setIsSearchOpen(false); }}>
                   <LayoutDashboard className="mr-2 h-4 w-4" />
                   <span>Dashboard</span>
                 </CommandItem>
-                <CommandItem onSelect={() => { navigate({to: '/money-in'}); setIsSearchOpen(false); }}>
+                <CommandItem onSelect={() => { router.push('/money-in'); setIsSearchOpen(false); }}>
                   <ArrowDownLeft className="mr-2 h-4 w-4" />
                   <span>Record Inflows</span>
                 </CommandItem>
-                <CommandItem onSelect={() => { navigate({to: '/expenses'}); setIsSearchOpen(false); }}>
+                <CommandItem onSelect={() => { router.push('/expenses'); setIsSearchOpen(false); }}>
                   <ArrowUpRight className="mr-2 h-4 w-4" />
                   <span>Scan Receipts</span>
                 </CommandItem>
               </CommandGroup>
               <CommandGroup heading="Reports">
-                <CommandItem onSelect={() => { navigate({to: '/reports'}); setIsSearchOpen(false); }}>
+                <CommandItem onSelect={() => { router.push('/reports'); setIsSearchOpen(false); }}>
                   <BarChart3 className="mr-2 h-4 w-4" />
                   <span>Reports Hub</span>
                 </CommandItem>
-                <CommandItem onSelect={() => { navigate({to: '/income-statement'}); setIsSearchOpen(false); }}>
+                <CommandItem onSelect={() => { router.push('/income-statement'); setIsSearchOpen(false); }}>
                   <Scale className="mr-2 h-4 w-4" />
                   <span>Income Statement</span>
                 </CommandItem>
-                <CommandItem onSelect={() => { navigate({to: '/trial-balance'}); setIsSearchOpen(false); }}>
+                <CommandItem onSelect={() => { router.push('/trial-balance'); setIsSearchOpen(false); }}>
                   <Scale className="mr-2 h-4 w-4" />
                   <span>Trial Balance</span>
                 </CommandItem>
               </CommandGroup>
               <CommandGroup heading="Settings">
-                <CommandItem onSelect={() => { navigate({to: '/admin/settings'}); setIsSearchOpen(false); }}>
+                <CommandItem onSelect={() => { router.push('/admin/settings'); setIsSearchOpen(false); }}>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Account Settings</span>
                 </CommandItem>

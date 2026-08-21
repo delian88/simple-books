@@ -1,6 +1,9 @@
 import { apiGet, apiPost } from "@/lib/api";
 
-export const listGateways = () => apiGet('/api/payments.php?action=listGateways');
+export const listPaymentMethods = () => apiGet('/api/payments.php?action=listPaymentMethods');
 
-export const upsertGateway = ({ data }: { data: any }) =>
-  apiPost('/api/payments.php?action=upsertGateway', data);
+export const addPaymentMethod = (data: { name: string; type: string }) => 
+  apiPost('/api/payments.php?action=addPaymentMethod', data);
+
+export const processPayment = (data: any) =>
+  apiPost('/api/payments.php?action=processPayment', data);

@@ -21,4 +21,5 @@ export const getAccountStatement = ({ data }: { data: { accountId: string; start
 
 export const getTrialBalance = () => apiGet('/api/ledger.php?action=getTrialBalance');
 
-export const getFinancialStatements = () => apiGet('/api/ledger.php?action=getFinancialStatements');
+export const getFinancialStatements = ({ data }: { data?: { startDate?: string; endDate?: string } } = {}) => 
+  apiPost('/api/ledger.php?action=getFinancialStatements', data || {});

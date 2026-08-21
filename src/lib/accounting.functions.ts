@@ -27,3 +27,20 @@ export const scanReceipt = ({ data }: { data: any }) =>
     filename: 'receipt.png',
     mimeType: 'image/png',
   });
+
+export const listCustomers = () => apiGet('/api/ar.php?action=listCustomers');
+
+export const addCustomer = ({ data }: { data: any }) =>
+  apiPost('/api/ar.php?action=createCustomer', data);
+
+export const deleteCustomer = ({ data }: { data: { id: string } }) =>
+  apiPost('/api/ar.php?action=deleteCustomer', data);
+
+export const listInvoices = () => apiGet('/api/ar.php?action=listInvoices');
+
+export const deleteInvoice = ({ data }: { data: { id: string } }) =>
+  apiPost('/api/ar.php?action=deleteInvoice', data);
+
+export const listExpenses = () => apiGet('/api/ai.php?action=listExpenses');
+export const listAccounts = () => apiGet('/api/accounts.php?action=listAccounts');
+export const listJournalEntries = () => apiGet('/api/ledger.php?action=listJournalEntries');

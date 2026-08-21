@@ -1,16 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { generateFinancialInsights } from "@/lib/ai.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Sparkles, TrendingUp, AlertCircle, RefreshCw, Bot, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function AIInsightsWidget() {
-  const getInsights = useServerFn(generateFinancialInsights);
-
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["financialInsights"],
-    queryFn: () => getInsights(),
+    queryFn: () => generateFinancialInsights(),
     staleTime: 1000 * 60 * 60, // 1 hour
   });
 

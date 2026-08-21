@@ -50,14 +50,49 @@ export function relativeTime(iso: string): string {
   return `${days} day${days > 1 ? "s" : ""} ago`;
 }
 
+function playNotificationSound() {
+  if (typeof window === 'undefined') return;
+  try {
+    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+    osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.1); // Slide to A6
+
+    gainNode.gain.setValueAtTime(0.1, ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+
+    osc.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.5);
+  } catch (e) {
+    // Ignore audio errors
+  }
+}
+
 export function NotificationProvider({ children }: { children: ReactNode }) {
-  const [notifications, setNotifications] = useState<AppNotification[]>(() => loadFromStorage());
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    saveToStorage(notifications);
-  }, [notifications]);
+    setNotifications(loadFromStorage());
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted) {
+      saveToStorage(notifications);
+    }
+  }, [notifications, mounted]);
 
   const addNotification = useCallback((n: Pick<AppNotification, "title" | "body" | "type">) => {
+    playNotificationSound();
     const entry: AppNotification = {
       id: `${Date.now()}-${Math.random()}`,
       title: n.title,

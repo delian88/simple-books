@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageSquare, X, Send, Bot, User, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
-import { useServerFn } from "@tanstack/react-start";
 import { aiChatQuery } from "@/lib/ai.functions";
 
 export function AIChatWidget() {
@@ -12,7 +11,6 @@ export function AIChatWidget() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const sendQuery = useServerFn(aiChatQuery);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -32,7 +30,7 @@ export function AIChatWidget() {
 
     try {
       // Send to Pollinations AI
-      const res = await sendQuery({ data: { query: userMessage, history: messages.map(m => ({ role: m.role, content: m.content })) } });
+      const res = await aiChatQuery({ data: { query: userMessage, history: messages.map(m => ({ role: m.role, content: m.content })) } });
       setMessages([...updatedMessages, { role: "assistant", content: res.response }]);
     } catch (err) {
       setMessages([...updatedMessages, { role: "assistant", content: "Sorry, I encountered an error." }]);

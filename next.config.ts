@@ -1,0 +1,29 @@
+import type { NextConfig } from 'next';
+
+const isProd = process.env.NODE_ENV === 'production';
+
+const nextConfig: NextConfig = {
+  ...(isProd ? { output: 'export' } : {}),
+  trailingSlash: true,
+  images: {
+    unoptimized: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  ...(isProd ? {} : {
+    async rewrites() {
+      return [
+        {
+          source: '/api/:path*',
+          destination: 'http://127.0.0.1:8000/api/:path*', // Proxy to PHP backend
+        },
+      ];
+    },
+  })
+};
+
+export default nextConfig;

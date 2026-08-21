@@ -10,13 +10,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-$host = 'localhost'; // Update with Namecheap DB host
-$db   = 'mykornwi_bookz'; // Update with Namecheap DB name
-$user = 'mykornwi_bookzuser'; // Update with Namecheap DB user
-$pass = 'bookzuser$1'; // Update with Namecheap DB password
+$host = 'localhost'; // Fallback
+$db   = 'mykornwi_bookz';
+$user = 'mykornwi_bookzuser';
+$pass = 'bookzuser$1';
+$port = 3306;
+
+// Load from .env.local or .env
+$env_path_local = dirname(__DIR__) . '/.env.local';
+$env_path = dirname(__DIR__) . '/.env';
+$active_env_path = file_exists($env_path_local) ? $env_path_local : (file_exists($env_path) ? $env_path : null);
+
+if ($active_env_path) {
+    $env = parse_ini_file($active_env_path);
+    if ($env && isset($env['DATABASE_URL'])) {
+        $parsed = parse_url($env['DATABASE_URL']);
+        if ($parsed) {
+            $host = $parsed['host'] ?? $host;
+            $user = $parsed['user'] ?? $user;
+            $pass = $parsed['pass'] ?? $pass;
+            $db   = isset($parsed['path']) ? ltrim($parsed['path'], '/') : $db;
+            $port = $parsed['port'] ?? $port;
+        }
+    }
+}
+
 $charset = 'utf8mb4';
 
-$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+$dsn = "mysql:host=$host;port=$port;dbname=$db;charset=$charset";
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -32,7 +53,7 @@ try {
 }
 
 // JWT Helpers
-$secret_key = "CHANGE_THIS_TO_YOUR_JWT_SECRET";
+$secret_key = getenv('APP_JWT_SECRET') ?: 'ledgerly_default_secret_change_in_production';
 
 function base64url_encode($data) {
     return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
@@ -78,8 +99,24 @@ function generate_uuid() {
     );
 }
 
+function get_bearer_token() {
+    $headers = apache_request_headers();
+    if (isset($headers['Authorization'])) {
+        if (preg_match('/Bearer\s(\S+)/', $headers['Authorization'], $matches)) {
+            return $matches[1];
+        }
+    }
+    // Fallback if apache_request_headers is not available
+    if (isset($_SERVER['HTTP_AUTHORIZATION'])) {
+        if (preg_match('/Bearer\s(\S+)/', $_SERVER['HTTP_AUTHORIZATION'], $matches)) {
+            return $matches[1];
+        }
+    }
+    return null;
+}
+
 function require_auth() {
-    $token = $_COOKIE['ledgerly_auth'] ?? null;
+    $token = $_COOKIE['ledgerly_auth'] ?? get_bearer_token();
     if (!$token) {
         http_response_code(401);
         echo json_encode(['error' => 'Unauthorized']);
@@ -96,7 +133,7 @@ function require_auth() {
 }
 
 function require_admin() {
-    $token = $_COOKIE['ledgerly_auth'] ?? null;
+    $token = $_COOKIE['ledgerly_auth'] ?? get_bearer_token();
     if (!$token) {
         http_response_code(401);
         echo json_encode(['error' => 'Unauthorized']);
