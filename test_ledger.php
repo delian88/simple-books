@@ -1,0 +1,1 @@
+<?php $_GET["action"]="getTrialBalance"; $_SERVER["REQUEST_METHOD"]="GET"; require "api/db.php"; function requireAuth(){return "123";} function getActiveCompanyId(){return "456";} require "api/ledger.php";

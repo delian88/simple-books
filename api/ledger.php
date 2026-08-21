@@ -182,7 +182,7 @@ switch ($action) {
                                JOIN journal_entries e ON l.journal_entry_id = e.id 
                                JOIN accounts a ON l.account_id = a.id
                                WHERE e.company_id = ? 
-                               GROUP BY l.account_id");
+                               GROUP BY l.account_id, a.name, a.type, a.sub_type");
         $bals->execute([$companyId]);
         $balances = $bals->fetchAll(PDO::FETCH_ASSOC);
 
@@ -258,7 +258,7 @@ switch ($action) {
                                JOIN journal_entries e ON l.journal_entry_id = e.id 
                                JOIN accounts a ON l.account_id = a.id
                                WHERE e.company_id = ? AND e.date >= ? AND e.date <= ?
-                               GROUP BY l.account_id");
+                               GROUP BY l.account_id, a.name, a.type, a.sub_type");
         $bals->execute([$companyId, $start . ' 00:00:00', $end . ' 23:59:59']);
         $balances = $bals->fetchAll(PDO::FETCH_ASSOC);
 
