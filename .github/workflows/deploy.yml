@@ -71,7 +71,7 @@ jobs:
             set net:max-retries 3;
             set net:reconnect-interval-base 5;
             open sftp://$SFTP_USER:$SFTP_PASS@$SFTP_HOST:$SFTP_PORT;
-            mirror --reverse --delete --verbose --exclude='.htaccess' out/ public_html/;
+            mirror --reverse --delete --verbose --exclude-glob='.htaccess' out/ public_html/;
             bye
           "
 
@@ -87,7 +87,7 @@ jobs:
             set net:max-retries 3;
             set net:reconnect-interval-base 5;
             open sftp://$SFTP_USER:$SFTP_PASS@$SFTP_HOST:$SFTP_PORT;
-            mirror --reverse --delete --verbose --exclude='.env' --exclude='.env.example' --exclude='*.sql' --exclude='*.md' --exclude='postman_collection.json' api/ public_html/api/;
+            mirror --reverse --delete --verbose --exclude-glob='.env' --exclude-glob='.env.example' --exclude-glob='*.sql' --exclude-glob='*.md' --exclude-glob='postman_collection.json' api/ public_html/api/;
             bye
           "
 
