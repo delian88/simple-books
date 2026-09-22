@@ -1,0 +1,94 @@
+﻿name: "Deploy to mykobobooks.com"
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: "Build Next.js"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps --no-optional
+
+      - name: Build static export
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: out/
+          retention-days: 1
+
+  deploy:
+    name: "Deploy to cPanel"
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: next-build
+          path: out/
+
+      - name: Install lftp
+        run: sudo apt-get install -y lftp
+
+      - name: Deploy frontend to public_html
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_PORT: ${{ secrets.SFTP_PORT }}
+          SFTP_USER: ${{ secrets.SFTP_USER }}
+          SFTP_PASS: ${{ secrets.SFTP_PASS }}
+        run: |
+          lftp -c "
+            set sftp:auto-confirm yes;
+            set net:max-retries 3;
+            set net:reconnect-interval-base 5;
+            open sftp://$SFTP_USER:$SFTP_PASS@$SFTP_HOST:$SFTP_PORT;
+            mirror --reverse --delete --verbose --exclude='.htaccess' out/ public_html/;
+            bye
+          "
+
+      - name: Deploy PHP API to public_html/api
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}
+          SFTP_PORT: ${{ secrets.SFTP_PORT }}
+          SFTP_USER: ${{ secrets.SFTP_USER }}
+          SFTP_PASS: ${{ secrets.SFTP_PASS }}
+        run: |
+          lftp -c "
+            set sftp:auto-confirm yes;
+            set net:max-retries 3;
+            set net:reconnect-interval-base 5;
+            open sftp://$SFTP_USER:$SFTP_PASS@$SFTP_HOST:$SFTP_PORT;
+            mirror --reverse --delete --verbose --exclude='.env' --exclude='.env.example' --exclude='*.sql' --exclude='*.md' --exclude='postman_collection.json' api/ public_html/api/;
+            bye
+          "
+
+      - name: Deployment complete
+        run: echo "Deployed to https://mykobobooks.com successfully!"
