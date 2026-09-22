@@ -8,20 +8,19 @@ export const dynamicParams = false;
 
 export async function generateStaticParams() {
   try {
-    const res = await fetch(`http://127.0.0.1:8000/api/cms.php?action=listPublishedPages`);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api';
+    const res = await fetch(`${apiUrl}/cms.php?action=listPublishedPages`);
     if (res.ok) {
       const pages = await res.json();
-      if (!pages || pages.length === 0) {
-        return [{ slug: 'dummy-page' }];
+      if (Array.isArray(pages) && pages.length > 0) {
+        return pages.map((page: any) => ({ slug: page.slug }));
       }
-      return pages.map((page: any) => ({
-        slug: page.slug,
-      }));
     }
   } catch (e) {
-    // Ignore errors during build
+    // API unreachable at build time (CI) — skip pre-rendering CMS pages
   }
-  return [{ slug: 'dummy-page' }];
+  // Return empty array: CMS pages won't be pre-rendered but will work at runtime
+  return [];
 }
 
 export default async function PublicPage({ params }: { params: Promise<{ slug: string }> }) {

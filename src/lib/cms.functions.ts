@@ -21,12 +21,14 @@ export const getPage = ({ queryKey }: any) => {
 };
 
 export const getPageBySlug = async (slug: string) => {
-  const res = await fetch(`http://127.0.0.1:8000/api/cms.php?action=getPageBySlug&slug=${slug}`);
-  if (!res.ok) {
-    if (res.status === 404) return null;
-    throw new Error('Failed to fetch page');
+  try {
+    const res = await fetch(`http://127.0.0.1:8000/api/cms.php?action=getPageBySlug&slug=${slug}`);
+    if (!res.ok) return null;
+    return res.json();
+  } catch (e) {
+    // API unreachable (e.g. build time / CI)
+    return null;
   }
-  return res.json();
 };
 
 export const savePage = ({ data }: { data: any }) =>
