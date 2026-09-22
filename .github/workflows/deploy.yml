@@ -1,9 +1,10 @@
-﻿name: "Deploy to mykobobooks.com"
+name: "Deploy to mykobobooks.com"
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:   # Allows manual trigger from GitHub Actions UI
 
 concurrency:
   group: deploy-production
