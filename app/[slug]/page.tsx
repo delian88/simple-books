@@ -20,7 +20,8 @@ export async function generateStaticParams() {
     // API unreachable at build time (CI) — skip pre-rendering CMS pages
   }
   // Return empty array: CMS pages won't be pre-rendered but will work at runtime
-  return [];
+  // Static export requires at least one entry — placeholder safely hits notFound()
+  return [{ slug: '__placeholder__' }];
 }
 
 export default async function PublicPage({ params }: { params: Promise<{ slug: string }> }) {
