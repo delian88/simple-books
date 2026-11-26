@@ -24,6 +24,30 @@ const reports = [
     href: "/trial-balance",
   },
   {
+    title: "Cash Flow Statement",
+    description: "Cash in, cash out and closing balance by month.",
+    icon: <Scale className="h-6 w-6 text-primary" />,
+    href: "/reports/cash-flow",
+  },
+  {
+    title: "Day Book",
+    description: "Every transaction in date order with debit and credit columns.",
+    icon: <ScrollText className="h-6 w-6 text-primary" />,
+    href: "/reports/day-book",
+  },
+  {
+    title: "Tax Summary",
+    description: "Output tax, input tax credit and net tax payable.",
+    icon: <FileText className="h-6 w-6 text-primary" />,
+    href: "/reports/tax",
+  },
+  {
+    title: "Audit Trail",
+    description: "A log of who created, changed or deleted records.",
+    icon: <ScrollText className="h-6 w-6 text-primary" />,
+    href: "/audit-trail",
+  },
+  {
     title: "Account Statement",
     description: "Generate a detailed statement of legal and financial transactions for a specific period.",
     icon: <ScrollText className="h-6 w-6 text-primary" />,

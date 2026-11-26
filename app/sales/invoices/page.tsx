@@ -5,9 +5,13 @@ import { AppShell } from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, Plus, Trash2 } from "lucide-react";
+import { FileText, Plus, Trash2, BellRing, CheckCircle2, Send } from "lucide-react";
 import { listInvoices, deleteInvoice } from "@/lib/accounting.functions";
+import { updateInvoiceStatus } from "@/lib/ar.functions";
+import { sendReminders } from "@/lib/modules.functions";
+import { toast } from "sonner";
 import Link from "next/link";
+
 export default function InvoicesPage() {
   const queryClient = useQueryClient();
 
@@ -26,16 +30,38 @@ export default function InvoicesPage() {
     }
   });
 
+  const statusMut = useMutation({
+    mutationFn: updateInvoiceStatus,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      toast.success("Invoice status updated");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const remindMut = useMutation({
+    mutationFn: sendReminders,
+    onSuccess: (r: any) => {
+      toast.success(`Overdue invoices: ${r.overdue || 0}. Reminders logged: ${r.logged || 0}, emailed: ${r.emailed || 0}.`);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   return (
     <AppShell
       title="Sales Invoices"
-      subtitle="Manage your sales invoices and track payments."
+      subtitle="Manage your sales invoices, send payment reminders and track payments."
       actions={
-        <Link href="/sales/invoices/new">
-          <Button className="bg-[#0B3D2B] hover:bg-[#0B3D2B]/90 text-white gap-2">
-            <Plus className="h-4 w-4" /> Create Invoice
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" disabled={remindMut.isPending} onClick={() => remindMut.mutate()} className="gap-2">
+            <BellRing className="h-4 w-4" /> {remindMut.isPending ? "Sending..." : "Send Overdue Reminders"}
           </Button>
-        </Link>
+          <Link href="/sales/invoices/new">
+            <Button className="bg-[#0B3D2B] hover:bg-[#0B3D2B]/90 text-white gap-2">
+              <Plus className="h-4 w-4" /> Create Invoice
+            </Button>
+          </Link>
+        </div>
       }
     >
       <Card className="shadow-sm border-border w-full mt-6">
@@ -54,7 +80,7 @@ export default function InvoicesPage() {
               </div>
               <h3 className="text-lg font-bold font-display">No invoices found</h3>
               <p className="mt-2 text-sm text-muted-foreground max-w-[250px]">
-                You haven't created any sales invoices yet.
+                You haven&apos;t created any sales invoices yet.
               </p>
             </div>
           ) : (
@@ -64,6 +90,7 @@ export default function InvoicesPage() {
                   <TableHead>Invoice #</TableHead>
                   <TableHead>Customer</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead>Due</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -75,8 +102,13 @@ export default function InvoicesPage() {
                     <TableCell className="font-medium">{inv.invoice_number}</TableCell>
                     <TableCell>{inv.customer_name || "-"}</TableCell>
                     <TableCell>{new Date(inv.issue_date).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(inv.due_date).toLocaleDateString()}</TableCell>
                     <TableCell>
-                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800">
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                        inv.status === "PAID" ? "bg-emerald-100 text-emerald-800" :
+                        inv.status === "SENT" ? "bg-blue-100 text-blue-800" :
+                        "bg-gray-100 text-gray-800"
+                      }`}>
                         {inv.status}
                       </span>
                     </TableCell>
@@ -87,18 +119,40 @@ export default function InvoicesPage() {
                       }).format(inv.total_amount)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => {
-                          if (confirm('Are you sure you want to delete this invoice?')) {
-                            deleteMutation.mutate({ data: { id: inv.id } });
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        {inv.status === "DRAFT" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => statusMut.mutate({ data: { id: inv.id, status: "SENT" } })}
+                            className="gap-1"
+                          >
+                            <Send className="h-3.5 w-3.5" /> Mark Sent
+                          </Button>
+                        )}
+                        {inv.status !== "PAID" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => statusMut.mutate({ data: { id: inv.id, status: "PAID" } })}
+                            className="gap-1 text-emerald-700"
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Mark Paid
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            if (confirm('Are you sure you want to delete this invoice?')) {
+                              deleteMutation.mutate({ data: { id: inv.id } });
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

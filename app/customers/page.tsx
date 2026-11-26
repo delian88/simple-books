@@ -9,8 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, Plus, Trash2 } from "lucide-react";
+import { Users, Plus, Trash2, ExternalLink } from "lucide-react";
 import { listCustomers, addCustomer, deleteCustomer } from "@/lib/accounting.functions";
+import { portalLink } from "@/lib/modules.functions";
+import { toast } from "sonner";
 
 export default function CustomersPage() {
   const queryClient = useQueryClient();
@@ -144,18 +146,38 @@ export default function CustomersPage() {
                     <TableCell>{c.email || "-"}</TableCell>
                     <TableCell>{c.phone || "-"}</TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => {
-                          if (confirm('Are you sure you want to delete this customer?')) {
-                            deleteMutation.mutate({ data: { id: c.id } });
-                          }
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1"
+                          onClick={async () => {
+                            try {
+                              const res = await portalLink(c.id);
+                              const url = `${window.location.origin}/portal?token=${encodeURIComponent(res.token)}`;
+                              await navigator.clipboard?.writeText(url).catch(() => {});
+                              toast.success("Customer portal link copied!");
+                              window.open(url, "_blank");
+                            } catch (e: any) {
+                              toast.error(e.message || "Failed to generate portal link");
+                            }
+                          }}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" /> Portal
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            if (confirm('Are you sure you want to delete this customer?')) {
+                              deleteMutation.mutate({ data: { id: c.id } });
+                            }
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

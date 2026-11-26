@@ -93,6 +93,18 @@ switch ($action) {
             $pdo->prepare("INSERT INTO sales_invoice_lines (id, invoice_id, description, quantity, unit_price, amount, tax_rate, created_at)
                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
                 ->execute([$lid, $id, $line['description'], $line['quantity'] ?? 1, $line['unit_price'] ?? 0, $line['amount'] ?? 0, $line['tax_rate'] ?? 0, $now]);
+            if (!empty($line['product_id'])) {
+                try {
+                    $ws = $pdo->prepare("SELECT id FROM pb_records WHERE company_id = ? AND type = 'warehouse' ORDER BY created_at LIMIT 1");
+                    $ws->execute([$companyId]);
+                    $wid = $line['warehouse_id'] ?? $ws->fetchColumn();
+                    if ($wid) {
+                        $move = json_encode(['product_id' => $line['product_id'], 'warehouse_id' => $wid, 'qty' => -abs((float)($line['quantity'] ?? 1)), 'kind' => 'sale', 'note' => 'Sales invoice', 'date' => date('Y-m-d')]);
+                        $pdo->prepare("INSERT INTO pb_records (id, company_id, type, data, created_by, created_at, updated_at) VALUES (?, ?, 'stock_move', ?, ?, ?, ?)")
+                            ->execute([bin2hex(random_bytes(9)), $companyId, $move, $userId, $now, $now]);
+                    }
+                } catch (Exception $e) {}
+            }
         }
         jsonResponse(['id' => $id]);
         break;
@@ -115,6 +127,18 @@ switch ($action) {
             $pdo->prepare("INSERT INTO sales_invoice_lines (id, invoice_id, description, quantity, unit_price, amount, tax_rate, created_at)
                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
                 ->execute([$lid, $id, $line['description'], $line['quantity'] ?? 1, $line['unit_price'] ?? 0, $line['amount'] ?? 0, $line['tax_rate'] ?? 0, $now]);
+            if (!empty($line['product_id'])) {
+                try {
+                    $ws = $pdo->prepare("SELECT id FROM pb_records WHERE company_id = ? AND type = 'warehouse' ORDER BY created_at LIMIT 1");
+                    $ws->execute([$companyId]);
+                    $wid = $line['warehouse_id'] ?? $ws->fetchColumn();
+                    if ($wid) {
+                        $move = json_encode(['product_id' => $line['product_id'], 'warehouse_id' => $wid, 'qty' => -abs((float)($line['quantity'] ?? 1)), 'kind' => 'sale', 'note' => 'Sales invoice', 'date' => date('Y-m-d')]);
+                        $pdo->prepare("INSERT INTO pb_records (id, company_id, type, data, created_by, created_at, updated_at) VALUES (?, ?, 'stock_move', ?, ?, ?, ?)")
+                            ->execute([bin2hex(random_bytes(9)), $companyId, $move, $userId, $now, $now]);
+                    }
+                } catch (Exception $e) {}
+            }
         }
         jsonResponse(['ok' => true]);
         break;

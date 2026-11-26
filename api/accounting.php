@@ -107,7 +107,7 @@ switch ($action) {
                 ]);
             $ids[] = $id;
         }
-        jsonResponse(['ok' => true, 'ids' => $ids]);
+        jsonResponse(['ok' => true, 'ids' => $ids, 'inserted' => count($ids)]);
         break;
 
     case 'deleteTransaction':

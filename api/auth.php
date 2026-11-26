@@ -53,6 +53,18 @@ function requireAuth(): string {
     if (!$payload || empty($payload['sub'])) {
         jsonResponse(['error' => 'Unauthorized'], 401);
     }
+    // Auditors get view-only access: block every write request
+    global $pdo;
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET' && isset($pdo)) {
+        try {
+            $r = $pdo->prepare("SELECT role FROM company_users WHERE user_id = ? LIMIT 1");
+            $r->execute([$payload['sub']]);
+            $row = $r->fetch();
+            if ($row && $row['role'] === 'AUDITOR') {
+                jsonResponse(['error' => 'Auditors have view-only access'], 403);
+            }
+        } catch (Exception $e) { /* never block on a lookup failure */ }
+    }
     return $payload['sub'];
 }
 
@@ -136,7 +148,7 @@ switch ($action) {
         $payload = getAuthPayload();
         if (!$payload) jsonResponse(['error' => 'No session'], 401);
         $stmt = $pdo->prepare("
-            SELECT u.id, u.email, u.role, c.name as business_name, NULL as profile_picture 
+            SELECT u.id, u.email, u.role, cu.role as company_role, c.name as business_name, NULL as profile_picture 
             FROM users u 
             LEFT JOIN company_users cu ON cu.user_id = u.id 
             LEFT JOIN companies c ON c.id = cu.company_id 
@@ -148,6 +160,7 @@ switch ($action) {
             'id' => $payload['sub'],
             'email' => $uData['email'] ?? $payload['email'] ?? null,
             'role' => $uData['role'] ?? 'Company',
+            'companyRole' => $uData['company_role'] ?? 'OWNER',
             'businessName' => $uData['business_name'] ?? null,
             'profilePicture' => $uData['profile_picture'] ?? null
         ]);

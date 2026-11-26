@@ -157,9 +157,85 @@ switch ($action) {
         ]);
         break;
 
-    // ── Mocked AI helpers ─────────────────────────────────────────────────────
+    // ── Ask your books AI chat (queries live company data) ───────────────────
     case 'aiChatQuery':
-        jsonResponse(['response' => 'AI chat is not yet configured on this server.']);
+        $data  = json_decode(file_get_contents('php://input'), true) ?? [];
+        $query = trim($data['query'] ?? '');
+        if ($query === '') {
+            jsonResponse(['response' => 'Ask me about your revenue, expenses, overdue invoices, cash balance, or stock!']);
+        }
+
+        // Gather live summary from company database
+        $today = date('Y-m-d');
+        $invStmt = $pdo->prepare("SELECT i.invoice_number, i.total_amount, i.due_date, i.status, c.name AS customer_name
+                                  FROM sales_invoices i LEFT JOIN customers c ON c.id = i.customer_id
+                                  WHERE i.company_id = ? AND i.status <> 'CANCELLED'");
+        $invStmt->execute([$companyId]);
+        $invoices = $invStmt->fetchAll();
+
+        $totalInvoiced = 0; $totalPaid = 0; $totalUnpaid = 0; $overdueList = [];
+        foreach ($invoices as $inv) {
+            $amt = (float)$inv['total_amount'];
+            if ($inv['status'] !== 'DRAFT') $totalInvoiced += $amt;
+            if ($inv['status'] === 'PAID') {
+                $totalPaid += $amt;
+            } elseif ($inv['status'] !== 'DRAFT') {
+                $totalUnpaid += $amt;
+                if (!empty($inv['due_date']) && substr($inv['due_date'], 0, 10) < $today) {
+                    $overdueList[] = "{$inv['invoice_number']} ({$inv['customer_name']}: " . number_format($amt, 2) . ")";
+                }
+            }
+        }
+
+        $expStmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE company_id = ?");
+        $expStmt->execute([$companyId]);
+        $aiExp = (float)$expStmt->fetchColumn();
+
+        $txInStmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE company_id = ? AND direction = 'inflow'");
+        $txInStmt->execute([$companyId]);
+        $txIn = (float)$txInStmt->fetchColumn();
+
+        $txOutStmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE company_id = ? AND direction = 'outflow'");
+        $txOutStmt->execute([$companyId]);
+        $txOut = (float)$txOutStmt->fetchColumn();
+
+        $totalRevenue  = $totalInvoiced + $txIn;
+        $totalExpenses = $aiExp + $txOut;
+        $netProfit     = $totalRevenue - $totalExpenses;
+
+        $qLower = strtolower($query);
+        if (strpos($qLower, 'overdue') !== false || strpos($qLower, 'owe') !== false || strpos($qLower, 'unpaid') !== false || strpos($qLower, 'receivable') !== false) {
+            $msg = "You currently have " . number_format($totalUnpaid, 2) . " in unpaid receivables.";
+            if ($overdueList) {
+                $msg .= " Overdue invoices: " . implode(', ', array_slice($overdueList, 0, 5)) . ".";
+            } else {
+                $msg .= " None of your invoices are overdue right now.";
+            }
+            jsonResponse(['response' => $msg]);
+        }
+        if (strpos($qLower, 'profit') !== false || strpos($qLower, 'margin') !== false || strpos($qLower, 'net') !== false) {
+            jsonResponse(['response' => "Your total recorded revenue is " . number_format($totalRevenue, 2) . ", total expenses are " . number_format($totalExpenses, 2) . ", giving an estimated net profit of " . number_format($netProfit, 2) . "."]);
+        }
+        if (strpos($qLower, 'expense') !== false || strpos($qLower, 'spend') !== false || strpos($qLower, 'outflow') !== false) {
+            jsonResponse(['response' => "Your total recorded expenses & outflows are " . number_format($totalExpenses, 2) . " (" . number_format($aiExp, 2) . " from scanned/AI expenses and " . number_format($txOut, 2) . " from Money Out)."]);
+        }
+        if (strpos($qLower, 'revenue') !== false || strpos($qLower, 'sales') !== false || strpos($qLower, 'income') !== false || strpos($qLower, 'inflow') !== false) {
+            jsonResponse(['response' => "Your total revenue is " . number_format($totalRevenue, 2) . " (" . number_format($totalInvoiced, 2) . " invoiced, " . number_format($totalPaid, 2) . " marked paid, plus " . number_format($txIn, 2) . " in Money In)."]);
+        }
+
+        // General answer with live context via Pollinations AI + deterministic fallback
+        $context = "Live company numbers: Revenue=" . number_format($totalRevenue, 2)
+                 . ", Expenses=" . number_format($totalExpenses, 2)
+                 . ", NetProfit=" . number_format($netProfit, 2)
+                 . ", UnpaidReceivables=" . number_format($totalUnpaid, 2)
+                 . ", OverdueCount=" . count($overdueList) . ".";
+        $prompt = "You are KoboBooks AI, a concise bookkeeping assistant. $context Answer the user's question clearly in 2-3 sentences: $query";
+        $aiReply = @file_get_contents('https://text.pollinations.ai/' . urlencode($prompt));
+        if ($aiReply && strlen(trim($aiReply)) > 5) {
+            jsonResponse(['response' => trim($aiReply)]);
+        }
+
+        jsonResponse(['response' => "Here is your live snapshot: Revenue " . number_format($totalRevenue, 2) . ", Expenses " . number_format($totalExpenses, 2) . ", Net Profit " . number_format($netProfit, 2) . ", and Unpaid Receivables " . number_format($totalUnpaid, 2) . " (" . count($overdueList) . " overdue)."]);
         break;
 
     case 'generateFinancialInsights':

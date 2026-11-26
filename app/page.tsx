@@ -352,12 +352,12 @@ export default function Landing() {
       const pct = root.querySelector<HTMLElement>("#closePct");
       let close = 80;
       const ev = [
-        ["you", "Quote · Kavre Consulting", "+₹58,000", "pos", "Sent a quote to Kavre"],
+        ["you", "Quote · Kavre Consulting", "+₦58,000", "pos", "Sent a quote to Kavre"],
         ["ca", "Bank rules · 6 matched", "45 / 45", "", "Finished bank reconciliation"],
-        ["you", "Invoice · Asha Wellness", "+₹21,000", "pos", "Invoiced Asha Wellness"],
-        ["ca", "Journal · Prepaid rent", "−₹15,000", "neg", "Posting month-end entries"],
+        ["you", "Invoice · Asha Wellness", "+₦21,000", "pos", "Invoiced Asha Wellness"],
+        ["ca", "Journal · Prepaid rent", "−₦15,000", "neg", "Posting month-end entries"],
         ["you", "Payment · Kavre · UPI", "Matched ✓", "", "Kavre paid via UPI"],
-        ["ca", "GST summary · October", "Ready ✓", "", "October GST data ready"],
+        ["ca", "VAT summary · October", "Ready ✓", "", "October VAT data ready"],
       ];
       let i = 0;
       const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -410,18 +410,18 @@ export default function Landing() {
 
     /* ---- 7. Pricing: currency + billing toggles ---- */
     try {
-      let cur = "inr";
+      let cur = "ngn";
       let bill = "y";
       const billSeg = root.querySelector<HTMLElement>("#billSeg");
       function paint() {
         Array.from(root?.querySelectorAll<HTMLElement>(".amt") || []).forEach((a) => {
-          const key = cur === "inr" ? "inr" : bill === "y" ? "usdy" : "usdm";
+          const key = cur === "ngn" ? "ngn" : bill === "y" ? "usdy" : "usdm";
           const raw = a.dataset[key] || "";
           const v = raw.split("|");
           if (a.children[0]) a.children[0].textContent = v[0] || "";
           if (a.children[1]) a.children[1].textContent = v[1] || "";
         });
-        if (billSeg) billSeg.hidden = cur === "inr";
+        if (billSeg) billSeg.hidden = cur === "ngn";
       }
       const sgs = Array.from(root.querySelectorAll<HTMLButtonElement>(".sg"));
       sgs.forEach((b) => {
@@ -757,7 +757,7 @@ export default function Landing() {
                   <b className="stars">★★★★★</b> 4.5 on Capterra &amp; G2
                 </span>
                 <span>
-                  <b>1,00,000+</b> businesses
+                  <b>100,000+</b> businesses
                 </span>
                 <span>
                   <b>Free</b> forever plan
@@ -782,16 +782,16 @@ export default function Landing() {
                     <div className="kpis">
                       <div className="kpi">
                         <small>Revenue · Oct</small>
-                        <b>₹4,82,000</b>
+                        <b>₦482,000</b>
                         <span className="up">▲ 12%</span>
                       </div>
                       <div className="kpi">
                         <small>Outstanding</small>
-                        <b>₹1,10,900</b>
+                        <b>₦110,900</b>
                       </div>
                       <div className="kpi">
                         <small>Tax payable</small>
-                        <b>₹1,23,180</b>
+                        <b>₦123,180</b>
                       </div>
                     </div>
                     <div>
@@ -818,19 +818,19 @@ export default function Landing() {
                     <p className="dash-h">Recent invoices</p>
                     <div className="row">
                       <span className="nm">
-                        Meridian Design Studio<small>INV-0248 · ₹1,56,940</small>
+                        Meridian Design Studio<small>INV-0248 · ₦156,940</small>
                       </span>
                       <span className="tag tag-ok">Paid</span>
                     </div>
                     <div className="row">
                       <span className="nm">
-                        Kavre Consulting<small>INV-0246 · ₹58,000</small>
+                        Kavre Consulting<small>INV-0246 · ₦58,000</small>
                       </span>
                       <span className="tag tag-ok">Paid</span>
                     </div>
                     <div className="row">
                       <span className="nm">
-                        Northfield Tech<small>INV-0243 · ₹92,400</small>
+                        Northfield Tech<small>INV-0243 · ₦92,400</small>
                       </span>
                       <span className="tag tag-due">Reminder sent</span>
                     </div>
@@ -840,7 +840,7 @@ export default function Landing() {
               <div className="float f1">
                 <span className="ic">⚡</span>
                 <span>
-                  <b>GST applied automatically</b>
+                  <b>VAT applied automatically</b>
                   <small>18% · service, interstate</small>
                 </span>
               </div>
@@ -864,7 +864,7 @@ export default function Landing() {
 
         {/* ============ MARQUEE ============ */}
         <div className="marquee-sec" data-block="logos">
-          <p>Trusted by 1,00,000+ businesses worldwide</p>
+          <p>Trusted by 100,000+ businesses worldwide</p>
           <div className="marquee" aria-hidden="true">
             <span>Design studios</span>
             <span>CA firms</span>
@@ -1046,7 +1046,7 @@ export default function Landing() {
                   <div className="ps-copy">
                     <h3>Bill for your time. Get paid without chasing.</h3>
                     <ul className="checks">
-                      <li>Retainer and project invoices with SAC codes and the right GST</li>
+                      <li>Retainer and project invoices with service codes and the right VAT</li>
                       <li>Payment links and automatic reminders for late payers</li>
                       <li>Profit by client and project, so you know which work pays</li>
                     </ul>
@@ -1071,19 +1071,19 @@ export default function Landing() {
                     <div className="s-body">
                       <div className="s-row a1">
                         <span>Brand identity system</span>
-                        <b>₹65,000</b>
+                        <b>₦65,000</b>
                       </div>
                       <div className="s-row a2">
                         <span>Monthly retainer · Nov</span>
-                        <b>₹40,000</b>
+                        <b>₦40,000</b>
                       </div>
                       <div className="s-row a3 mute">
-                        <span>CGST + SGST 18% (auto)</span>
-                        <b>₹18,900</b>
+                        <span>VAT 7.5% (auto)</span>
+                        <b>₦18,900</b>
                       </div>
                       <div className="s-row tot a4">
                         <span>Total</span>
-                        <b>₹1,23,900</b>
+                        <b>₦123,900</b>
                       </div>
                       <div className="s-pay a5">
                         <span className="pl">UPI payment link added</span>
@@ -1123,7 +1123,7 @@ export default function Landing() {
                     </div>
                     <div className="s-body has-toast">
                       <div className="wh">
-                        <span className="on">Pune</span>
+                        <span className="on">Lagos</span>
                         <span>Mumbai</span>
                         <span>Nagpur</span>
                       </div>
@@ -1169,7 +1169,7 @@ export default function Landing() {
                     <h3>All your clients&apos; books, one login.</h3>
                     <ul className="checks">
                       <li>Every {appName} client listed in one dashboard</li>
-                      <li>Live reports and GST data. No emailed files.</li>
+                      <li>Live reports and VAT data. No emailed files.</li>
                       <li>Audit trail on every entry your clients make</li>
                     </ul>
                     <Link className="btn btn-green" href={primaryCtaHref}>
@@ -1194,7 +1194,7 @@ export default function Landing() {
                       <div className="cli a1">
                         <span className="ci">SK</span>
                         <span>Studio Kalaa</span>
-                        <span className="st ok">GST data ready</span>
+                        <span className="st ok">VAT data ready</span>
                       </div>
                       <div className="cli a2">
                         <span className="ci">MD</span>
@@ -1226,7 +1226,7 @@ export default function Landing() {
                   <div className="ps-copy">
                     <h3>Look like a company of ten. Pay nothing to start.</h3>
                     <ul className="checks">
-                      <li>Professional, branded GST invoices from day one</li>
+                      <li>Professional, branded VAT invoices from day one</li>
                       <li>Expenses tracked as you go, so tax time takes minutes</li>
                       <li>A free plan with no time limit, plus the mobile app</li>
                     </ul>
@@ -1252,15 +1252,15 @@ export default function Landing() {
                       <div className="solo-k">
                         <span className="a1">
                           <small>Billed</small>
-                          <b>₹1,85,000</b>
+                          <b>₦185,000</b>
                         </span>
                         <span className="a2">
                           <small>Expenses</small>
-                          <b>₹22,400</b>
+                          <b>₦22,400</b>
                         </span>
                         <span className="a3 keep">
                           <small>You keep</small>
-                          <b>₹1,62,600</b>
+                          <b>₦162,600</b>
                         </span>
                       </div>
                       <div className="s-row a4">
@@ -1271,7 +1271,7 @@ export default function Landing() {
                       </div>
                       <div className="s-row a5">
                         <span>Expense · Adobe subscription</span>
-                        <b>₹4,230</b>
+                        <b>₦4,230</b>
                       </div>
                       <div className="freeb a5">Free plan · no time limit</div>
                     </div>
@@ -1426,7 +1426,7 @@ export default function Landing() {
                 <ul className="checks">
                   <li>Branded templates with your logo, colours and bank details</li>
                   <li>Estimates and quotations that convert to invoices in one click</li>
-                  <li>CGST/SGST or IGST picked automatically from place of supply</li>
+                  <li>VAT applied automatically based on supply type</li>
                   <li>UPI, card and bank-transfer payment links on every invoice</li>
                   <li>Automatic reminders before and after the due date</li>
                 </ul>
@@ -1434,7 +1434,7 @@ export default function Landing() {
                   Explore invoicing →
                 </Link>
               </div>
-              <div className="shot" role="img" aria-label="Sample GST invoice from a design studio">
+              <div className="shot" role="img" aria-label="Sample VAT invoice from a design studio">
                 <div className="win-top">
                   <span className="dot"></span>
                   <span className="dot"></span>
@@ -1447,7 +1447,7 @@ export default function Landing() {
                       <span className="sq">S</span>
                       <span>
                         <b>Studio Kalaa</b>
-                        <small>GSTIN 27ABCDE1234F1Z5 · Pune</small>
+                        <small>TIN 12345678-0001 · Lagos</small>
                       </span>
                     </div>
                     <div className="inv-meta">
@@ -1468,7 +1468,7 @@ export default function Landing() {
                       <thead>
                         <tr>
                           <th>Service</th>
-                          <th>SAC</th>
+                          <th>Code</th>
                           <th className="r">Amount</th>
                         </tr>
                       </thead>
@@ -1476,17 +1476,17 @@ export default function Landing() {
                         <tr>
                           <td>Brand identity system</td>
                           <td>998391</td>
-                          <td className="r">₹65,000</td>
+                          <td className="r">₦65,000</td>
                         </tr>
                         <tr>
                           <td>Social media kit (20 posts)</td>
                           <td>998391</td>
-                          <td className="r">₹28,000</td>
+                          <td className="r">₦28,000</td>
                         </tr>
                         <tr>
                           <td>Monthly retainer · October</td>
                           <td>998391</td>
-                          <td className="r">₹40,000</td>
+                          <td className="r">₦40,000</td>
                         </tr>
                       </tbody>
                     </table>
@@ -1494,19 +1494,19 @@ export default function Landing() {
                   <div className="tot">
                     <div>
                       <span>Subtotal</span>
-                      <span>₹1,33,000</span>
+                      <span>₦133,000</span>
                     </div>
                     <div>
-                      <span>CGST 9%</span>
-                      <span>₹11,970</span>
+                      <span>VAT 7.5%</span>
+                      <span>₦11,970</span>
                     </div>
                     <div>
-                      <span>SGST 9%</span>
-                      <span>₹11,970</span>
+                      <span></span>
+                      <span>₦11,970</span>
                     </div>
                     <div className="g">
                       <span>Total</span>
-                      <span>₹1,56,940</span>
+                      <span>₦156,940</span>
                     </div>
                   </div>
                   <div className="inv-actions">
@@ -1520,7 +1520,7 @@ export default function Landing() {
             {/* Expenses */}
             <div className="panel" role="tabpanel" id="p-exp" aria-labelledby="tab-exp" hidden>
               <div>
-                <h3>Know where every rupee goes</h3>
+                <h3>Know where every naira goes</h3>
                 <p className="sub">
                   Record an expense in seconds and attach the bill. Every purchase is categorised, its tax credit is
                   tracked, and it shows up in your P&amp;L right away.
@@ -1528,7 +1528,7 @@ export default function Landing() {
                 <ul className="checks">
                   <li>Record rent, software, travel and vendor bills in seconds</li>
                   <li>Attach receipts and bills to every entry</li>
-                  <li>Input tax credit captured from GST-compliant purchase bills</li>
+                  <li>Input tax credit captured from VAT-compliant purchase bills</li>
                   <li>Vendor balances, advances and payables in one view</li>
                   <li>Category breakdown of spend for any period</li>
                 </ul>
@@ -1548,9 +1548,9 @@ export default function Landing() {
                     <span>
                       <small>Total spend this month</small>
                       <br />
-                      <b>₹1,86,450</b>
+                      <b>₦186,450</b>
                     </span>
-                    <span className="auto-note">ITC claimable ₹18,240</span>
+                    <span className="auto-note">Input VAT recoverable ₦18,240</span>
                   </div>
                   <div className="catbar" aria-hidden="true">
                     <i style={{ width: "38%", background: "var(--brand-700)" }}></i>
@@ -1573,7 +1573,7 @@ export default function Landing() {
                         Office rent · Baner<small>Kulkarni Properties · 01 Oct</small>
                       </span>
                       <span className="rc">Bill ✓</span>
-                      <b>₹45,000</b>
+                      <b>₦45,000</b>
                     </div>
                     <div className="exp">
                       <span className="ic">💻</span>
@@ -1581,7 +1581,7 @@ export default function Landing() {
                         Figma &amp; Google Workspace<small>Software · 05 Oct</small>
                       </span>
                       <span className="rc">Bill ✓</span>
-                      <b>₹12,380</b>
+                      <b>₦12,380</b>
                     </div>
                     <div className="exp">
                       <span className="ic">✈️</span>
@@ -1589,7 +1589,7 @@ export default function Landing() {
                         Client visit · Mumbai<small>Travel · 14 Oct</small>
                       </span>
                       <span className="rc">Receipt ✓</span>
-                      <b>₹8,650</b>
+                      <b>₦8,650</b>
                     </div>
                     <div className="exp">
                       <span className="ic">🖨️</span>
@@ -1597,7 +1597,7 @@ export default function Landing() {
                         Printing for pitch deck<small>Vendor: Print Hub · 19 Oct</small>
                       </span>
                       <span className="rc">Bill ✓</span>
-                      <b>₹3,420</b>
+                      <b>₦3,420</b>
                     </div>
                   </div>
                 </div>
@@ -1613,7 +1613,7 @@ export default function Landing() {
                   return data is already organised, so you review it and file.
                 </p>
                 <ul className="checks">
-                  <li>Tax codes pre-loaded for India, UAE, Australia and more</li>
+                  <li>Tax codes pre-loaded for Nigeria and more</li>
                   <li>Outward supplies, input credit and net liability calculated live</li>
                   <li>Credit notes, debit notes and amendments tracked correctly</li>
                   <li>Purchase data reconciled before you file</li>
@@ -1623,26 +1623,26 @@ export default function Landing() {
                   Explore tax compliance →
                 </Link>
               </div>
-              <div className="shot" role="img" aria-label="Monthly GST return summary marked ready to file">
+              <div className="shot" role="img" aria-label="Monthly VAT return summary marked ready to file">
                 <div className="win-top">
                   <span className="dot"></span>
                   <span className="dot"></span>
                   <span className="dot"></span>
-                  <span>GST return summary · October 2026</span>
+                  <span>VAT return summary · October 2026</span>
                 </div>
                 <div className="shot-body">
                   <div className="taxgrid">
                     <div className="taxcell">
                       <small>Output tax</small>
-                      <b>₹1,84,320</b>
+                      <b>₦184,320</b>
                     </div>
                     <div className="taxcell">
                       <small>Input credit</small>
-                      <b>₹61,140</b>
+                      <b>₦61,140</b>
                     </div>
                     <div className="taxcell hl">
                       <small>Net payable</small>
-                      <b>₹1,23,180</b>
+                      <b>₦123,180</b>
                     </div>
                   </div>
                   <div className="prog">
@@ -1691,15 +1691,15 @@ export default function Landing() {
                 <ul className="checks">
                   <li>Import CSV or Excel statements from any bank</li>
                   <li>Receipts auto-matched to invoices, payments to bills</li>
-                  <li>Unrecorded transactions flagged before they become problems</li>
+                  <li>Unrecorded tranCodetions flagged before they become problems</li>
                   <li>Record deposits, withdrawals and contra entries</li>
-                  <li>Full audit trail for every matched transaction</li>
+                  <li>Full audit trail for every matched tranCodetion</li>
                 </ul>
                 <Link className="link" href={primaryCtaHref}>
                   Explore banking →
                 </Link>
               </div>
-              <div className="shot" role="img" aria-label="Bank reconciliation showing matched transactions">
+              <div className="shot" role="img" aria-label="Bank reconciliation showing matched tranCodetions">
                 <div className="win-top">
                   <span className="dot"></span>
                   <span className="dot"></span>
@@ -1708,7 +1708,7 @@ export default function Landing() {
                 </div>
                 <div className="shot-body">
                   <div className="bankhead">
-                    <b>42 of 45 transactions matched</b>
+                    <b>42 of 45 tranCodetions matched</b>
                     <span className="auto-note">Took 14 minutes</span>
                   </div>
                   <div className="meterline">
@@ -1716,7 +1716,7 @@ export default function Landing() {
                   </div>
                   <div className="match">
                     <span className="side">
-                      <small>Bank · 18 Oct</small>UPI/MERIDIAN DESIGN · +₹1,56,940
+                      <small>Bank · 18 Oct</small>UPI/MERIDIAN DESIGN · +₦156,940
                     </span>
                     <span className="lnk">✓</span>
                     <span className="side">
@@ -1725,7 +1725,7 @@ export default function Landing() {
                   </div>
                   <div className="match">
                     <span className="side">
-                      <small>Bank · 01 Oct</small>NEFT/KULKARNI PROP · −₹45,000
+                      <small>Bank · 01 Oct</small>NEFT/KULKARNI PROP · −₦45,000
                     </span>
                     <span className="lnk">✓</span>
                     <span className="side">
@@ -1734,7 +1734,7 @@ export default function Landing() {
                   </div>
                   <div className="match">
                     <span className="side">
-                      <small>Bank · 05 Oct</small>CARD/GOOGLE WORKSPACE · −₹12,380
+                      <small>Bank · 05 Oct</small>CARD/GOOGLE WORKSPACE · −₦12,380
                     </span>
                     <span className="lnk">✓</span>
                     <span className="side">
@@ -1743,7 +1743,7 @@ export default function Landing() {
                   </div>
                   <div className="match">
                     <span className="side">
-                      <small>Bank · 22 Oct</small>ATM WDL PUNE · −₹5,000
+                      <small>Bank · 22 Oct</small>ATM WDL LAGOS · −₦5,000
                     </span>
                     <span className="lnk q">?</span>
                     <span className="side">
@@ -1779,7 +1779,7 @@ export default function Landing() {
               <div className="fn n1">
                 <span className="fi">📝</span>
                 <b>Quote sent</b>
-                <small>QT-0042 · ₹1,23,900</small>
+                <small>QT-0042 · ₦123,900</small>
               </div>
               <div className="fn n2">
                 <span className="fi">🤝</span>
@@ -1810,22 +1810,22 @@ export default function Landing() {
                   <small>Win the work, then bill it without retyping.</small>
                 </div>
                 <div className="sm quote">
-                  <span>QT-0042 · ₹1,23,900</span>
+                  <span>QT-0042 · ₦123,900</span>
                   <span className="conv">Convert to invoice →</span>
                 </div>
               </div>
               <div className="sc">
                 <div className="sc-h">
-                  <b>Professional GST invoices</b>
-                  <small>Your logo, SAC codes and the right tax, every time.</small>
+                  <b>Professional VAT invoices</b>
+                  <small>Your logo, service codes and the right tax, every time.</small>
                 </div>
                 <div className="sm doc">
                   <span className="dl w1"></span>
                   <span className="dl w2"></span>
                   <span className="dr">
-                    <em>CGST 9%</em>
-                    <em>SGST 9%</em>
-                    <b>₹1,23,900</b>
+                    <em>VAT 7.5%</em>
+                    <em></em>
+                    <b>₦123,900</b>
                   </span>
                 </div>
               </div>
@@ -1837,7 +1837,7 @@ export default function Landing() {
                 <div className="sm pays">
                   <span>UPI</span>
                   <span>Cards</span>
-                  <span>Net banking</span>
+                  <span>Bank transfer</span>
                 </div>
               </div>
               <div className="sc">
@@ -1876,15 +1876,15 @@ export default function Landing() {
                 <div className="sm aging">
                   <span>
                     <i style={{ width: "100%" }}></i>
-                    <em>₹2.14L</em>
+                    <em>₦214K</em>
                   </span>
                   <span>
                     <i className="o" style={{ width: "43%" }}></i>
-                    <em>₹92K</em>
+                    <em>₦92K</em>
                   </span>
                   <span>
                     <i className="o2" style={{ width: "9%" }}></i>
-                    <em>₹18K</em>
+                    <em>₦18K</em>
                   </span>
                 </div>
               </div>
@@ -1987,7 +1987,7 @@ export default function Landing() {
                   <div className="lg-row" data-who="you">
                     <span className="tag-a you">You</span>
                     <span className="lg-t">Invoice · Meridian Design</span>
-                    <span className="lg-v pos">+₹1,23,900</span>
+                    <span className="lg-v pos">+₦123,900</span>
                     <span className="perm"></span>
                   </div>
                   <div className="lg-row" data-who="ca">
@@ -2005,7 +2005,7 @@ export default function Landing() {
                   <div className="lg-row" data-who="ca">
                     <span className="tag-a ca">CA</span>
                     <span className="lg-t">Journal · Depreciation</span>
-                    <span className="lg-v neg">−₹8,200</span>
+                    <span className="lg-v neg">−₦8,200</span>
                     <span className="perm"></span>
                   </div>
                 </div>
@@ -2060,7 +2060,7 @@ export default function Landing() {
                 Every number you need. <span className="grad">One click away.</span>
               </h2>
               <p className="sub">
-                45+ reports update the moment you record a transaction. No waiting for month-end and no asking your
+                45+ reports update the moment you record a tranCodetion. No waiting for month-end and no asking your
                 accountant how the business is doing.
               </p>
               <ul className="checks">
@@ -2090,15 +2090,15 @@ export default function Landing() {
                   </div>
                   <div className="ln">
                     <span>Bank</span>
-                    <b>6,40,000</b>
+                    <b>640,000</b>
                   </div>
                   <div className="ln">
                     <span>Receivables</span>
-                    <b>1,10,900</b>
+                    <b>110,900</b>
                   </div>
                   <div className="ln">
                     <span>Fixed assets</span>
-                    <b>2,85,000</b>
+                    <b>285,000</b>
                   </div>
                   <div className="ln">
                     <span>Other assets</span>
@@ -2106,30 +2106,30 @@ export default function Landing() {
                   </div>
                   <div className="ln tt">
                     <span>Total assets</span>
-                    <b>11,00,000</b>
+                    <b>1,100,000</b>
                   </div>
                   <div className="ln hd">
                     <span>Liabilities &amp; equity</span>
                   </div>
                   <div className="ln">
                     <span>Payables</span>
-                    <b>1,42,000</b>
+                    <b>142,000</b>
                   </div>
                   <div className="ln">
-                    <span>GST payable</span>
-                    <b>1,23,180</b>
+                    <span>VAT payable</span>
+                    <b>123,180</b>
                   </div>
                   <div className="ln">
                     <span>Loan</span>
-                    <b>2,00,000</b>
+                    <b>200,000</b>
                   </div>
                   <div className="ln">
                     <span>Equity</span>
-                    <b>6,34,820</b>
+                    <b>634,820</b>
                   </div>
                   <div className="ln tt">
                     <span>Total</span>
-                    <b>11,00,000</b>
+                    <b>1,100,000</b>
                   </div>
                   <span className="seal">✓ Balanced</span>
                 </div>
@@ -2142,7 +2142,7 @@ export default function Landing() {
                   </div>
                   <div className="ln">
                     <span>Revenue</span>
-                    <b>4,82,000</b>
+                    <b>482,000</b>
                   </div>
                   <div className="ln hd">
                     <span>Less: expenses</span>
@@ -2169,11 +2169,11 @@ export default function Landing() {
                   </div>
                   <div className="ln sbt">
                     <span>Total expenses</span>
-                    <b>(1,86,450)</b>
+                    <b>(186,450)</b>
                   </div>
                   <div className="ln tt">
                     <span>Net profit</span>
-                    <b>2,95,550</b>
+                    <b>295,550</b>
                   </div>
                   <div className="margin">
                     <span>Net margin</span>
@@ -2194,12 +2194,12 @@ export default function Landing() {
                     <div>
                       <span>12 other clients</span>
                       <i style={{ width: "100%" }}></i>
-                      <b>1,92,000</b>
+                      <b>192,000</b>
                     </div>
                     <div>
                       <span>Meridian Design</span>
                       <i style={{ width: "69%" }}></i>
-                      <b>1,33,000</b>
+                      <b>133,000</b>
                     </div>
                     <div>
                       <span>Northfield Tech</span>
@@ -2219,7 +2219,7 @@ export default function Landing() {
                   </div>
                   <div className="ln tt">
                     <span>Total sales</span>
-                    <b>4,82,000</b>
+                    <b>482,000</b>
                   </div>
                 </div>
 
@@ -2231,19 +2231,19 @@ export default function Landing() {
                   </div>
                   <div className="ln">
                     <span>Opening balance</span>
-                    <b>4,20,000</b>
+                    <b>420,000</b>
                   </div>
                   <div className="ln">
                     <span>Cash in</span>
-                    <b>5,10,000</b>
+                    <b>510,000</b>
                   </div>
                   <div className="ln">
                     <span>Cash out</span>
-                    <b>(2,90,000)</b>
+                    <b>(290,000)</b>
                   </div>
                   <div className="ln tt">
                     <span>Closing balance</span>
-                    <b>6,40,000</b>
+                    <b>640,000</b>
                   </div>
                   <svg className="spark2" viewBox="0 0 200 60" preserveAspectRatio="none" aria-hidden="true">
                     <path
@@ -2304,7 +2304,7 @@ export default function Landing() {
                   <span className="pc-l w80"></span>
                   <span className="pc-l w60"></span>
                   <span className="pc-l w70"></span>
-                  <span className="pc-total">₹1,56,940</span>
+                  <span className="pc-total">₦156,940</span>
                 </span>
                 <span className="pcard pc2">
                   <span className="pc-h">
@@ -2374,7 +2374,7 @@ export default function Landing() {
                 <div className="chat">
                   <span className="q">How much does Northfield Tech owe us?</span>
                   <span className="a">
-                    ₹92,400 on INV-0243, now 7 days overdue.<span className="act">Send reminder</span>
+                    ₦92,400 on INV-0243, now 7 days overdue.<span className="act">Send reminder</span>
                   </span>
                 </div>
               </div>
@@ -2384,7 +2384,7 @@ export default function Landing() {
                   <span className="live">Live</span>
                 </div>
                 <h3>Snap a bill, skip the typing</h3>
-                <p>Take a photo of a purchase bill and the vendor, GSTIN, amount and tax are filled in for you.</p>
+                <p>Take a photo of a purchase bill and the vendor, TIN, amount and tax are filled in for you.</p>
                 <div className="scan">
                   <span className="rcpt">
                     <i className="w90"></i>
@@ -2398,10 +2398,10 @@ export default function Landing() {
                       <small>Vendor</small>Print Hub
                     </span>
                     <span>
-                      <small>Amount</small>₹3,420
+                      <small>Amount</small>₦3,420
                     </span>
                     <span>
-                      <small>GST</small>₹522 · 18%
+                      <small>VAT</small>₦522 · 7.5%
                     </span>
                   </span>
                 </div>
@@ -2413,7 +2413,7 @@ export default function Landing() {
                 </div>
                 <h3>Rules that learn your bank</h3>
                 <p>
-                  Tell it once how to treat a recurring transaction, and it categorises every future one automatically.
+                  Tell it once how to treat a recurring tranCodetion, and it categorises every future one automatically.
                 </p>
                 <div className="rule">
                   <span className="rl">
@@ -2422,9 +2422,9 @@ export default function Landing() {
                   </span>
                   <span className="rl">
                     <small>Categorise as</small>
-                    <b>Software expense · 18% GST</b>
+                    <b>Software expense · 7.5% VAT</b>
                   </span>
-                  <span className="rl ok">✓ Applied to 18 transactions this year</span>
+                  <span className="rl ok">✓ Applied to 18 tranCodetions this year</span>
                 </div>
               </div>
             </div>
@@ -2452,7 +2452,7 @@ export default function Landing() {
                   <li>Works in any browser and on your phone</li>
                   <li>Owners use it on day one, no training needed</li>
                   <li>Your CA logs in from anywhere, read-only</li>
-                  <li>Bank rules match transactions automatically</li>
+                  <li>Bank rules match tranCodetions automatically</li>
                   <li>Encrypted cloud backups, automatically</li>
                   <li>New features arrive with nothing to install</li>
                 </ul>
@@ -2482,7 +2482,7 @@ export default function Landing() {
                   </div>
                   <div className="ms-kpi">
                     <small>Receivables</small>
-                    <b>₹1,10,900</b>
+                    <b>₦110,900</b>
                   </div>
                   <div className="ms-bars">
                     <i style={{ height: "40%" }}></i>
@@ -2514,19 +2514,19 @@ export default function Landing() {
                   </div>
                   <div className="ms-field two">
                     <span>
-                      <small>Amount</small>₹40,000
+                      <small>Amount</small>₦40,000
                     </span>
                     <span>
-                      <small>GST 18%</small>₹7,200
+                      <small>VAT 7.5%</small>₦7,200
                     </span>
                   </div>
                   <div className="ms-total">
                     <span>Total</span>
-                    <b>₹47,200</b>
+                    <b>₦47,200</b>
                   </div>
                   <div className="ms-btn">Send invoice</div>
                 </div>
-                <div className="toast">💸 Payment received · ₹1,56,940</div>
+                <div className="toast">💸 Payment received · ₦156,940</div>
               </div>
             </div>
             <div>
@@ -2686,7 +2686,7 @@ export default function Landing() {
                 </div>
                 <div className="tk">
                   <label>
-                    <span>GST return prep</span>
+                    <span>VAT return prep</span>
                     <em>4 hrs → 20 min</em>
                   </label>
                   <span className="tb">
@@ -2857,7 +2857,7 @@ export default function Landing() {
                 Sales orders
               </span>
               <span className="ft l" data-c="tax">
-                Automatic GST
+                Automatic VAT
               </span>
               <span className="ft s" data-c="bank">
                 Contra entries
@@ -3178,8 +3178,8 @@ export default function Landing() {
 
             <div className="pr-ctrl">
               <div className="seg" role="radiogroup" aria-label="Currency">
-                <button className="sg" role="radio" aria-checked="true" data-cur="inr">
-                  ₹ INR
+                <button className="sg" role="radio" aria-checked="true" data-cur="ngn">
+                  ₦ NGN
                 </button>
                 <button className="sg" role="radio" aria-checked="false" data-cur="usd">
                   $ USD
@@ -3199,8 +3199,8 @@ export default function Landing() {
               <article className="plan">
                 <h3>Startup</h3>
                 <p className="pt">For trying it out or very small volumes</p>
-                <div className="amt" data-inr="₹0|forever" data-usdy="$0|forever" data-usdm="$0|forever">
-                  <b>₹0</b>
+                <div className="amt" data-ngn="₦0|forever" data-usdy="$0|forever" data-usdm="$0|forever">
+                  <b>₦0</b>
                   <span>forever</span>
                 </div>
                 <Link className="btn btn-line" href={primaryCtaHref}>
@@ -3217,14 +3217,14 @@ export default function Landing() {
 
               <article className="plan">
                 <h3>Essential</h3>
-                <p className="pt">For solopreneurs filing GST</p>
+                <p className="pt">For solopreneurs filing VAT</p>
                 <div
                   className="amt"
-                  data-inr="₹2,499|per year"
+                  data-ngn="₦25,000|per year"
                   data-usdy="$99|per year"
                   data-usdm="$9.95|per month"
                 >
-                  <b>₹2,499</b>
+                  <b>₦25,000</b>
                   <span>per year</span>
                 </div>
                 <Link className="btn btn-line" href={primaryCtaHref}>
@@ -3233,7 +3233,7 @@ export default function Landing() {
                 <ul>
                   <li>1 user</li>
                   <li>1,000 invoices a year</li>
-                  <li>GSTR-1 and GSTR-3B</li>
+                  <li>VAT returns</li>
                   <li>Invoice reminders and signature</li>
                   <li className="add">WhatsApp integration add-on</li>
                 </ul>
@@ -3243,8 +3243,8 @@ export default function Landing() {
                 <span className="ribbon">Most popular</span>
                 <h3>Growth</h3>
                 <p className="pt">For growing teams and service firms</p>
-                <div className="amt" data-inr="₹4,999|per year" data-usdy="$199|per year" data-usdm="$20|per month">
-                  <b>₹4,999</b>
+                <div className="amt" data-ngn="₦50,000|per year" data-usdy="$199|per year" data-usdm="$20|per month">
+                  <b>₦50,000</b>
                   <span>per year</span>
                 </div>
                 <Link className="btn btn-green" href={primaryCtaHref}>
@@ -3264,12 +3264,12 @@ export default function Landing() {
                 <p className="pt">For established businesses</p>
                 <div
                   className="amt"
-                  data-inr="₹7,500|per year · or ₹750/month"
+                  data-ngn="₦7,500|per year · or ₦7,500/month"
                   data-usdy="$349|per year"
                   data-usdm="$35|per month"
                 >
-                  <b>₹7,500</b>
-                  <span>per year · or ₹750/month</span>
+                  <b>₦75,000</b>
+                  <span>per year · or ₦7,500/month</span>
                 </div>
                 <Link className="btn btn-line" href={primaryCtaHref}>
                   Start free trial
@@ -3284,7 +3284,7 @@ export default function Landing() {
               </article>
             </div>
             <p className="pr-note">
-              Prices exclude GST. Pay by card, net banking, American Express or PayPal.{" "}
+              Prices exclude VAT. Pay by card, bank transfer, card or PayPal.{" "}
               <a href="#all-features">Compare every feature →</a>
             </p>
           </div>
@@ -3405,7 +3405,7 @@ export default function Landing() {
                 <summary>What does the free plan include?</summary>
                 <p>
                   The Startup plan is free forever for one user, with 10 invoices and 10 journal vouchers a month,
-                  basic financial reports and one warehouse. Paid plans start at ₹2,499 a year and add GST returns, more
+                  basic financial reports and one warehouse. Paid plans start at ₦25,000 a year and add VAT returns, more
                   invoices, more users, payroll and multi-currency.
                 </p>
               </details>
@@ -3506,7 +3506,7 @@ export default function Landing() {
               <ul className="foot-cc">
                 <li>
                   <a href="#pricing">
-                    <img src="/flags/in.svg" width="20" height="15" alt="" loading="lazy" /> India
+                    <img src="/flags/ng.svg" width="20" height="15" alt="" loading="lazy" /> Nigeria
                   </a>
                 </li>
                 <li>

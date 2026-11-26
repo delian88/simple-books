@@ -20,6 +20,10 @@ import {
   X,
   Printer,
   BarChart3,
+  Package,
+  Boxes,
+  Warehouse,
+  Landmark,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { logout, getSession } from "@/lib/auth.functions";
@@ -37,7 +41,18 @@ import { useNotifications, relativeTime } from "@/contexts/NotificationContext";
 const MAIN_NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/customers", label: "Customers", icon: Users },
+  { to: "/estimates", label: "Estimates & Quotes", icon: FileText },
   { to: "/sales/invoices", label: "Sales Invoices", icon: FileText },
+  { to: "/recurring-invoices", label: "Recurring Invoices", icon: FileText },
+  { to: "/credit-notes", label: "Credit & Debit Notes", icon: FileText },
+  { to: "/vendors", label: "Vendors", icon: Users },
+  { to: "/purchase-orders", label: "Purchase Orders", icon: FileText },
+  { to: "/products", label: "Products", icon: Package },
+  { to: "/inventory", label: "Inventory & Stock", icon: Boxes },
+  { to: "/warehouses", label: "Warehouses", icon: Warehouse },
+  { to: "/bank-reconciliation", label: "Bank Reconciliation", icon: Landmark },
+  { to: "/bank-rules", label: "Bank Rules", icon: Landmark },
+  { to: "/team", label: "Team & Accountant", icon: Users },
   { to: "/expenses", label: "Expenses (AI)", icon: ArrowUpRight },
   { to: "/money-in", label: "Money In", icon: ArrowDownLeft },
   { to: "/money-out", label: "Money Out", icon: ArrowUpRight },
@@ -47,6 +62,10 @@ const MAIN_NAV = [
   { to: "/trial-balance", label: "Trial Balance", icon: Scale },
   { to: "/income-statement", label: "Income Statement", icon: Scale },
   { to: "/balance-sheet", label: "Balance Sheet", icon: Scale },
+  { to: "/reports/cash-flow", label: "Cash Flow", icon: Scale },
+  { to: "/reports/day-book", label: "Day Book", icon: FileText },
+  { to: "/reports/tax", label: "Tax Summary", icon: Scale },
+  { to: "/audit-trail", label: "Audit Trail", icon: FileText },
   { to: "/reports", label: "Reports Hub", icon: BarChart3 },
   { to: "/journal-templates", label: "Journal Templates", icon: FileText },
 ] as const;
