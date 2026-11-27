@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -124,7 +125,7 @@ function useOptions(source?: string) {
   });
 }
 
-function SelectField({ field, value, onChange }: { field: Field; value: any; onChange: (v: string, label?: string) => void }) {
+export function SelectField({ field, value, onChange }: { field: Field; value: any; onChange: (v: string, label?: string) => void }) {
   const qc = useQueryClient();
   const { data: opts = [], isLoading } = useOptions(field.optionsFrom);
   const options = field.optionsFrom ? opts : (field.options || []).map((o) => ({ value: o, label: o }));
@@ -239,15 +240,39 @@ export function ResourcePage({ title, subtitle, type, noun, columns, fields, lin
   const saveMut = useMutation({
     mutationFn: ({ data, id }: { data: any; id?: string }) => saveRecord(type, data, id),
     onSuccess: () => {
+      toast.success(`${noun} saved successfully!`);
       refresh();
       setOpen(false);
     },
+    onError: (err: any) => {
+      toast.error(err.message || `Failed to save ${noun.toLowerCase()}`);
+    },
   });
-  const delMut = useMutation({ mutationFn: (id: string) => deleteRecord(type, id), onSuccess: refresh });
+  const delMut = useMutation({
+    mutationFn: (id: string) => deleteRecord(type, id),
+    onSuccess: () => {
+      toast.success(`${noun} deleted`);
+      refresh();
+    },
+    onError: (err: any) => {
+      toast.error(err.message || `Failed to delete ${noun.toLowerCase()}`);
+    },
+  });
 
   const defaults = () => {
     const d: any = {};
-    fields.forEach((f) => (d[f.key] = f.default ?? (f.type === "number" ? 0 : "")));
+    const today = new Date().toISOString().slice(0, 10);
+    fields.forEach((f) => {
+      if (f.default !== undefined) {
+        d[f.key] = typeof f.default === "function" ? f.default() : f.default;
+      } else if (f.type === "number") {
+        d[f.key] = 0;
+      } else if (f.type === "date") {
+        d[f.key] = today;
+      } else {
+        d[f.key] = "";
+      }
+    });
     return d;
   };
 
@@ -297,7 +322,13 @@ export function ResourcePage({ title, subtitle, type, noun, columns, fields, lin
 
   const cell = (col: Column, row: any): ReactNode => {
     if (col.render) return col.render(row);
-    const v = row[col.key];
+    let v = row[col.key];
+    if ((col.key === "vendor_id_name" || col.key === "vendor") && (!v || v === "-")) {
+      v = row.vendor_id_name || row.vendor_name || row.vendor || "-";
+    }
+    if ((col.key === "customer_id_name" || col.key === "customer") && (!v || v === "-")) {
+      v = row.customer_id_name || row.customer_name || row.customer || "-";
+    }
     if (col.kind === "money") return money(v);
     if (col.kind === "date") return v ? new Date(v).toLocaleDateString() : "-";
     if (col.kind === "badge")
@@ -339,7 +370,15 @@ export function ResourcePage({ title, subtitle, type, noun, columns, fields, lin
                       <SelectField
                         field={f}
                         value={form[f.key]}
-                        onChange={(v, label) => setForm((p: any) => ({ ...p, [f.key]: v, [`${f.key}_name`]: label }))}
+                        onChange={(v, label) =>
+                          setForm((p: any) => ({
+                            ...p,
+                            [f.key]: v,
+                            [`${f.key}_name`]: label,
+                            ...(f.optionsFrom === "vendors" || f.optionsFrom === "vendor" ? { vendor_name: label, vendor: label } : {}),
+                            ...(f.optionsFrom === "customers" || f.optionsFrom === "customer" ? { customer_name: label, customer: label } : {}),
+                          }))
+                        }
                       />
                     ) : f.type === "textarea" ? (
                       <textarea
