@@ -229,8 +229,9 @@ export default function ExpensesPage() {
         data: {
           vendor: result.vendor,
           amount: Number(result.amount),
-          date: new Date(result.date).toISOString().split('T')[0],
-          accountId: accountId,
+          date: new Date(result.date || new Date()).toISOString().split('T')[0],
+          category: result.category || "General Expense",
+          accountId: accountId || result.category || "General Expense",
           bankAccountId: selectedBankId || bankAccounts[0]?.value,
           description: `Voice note: "${text}"`
         }
@@ -283,7 +284,8 @@ export default function ExpensesPage() {
               vendor: result.vendor,
               amount: Number(result.amount),
               date: new Date(result.date || new Date().toISOString().split('T')[0]).toISOString().split('T')[0],
-              accountId: result.accountId || expenseAccounts[0]?.value,
+              category: result.category || "General Expense",
+              accountId: result.accountId || expenseAccounts[0]?.value || result.category || "General Expense",
               bankAccountId: selectedBankId || bankAccounts[0]?.value,
               description: result.description || `Scanned receipt: ${file.name}`
             }

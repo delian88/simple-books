@@ -43,9 +43,10 @@ switch ($action) {
         $data        = json_decode(file_get_contents('php://input'), true) ?? [];
         $id          = $data['id']          ?? null;
         $vendor      = $data['vendor']      ?? '';
-        $amount      = $data['amount']      ?? 0;
+        $amount      = (float)($data['amount'] ?? 0);
         $date        = $data['date']        ?? date('Y-m-d');
-        $accountId   = $data['accountId']   ?? 'Other';
+        $accountId   = $data['accountId']   ?? '';
+        $category    = $data['category']    ?? ($accountId ?: 'General Expense');
         $description = $data['description'] ?? null;
         $documentId  = $data['documentId']  ?? null;
         $bankAccountId = $data['bankAccountId'] ?? null;
@@ -60,11 +61,8 @@ switch ($action) {
                                SET vendor=?, description=?, amount=?, date=?, category=?, bank_account_id=?,
                                    is_flagged=?, flag_reason=?, updated_at=?
                                WHERE id=? AND company_id=?")
-                    ->execute([$vendor, $description, $amount, $date, $accountId, $bankAccountId,
+                    ->execute([$vendor, $description, $amount, $date, $category, $bankAccountId,
                                $isFlagged, $flagReason, $now, $id, $companyId]);
-                // TODO: update existing journal entry? For simplicity, we assume AI expense saves are usually inserts. 
-                // If it's an update, the journal entry should ideally be reversed or updated.
-                // We'll leave this as is for now, but a real app would update the journal entry too.
             } else {
                 $id = bin2hex(random_bytes(9));
                 $pdo->prepare("INSERT INTO expenses
@@ -72,24 +70,75 @@ switch ($action) {
                                 date, category, bank_account_id, is_flagged, flag_reason, created_at, updated_at)
                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
                     ->execute([$id, $companyId, $documentId, $vendor, $description,
-                               $amount, $date, $accountId, $bankAccountId, $isFlagged, $flagReason, $now, $now]);
+                               $amount, $date, $category, $bankAccountId, $isFlagged, $flagReason, $now, $now]);
                 
-                // Create Double-Entry Journal for the expense
-                if ($accountId && $bankAccountId) {
-                    $jeId = bin2hex(random_bytes(9));
-                    $journalDesc = "AI Receipt: $vendor " . ($description ? "- $description" : "");
-                    $pdo->prepare("INSERT INTO journal_entries (id, company_id, date, description, reference, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'POSTED', ?, ?)")
-                        ->execute([$jeId, $companyId, $date, $journalDesc, $id, $now, $now]);
-                    
-                    // Debit: Expense Account
-                    $l1 = bin2hex(random_bytes(9));
-                    $pdo->prepare("INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, created_at) VALUES (?, ?, ?, ?, 0, ?)")
-                        ->execute([$l1, $jeId, $accountId, $amount, $now]);
+                // Safe Double-Entry Journal creation
+                // 1. Resolve Expense Account to a valid accounts.id
+                $validExpenseAccountId = null;
+                if ($accountId && strlen($accountId) <= 32) {
+                    $chk = $pdo->prepare("SELECT id FROM accounts WHERE id = ? AND company_id = ?");
+                    $chk->execute([$accountId, $companyId]);
+                    $validExpenseAccountId = $chk->fetchColumn() ?: null;
+                }
+                if (!$validExpenseAccountId) {
+                    $nameToSearch = $category ?: ($accountId ?: 'General Expense');
+                    $find = $pdo->prepare("SELECT id FROM accounts WHERE company_id = ? AND LOWER(name) = LOWER(?) LIMIT 1");
+                    $find->execute([$companyId, $nameToSearch]);
+                    $validExpenseAccountId = $find->fetchColumn() ?: null;
+                }
+                if (!$validExpenseAccountId) {
+                    $findAny = $pdo->prepare("SELECT id FROM accounts WHERE company_id = ? AND type = 'EXPENSE' LIMIT 1");
+                    $findAny->execute([$companyId]);
+                    $validExpenseAccountId = $findAny->fetchColumn() ?: null;
+                }
+                if (!$validExpenseAccountId) {
+                    $validExpenseAccountId = bin2hex(random_bytes(9));
+                    $accName = $category ?: 'General Expense';
+                    $pdo->prepare("INSERT INTO accounts (id, company_id, name, type, sub_type, code, opening_balance, created_at, updated_at)
+                                   VALUES (?, ?, ?, 'EXPENSE', 'Operating Expense', '5000', 0, ?, ?)")
+                        ->execute([$validExpenseAccountId, $companyId, $accName, $now, $now]);
+                }
+
+                // 2. Resolve Bank / Asset Account to a valid accounts.id
+                $validBankAccountId = null;
+                if ($bankAccountId && strlen($bankAccountId) <= 32) {
+                    $chkB = $pdo->prepare("SELECT id FROM accounts WHERE id = ? AND company_id = ?");
+                    $chkB->execute([$bankAccountId, $companyId]);
+                    $validBankAccountId = $chkB->fetchColumn() ?: null;
+                }
+                if (!$validBankAccountId) {
+                    $findBank = $pdo->prepare("SELECT id FROM accounts WHERE company_id = ? AND (type = 'ASSET' OR sub_type = 'Cash' OR LOWER(name) LIKE '%cash%' OR LOWER(name) LIKE '%bank%') LIMIT 1");
+                    $findBank->execute([$companyId]);
+                    $validBankAccountId = $findBank->fetchColumn() ?: null;
+                }
+                if (!$validBankAccountId) {
+                    $validBankAccountId = bin2hex(random_bytes(9));
+                    $pdo->prepare("INSERT INTO accounts (id, company_id, name, type, sub_type, code, opening_balance, created_at, updated_at)
+                                   VALUES (?, ?, 'Cash on Hand', 'ASSET', 'Cash', '1000', 0, ?, ?)")
+                        ->execute([$validBankAccountId, $companyId, $now, $now]);
+                }
+
+                // 3. Insert Journal Entry with guaranteed valid foreign keys
+                if ($validExpenseAccountId && $validBankAccountId && $amount > 0) {
+                    try {
+                        $jeId = bin2hex(random_bytes(9));
+                        $journalDesc = "Expense: " . ($vendor ?: 'Vendor') . ($description ? " - $description" : "");
+                        $pdo->prepare("INSERT INTO journal_entries (id, company_id, date, description, reference, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'POSTED', ?, ?)")
+                            ->execute([$jeId, $companyId, $date, $journalDesc, $id, $now, $now]);
                         
-                    // Credit: Bank/Asset Account
-                    $l2 = bin2hex(random_bytes(9));
-                    $pdo->prepare("INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, created_at) VALUES (?, ?, ?, 0, ?, ?)")
-                        ->execute([$l2, $jeId, $bankAccountId, $amount, $now]);
+                        // Debit: Expense Account
+                        $l1 = bin2hex(random_bytes(9));
+                        $pdo->prepare("INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, created_at) VALUES (?, ?, ?, ?, 0, ?)")
+                            ->execute([$l1, $jeId, $validExpenseAccountId, $amount, $now]);
+                            
+                        // Credit: Bank/Asset Account
+                        $l2 = bin2hex(random_bytes(9));
+                        $pdo->prepare("INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, created_at) VALUES (?, ?, ?, 0, ?, ?)")
+                            ->execute([$l2, $jeId, $validBankAccountId, $amount, $now]);
+                    } catch (Exception $jeEx) {
+                        // Log warning, but don't fail expense creation
+                        error_log("Journal entry skipped for expense $id: " . $jeEx->getMessage());
+                    }
                 }
             }
             $pdo->commit();
