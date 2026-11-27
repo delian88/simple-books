@@ -13,7 +13,7 @@ export default function PurchaseOrdersPage() {
       numberPrefix="PO"
       lines
       fields={[
-        { key: "vendor_id", label: "Vendor", optionsFrom: "vendor", required: true },
+        { key: "vendor_id", label: "Vendor", optionsFrom: "vendors", required: true },
         { key: "order_date", label: "Order date", type: "date" },
         { key: "due_date", label: "Due date", type: "date" },
         { key: "status", label: "Status", type: "select", options: ["DRAFT", "ORDERED", "RECEIVED", "BILLED", "PAID"], default: "DRAFT" },

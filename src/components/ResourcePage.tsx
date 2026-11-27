@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Trash2, Pencil } from "lucide-react";
-import { listCustomers, listInvoices, listAccounts } from "@/lib/accounting.functions";
+import { listCustomers, listInvoices, listAccounts, addCustomer } from "@/lib/accounting.functions";
 import { listRecords, saveRecord, deleteRecord, money, type RecordType } from "@/lib/modules.functions";
 
 export type Field = {
@@ -87,18 +87,32 @@ function useOptions(source?: string) {
           label: `${r.first_name || ""} ${r.last_name || r.name || "Employee"} (${r.department || "Staff"})`,
         }));
       }
-      if (source === "vendors") {
+      if (source === "vendors" || source === "vendor") {
         const rows = await listRecords("vendor" as RecordType);
         return (Array.isArray(rows) ? rows : []).map((r: any) => ({
           value: r.id,
-          label: r.name || r.company_name || "Vendor",
+          label: r.name || r.company_name || r.vendor_name || "Vendor",
         }));
       }
-      if (source === "purchase_orders") {
+      if (source === "purchase_orders" || source === "purchase_order") {
         const rows = await listRecords("purchase_order" as RecordType);
         return (Array.isArray(rows) ? rows : []).map((r: any) => ({
           value: r.id,
           label: `${r.number} (${r.vendor_name || "Vendor"} · ${money(r.total_amount || 0)})`,
+        }));
+      }
+      if (source === "warehouses" || source === "warehouse") {
+        const rows = await listRecords("warehouse" as RecordType);
+        return (Array.isArray(rows) ? rows : []).map((r: any) => ({
+          value: r.id,
+          label: r.name || r.location || "Warehouse",
+        }));
+      }
+      if (source === "products" || source === "product") {
+        const rows = await listRecords("product" as RecordType);
+        return (Array.isArray(rows) ? rows : []).map((r: any) => ({
+          value: r.id,
+          label: `${r.name} (${money(r.sales_price || r.price || 0)})`,
         }));
       }
       const rows = await listRecords(source as RecordType);
@@ -111,22 +125,97 @@ function useOptions(source?: string) {
 }
 
 function SelectField({ field, value, onChange }: { field: Field; value: any; onChange: (v: string, label?: string) => void }) {
-  const { data: opts = [] } = useOptions(field.optionsFrom);
+  const qc = useQueryClient();
+  const { data: opts = [], isLoading } = useOptions(field.optionsFrom);
   const options = field.optionsFrom ? opts : (field.options || []).map((o) => ({ value: o, label: o }));
+  const [isAdding, setIsAdding] = useState(false);
+  const [quickName, setQuickName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const isVendor = field.optionsFrom === "vendors" || field.optionsFrom === "vendor";
+  const isCustomer = field.optionsFrom === "customers" || field.optionsFrom === "customer";
+  const isWarehouse = field.optionsFrom === "warehouses" || field.optionsFrom === "warehouse";
+  const canQuickAdd = isVendor || isCustomer || isWarehouse;
+
+  const handleQuickAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickName.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const name = quickName.trim();
+      let newId = "";
+      if (isCustomer) {
+        const res = await addCustomer({ data: { name } });
+        newId = res.id;
+        qc.invalidateQueries({ queryKey: ["options", field.optionsFrom] });
+      } else {
+        const type = isVendor ? "vendor" : "warehouse";
+        const res = await saveRecord(type as RecordType, { name });
+        newId = res.id;
+        qc.invalidateQueries({ queryKey: ["options", field.optionsFrom] });
+        qc.invalidateQueries({ queryKey: ["records", type] });
+      }
+      onChange(newId, name);
+      setQuickName("");
+      setIsAdding(false);
+    } catch (err: any) {
+      alert(err.message || "Failed to add item");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (isAdding) {
+    return (
+      <form onSubmit={handleQuickAdd} className="flex gap-1.5 items-center">
+        <Input
+          autoFocus
+          className="h-9 text-sm"
+          placeholder={`Enter new ${field.label.toLowerCase()} name...`}
+          value={quickName}
+          onChange={(e) => setQuickName(e.target.value)}
+        />
+        <Button type="submit" size="sm" disabled={isSubmitting || !quickName.trim()} className="h-9 px-3 bg-[#0B3D2B] text-white">
+          {isSubmitting ? "..." : "Add"}
+        </Button>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setIsAdding(false)} className="h-9 px-2 text-xs">
+          Cancel
+        </Button>
+      </form>
+    );
+  }
+
   return (
-    <select
-      className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm"
-      value={value ?? ""}
-      required={field.required}
-      onChange={(e) => onChange(e.target.value, options.find((o) => o.value === e.target.value)?.label)}
-    >
-      <option value="">Select...</option>
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
+    <div className="flex gap-1.5 items-center">
+      <select
+        className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+        value={value ?? ""}
+        required={field.required}
+        onChange={(e) => onChange(e.target.value, options.find((o) => o.value === e.target.value)?.label)}
+      >
+        <option value="">
+          {isLoading ? "Loading..." : options.length === 0 ? `No ${field.label.toLowerCase()}s found` : `Select ${field.label}...`}
         </option>
-      ))}
-    </select>
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      {canQuickAdd && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setIsAdding(true)}
+          className="h-9 px-2.5 text-xs shrink-0 gap-1 border-dashed"
+          title={`Add new ${field.label.toLowerCase()}`}
+        >
+          <Plus className="h-3.5 w-3.5" />
+          <span>New</span>
+        </Button>
+      )}
+    </div>
   );
 }
 

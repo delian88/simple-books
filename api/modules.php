@@ -79,7 +79,34 @@ function pbUpdate($pdo, $companyId, $id, $data) {
 function pbList($pdo, $companyId, $type) {
     $s = $pdo->prepare("SELECT * FROM pb_records WHERE company_id = ? AND type = ? ORDER BY created_at DESC LIMIT 1000");
     $s->execute([$companyId, $type]);
-    return array_map('pbRow', $s->fetchAll());
+    $list = array_map('pbRow', $s->fetchAll());
+
+    // For vendors: also pull distinct vendors from expenses if not already in list
+    if ($type === 'vendor') {
+        $existing = [];
+        foreach ($list as $v) {
+            $name = trim($v['name'] ?? '');
+            if ($name !== '') $existing[strtolower($name)] = true;
+        }
+        try {
+            $st = $pdo->prepare("SELECT DISTINCT vendor FROM expenses WHERE company_id = ? AND vendor IS NOT NULL AND TRIM(vendor) != ''");
+            $st->execute([$companyId]);
+            foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $vName) {
+                $vName = trim($vName);
+                if ($vName !== '' && !isset($existing[strtolower($vName)])) {
+                    $list[] = [
+                        'id' => 'v-' . md5($vName),
+                        'name' => $vName,
+                        'email' => '',
+                        'phone' => '',
+                        'created_at' => date('Y-m-d H:i:s')
+                    ];
+                    $existing[strtolower($vName)] = true;
+                }
+            }
+        } catch (Exception $e) {}
+    }
+    return $list;
 }
 function pbTotals($lines) {
     $sub = 0; $tax = 0;
