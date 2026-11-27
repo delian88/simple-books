@@ -555,23 +555,15 @@ export default function Landing() {
       {/* ============ NAVBAR ============ */}
       <nav aria-label="Primary">
         <div className="wrap nav-in">
-          <Link className="logo" href="/" aria-label={`${appName} home`}>
-            {appLogo ? (
-              <img src={appLogo} width="193" height="39" alt={appName} />
-            ) : (
-              <>
-                <img src="/logo.png" alt={appName} className="h-8 w-8 object-contain rounded inline-block mr-2" />
-                <span>
-                  {appName === "KoboBooks" ? (
-                    <>
-                      Kobo<span className="p2">Books</span>
-                    </>
-                  ) : (
-                    appName
-                  )}
-                </span>
-              </>
-            )}
+          <Link className="logo" href="/" aria-label={`${appName} home`} style={{ display: "inline-flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
+            <img
+              src="/logo.png"
+              alt={appName}
+              style={{ height: "36px", width: "36px", objectFit: "contain", borderRadius: "8px", flexShrink: 0 }}
+            />
+            <span style={{ display: "inline-flex", alignItems: "center", fontWeight: 800, fontSize: "22px", letterSpacing: "-0.02em", color: "#0B3D2B" }}>
+              Kobo<span style={{ color: "#D4AF37" }}>Books</span>
+            </span>
           </Link>
 
           <div className="nav-links">
@@ -3444,23 +3436,15 @@ export default function Landing() {
         <div className="wrap">
           <div className="foot-grid">
             <div>
-              <Link className="logo" href="/" aria-label={`${appName} home`}>
-                {appLogo ? (
-                  <img src={appLogo} width="193" height="39" alt={appName} />
-                ) : (
-                  <>
-                    <img src="/logo.png" alt={appName} className="h-8 w-8 object-contain rounded inline-block mr-2" />
-                    <span>
-                      {appName === "KoboBooks" ? (
-                        <>
-                          Kobo<span className="p2">Books</span>
-                        </>
-                      ) : (
-                        appName
-                      )}
-                    </span>
-                  </>
-                )}
+              <Link className="logo" href="/" aria-label={`${appName} home`} style={{ display: "inline-flex", alignItems: "center", gap: "10px", textDecoration: "none" }}>
+                <img
+                  src="/logo.png"
+                  alt={appName}
+                  style={{ height: "36px", width: "36px", objectFit: "contain", borderRadius: "8px", flexShrink: 0 }}
+                />
+                <span style={{ display: "inline-flex", alignItems: "center", fontWeight: 800, fontSize: "22px", letterSpacing: "-0.02em", color: "#0B3D2B" }}>
+                  Kobo<span style={{ color: "#D4AF37" }}>Books</span>
+                </span>
               </Link>
               <p data-entity="description" style={{ fontSize: "13.5px", marginTop: "12px" }}>
                 {appName} is online accounting and invoicing software for small businesses, with invoicing, expenses,
