@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Trash2, Pencil } from "lucide-react";
-import { listCustomers, listInvoices } from "@/lib/accounting.functions";
+import { listCustomers, listInvoices, listAccounts } from "@/lib/accounting.functions";
 import { listRecords, saveRecord, deleteRecord, money, type RecordType } from "@/lib/modules.functions";
 
 export type Field = {
@@ -66,8 +66,46 @@ function useOptions(source?: string) {
           label: `${r.invoice_number} (${r.customer_name || "Customer"} · ${money(r.total_amount)})`,
         }));
       }
+      if (source === "accounts") {
+        const rows = await listAccounts();
+        return (Array.isArray(rows) ? rows : []).map((r: any) => ({
+          value: r.id,
+          label: `${r.name} (${r.type || "Account"})`,
+        }));
+      }
+      if (source === "banks") {
+        const rows = await listRecords("bank_account" as RecordType);
+        return (Array.isArray(rows) ? rows : []).map((r: any) => ({
+          value: r.id,
+          label: `${r.bank_name || r.name} - ${r.account_number || ""} (${r.account_type || "Bank"})`,
+        }));
+      }
+      if (source === "employees") {
+        const rows = await listRecords("employee" as RecordType);
+        return (Array.isArray(rows) ? rows : []).map((r: any) => ({
+          value: r.id,
+          label: `${r.first_name || ""} ${r.last_name || r.name || "Employee"} (${r.department || "Staff"})`,
+        }));
+      }
+      if (source === "vendors") {
+        const rows = await listRecords("vendor" as RecordType);
+        return (Array.isArray(rows) ? rows : []).map((r: any) => ({
+          value: r.id,
+          label: r.name || r.company_name || "Vendor",
+        }));
+      }
+      if (source === "purchase_orders") {
+        const rows = await listRecords("purchase_order" as RecordType);
+        return (Array.isArray(rows) ? rows : []).map((r: any) => ({
+          value: r.id,
+          label: `${r.number} (${r.vendor_name || "Vendor"} · ${money(r.total_amount || 0)})`,
+        }));
+      }
       const rows = await listRecords(source as RecordType);
-      return (Array.isArray(rows) ? rows : []).map((r: any) => ({ value: r.id, label: r.name || r.number }));
+      return (Array.isArray(rows) ? rows : []).map((r: any) => ({
+        value: r.id,
+        label: r.name || r.number || r.title || r.id,
+      }));
     },
   });
 }

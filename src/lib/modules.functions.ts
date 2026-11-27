@@ -12,7 +12,19 @@ export type RecordType =
   | "recurring"
   | "credit_note"
   | "reminder"
-  | "audit";
+  | "audit"
+  | "sales_order"
+  | "receipt"
+  | "stock_purchase"
+  | "vendor_payment"
+  | "bank_account"
+  | "tax_rate"
+  | "simple_entry"
+  | "reimbursement"
+  | "project"
+  | "employee"
+  | "payroll_run"
+  | "leave_request";
 
 export const listRecords = (type: RecordType) =>
   apiGet<any[]>(`/api/modules.php?action=list&type=${type}`);
@@ -25,6 +37,59 @@ export const deleteRecord = (type: RecordType, id: string) =>
 
 export const convertEstimate = (id: string) =>
   apiPost("/api/modules.php?action=convertEstimate", { id });
+
+export const convertSalesOrder = (id: string) =>
+  apiPost("/api/modules.php?action=convertSalesOrder", { id });
+
+export const recordReceipt = (data: {
+  customer_id?: string;
+  customer_name?: string;
+  invoice_id?: string;
+  amount: number;
+  date?: string;
+  payment_method?: string;
+  reference?: string;
+  notes?: string;
+}) => apiPost("/api/modules.php?action=recordReceipt", data);
+
+export const recordVendorPayment = (data: {
+  vendor_id?: string;
+  vendor_name?: string;
+  purchase_order_id?: string;
+  amount: number;
+  date?: string;
+  payment_method?: string;
+  reference?: string;
+  notes?: string;
+}) => apiPost("/api/modules.php?action=recordVendorPayment", data);
+
+export const postSimpleEntry = (data: {
+  debit_account_id: string;
+  credit_account_id: string;
+  amount: number;
+  date?: string;
+  description?: string;
+  reference?: string;
+}) => apiPost("/api/modules.php?action=postSimpleEntry", data);
+
+export const runPayroll = (data: { month?: string; payment_date?: string; notes?: string }) =>
+  apiPost("/api/modules.php?action=runPayroll", data);
+
+export const getReportsData = () =>
+  apiGet<{
+    invoices: any[];
+    payments: any[];
+    purchaseOrders: any[];
+    bills: any[];
+    vendorPayments: any[];
+    products: any[];
+    warehouses: any[];
+    stockMoves: any[];
+    payrollRuns: any[];
+    employees: any[];
+    expenses: any[];
+    transactions: any[];
+  }>("/api/modules.php?action=getReportsData");
 
 export const runRecurring = () =>
   apiPost("/api/modules.php?action=runRecurring", {});

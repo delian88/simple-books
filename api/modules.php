@@ -1,10 +1,13 @@
 <?php
-// modules.php - ProfitBooks-style modules.
-// Document store (pb_records) for estimates, vendors, purchase orders, products, warehouses,
-// stock movements, bank rules, bank statement lines, recurring invoices, credit/debit notes,
-// reminder log and audit trail, plus workflow actions:
-//   convertEstimate, runRecurring, importBankLines, confirmLine, applyCreditNote,
-//   sendReminders, portalLink, listMembers/inviteMember/updateMemberRole/removeMember.
+// modules.php - Comprehensive ProfitBooks application modules and workflow engine.
+// Document store (pb_records) + accounting integration for:
+//   Income: estimates, sales orders, recurring invoices, receipts, credit notes
+//   Expenses: purchase orders, stock purchases, vendor payments, vendors
+//   Banking: bank accounts, bank statement lines, bank rules
+//   Accounting: taxes, simple double-entry accounting, reimbursements, projects, audit trail
+//   Items: products, warehouses, stock adjustments & movements
+//   Employees: employees, payroll runs, leave requests
+//   Reports: specialized sales, expense, inventory, transaction and payroll analytics
 require_once 'db.php';
 define('AUTH_AS_LIB', true);
 require_once 'auth.php';
@@ -29,15 +32,20 @@ try {
     try { $pdo->exec("CREATE INDEX idx_pb_company_type ON pb_records (company_id, type)"); } catch (Exception $e2) {}
 }
 
-const PB_TYPES = ['estimate', 'vendor', 'purchase_order', 'product', 'warehouse', 'stock_move',
-                  'bank_rule', 'bank_line', 'recurring', 'credit_note', 'reminder', 'audit'];
+const PB_TYPES = [
+    'estimate', 'vendor', 'purchase_order', 'product', 'warehouse', 'stock_move',
+    'bank_rule', 'bank_line', 'recurring', 'credit_note', 'reminder', 'audit',
+    'sales_order', 'receipt', 'stock_purchase', 'vendor_payment', 'bank_account',
+    'tax_rate', 'simple_entry', 'reimbursement', 'project', 'employee',
+    'payroll_run', 'leave_request'
+];
 
 function pbBody() {
     if (isset($GLOBALS['PB_TEST_BODY'])) return $GLOBALS['PB_TEST_BODY'];
     return json_decode(file_get_contents('php://input'), true) ?? [];
 }
 function pbType($t) {
-    if (!in_array($t, PB_TYPES, true)) jsonResponse(['error' => 'Invalid type'], 400);
+    if (!in_array($t, PB_TYPES, true)) jsonResponse(['error' => "Invalid type: $t"], 400);
     return $t;
 }
 function pbId() { return bin2hex(random_bytes(9)); }
@@ -86,8 +94,9 @@ function pbPostStock($pdo, $companyId, $userId, $lines, $sign, $kind, $note, $wa
     if (!$lines) return 0;
     if (!$warehouseId) {
         $ws = pbList($pdo, $companyId, 'warehouse');
-        if (!$ws) return 0;
-        $warehouseId = $ws[0]['id'];
+        if ($ws) {
+            $warehouseId = $ws[0]['id'];
+        }
     }
     $posted = 0;
     foreach ($lines as $l) {
@@ -154,11 +163,19 @@ switch ($action) {
         $type = pbType($body['type'] ?? '');
         $data = $body['data'] ?? [];
         $id   = $body['id'] ?? '';
+
         // When a purchase order moves to RECEIVED or BILLED, post stock additions once
         if ($type === 'purchase_order' && in_array($data['status'] ?? '', ['RECEIVED', 'BILLED'], true) && empty($data['stock_posted'])) {
             $posted = pbPostStock($pdo, $companyId, $userId, $data['lines'] ?? [], 1, 'purchase', 'PO ' . ($data['number'] ?? $id));
             if ($posted > 0) $data['stock_posted'] = true;
         }
+
+        // When a stock purchase is created or received, post stock addition
+        if ($type === 'stock_purchase' && empty($data['stock_posted']) && !empty($data['lines'])) {
+            $posted = pbPostStock($pdo, $companyId, $userId, $data['lines'] ?? [], 1, 'stock_purchase', 'Bill ' . ($data['number'] ?? $id));
+            if ($posted > 0) $data['stock_posted'] = true;
+        }
+
         if ($id) {
             pbUpdate($pdo, $companyId, $id, $data);
             if ($type !== 'stock_move') pbAudit($pdo, $companyId, $userId, "Updated $type " . ($data['name'] ?? $data['number'] ?? $id));
@@ -189,6 +206,251 @@ switch ($action) {
         pbUpdate($pdo, $companyId, $est['id'], $est);
         pbAudit($pdo, $companyId, $userId, "Converted estimate " . ($est['number'] ?? '') . " to invoice $number");
         jsonResponse(['ok' => true, 'invoice_number' => $number]);
+        break;
+
+    // ── sales order -> invoice ────────────────────────────────────────────
+    case 'convertSalesOrder':
+        $so = pbGet($pdo, $companyId, 'sales_order', $body['id'] ?? '');
+        if (!$so) jsonResponse(['error' => 'Sales Order not found'], 404);
+        if (empty($so['customer_id'])) jsonResponse(['error' => 'Sales Order has no customer'], 400);
+        [, $number] = pbCreateInvoice($pdo, $companyId, $so['customer_id'], $so['lines'] ?? [], date('Y-m-d'),
+            $so['delivery_date'] ?: date('Y-m-d', strtotime('+30 days')), $so['notes'] ?? null, $userId);
+        $so['status'] = 'INVOICED';
+        $so['invoice_number'] = $number;
+        pbUpdate($pdo, $companyId, $so['id'], $so);
+        pbAudit($pdo, $companyId, $userId, "Converted sales order " . ($so['number'] ?? '') . " to invoice $number");
+        jsonResponse(['ok' => true, 'invoice_number' => $number]);
+        break;
+
+    // ── record receipt (customer payment) ──────────────────────────────────
+    case 'recordReceipt':
+        $data = $body['data'] ?? $body;
+        $customerId = $data['customer_id'] ?? '';
+        $invoiceId  = $data['invoice_id'] ?? '';
+        $amount     = (float)($data['amount'] ?? 0);
+        $date       = $data['date'] ?? date('Y-m-d');
+        $method     = $data['payment_method'] ?? 'BANK_TRANSFER';
+        $reference  = $data['reference'] ?? ('RCP-' . strtoupper(bin2hex(random_bytes(3))));
+        $notes      = $data['notes'] ?? '';
+
+        if ($amount <= 0) jsonResponse(['error' => 'Amount must be greater than zero'], 400);
+
+        $now = date('Y-m-d H:i:s');
+        $payId = pbId();
+
+        // If linked to an invoice, update invoice status
+        if ($invoiceId) {
+            $st = $pdo->prepare("SELECT id, total_amount, customer_id FROM sales_invoices WHERE id = ? AND company_id = ?");
+            $st->execute([$invoiceId, $companyId]);
+            $inv = $st->fetch();
+            if ($inv) {
+                if (!$customerId) $customerId = $inv['customer_id'];
+                // Check past payments
+                $pSum = $pdo->prepare("SELECT SUM(amount) FROM customer_payments WHERE company_id = ? AND reference LIKE ?");
+                $pSum->execute([$companyId, "%{$inv['id']}%"]);
+                $paidSoFar = (float)($pSum->fetchColumn() ?: 0) + $amount;
+                $newStatus = ($paidSoFar >= (float)$inv['total_amount'] - 0.01) ? 'PAID' : 'PARTIALLY_PAID';
+
+                $pdo->prepare("UPDATE sales_invoices SET status = ?, updated_at = ? WHERE id = ? AND company_id = ?")
+                    ->execute([$newStatus, $now, $invoiceId, $companyId]);
+            }
+        }
+
+        // Insert customer_payments row
+        $pdo->prepare("INSERT INTO customer_payments (id, company_id, customer_id, date, amount, reference, payment_method, status, notes, created_at, updated_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, 'COMPLETED', ?, ?, ?)")
+            ->execute([$payId, $companyId, $customerId ?: null, $date, $amount, $reference, $method, $notes, $now, $now]);
+
+        // Insert double-entry transaction record (Money In)
+        $pdo->prepare("INSERT INTO transactions (id, user_id, company_id, created_by, direction, category, category_id, amount, occurred_on, counterparty, note, source, created_at)
+                       VALUES (?, ?, ?, ?, 'inflow', 'Sales Receipt', NULL, ?, ?, ?, ?, 'receipt', ?)")
+            ->execute([pbId(), $userId, $companyId, $userId, $amount, $date, $data['customer_name'] ?? 'Customer', $reference . ': ' . $notes, $now]);
+
+        // Save in pb_records as receipt
+        $rcpId = pbInsert($pdo, $companyId, $userId, 'receipt', [
+            'number'         => $reference,
+            'customer_id'    => $customerId,
+            'customer_name'  => $data['customer_name'] ?? '',
+            'invoice_id'     => $invoiceId,
+            'amount'         => $amount,
+            'date'           => $date,
+            'payment_method' => $method,
+            'notes'          => $notes,
+            'status'         => 'COMPLETED'
+        ]);
+
+        pbAudit($pdo, $companyId, $userId, "Recorded receipt $reference for " . number_format($amount, 2));
+        jsonResponse(['ok' => true, 'id' => $rcpId, 'reference' => $reference]);
+        break;
+
+    // ── record vendor payment ──────────────────────────────────────────────
+    case 'recordVendorPayment':
+        $data = $body['data'] ?? $body;
+        $vendorId = $data['vendor_id'] ?? '';
+        $poId     = $data['purchase_order_id'] ?? '';
+        $amount   = (float)($data['amount'] ?? 0);
+        $date     = $data['date'] ?? date('Y-m-d');
+        $method   = $data['payment_method'] ?? 'BANK_TRANSFER';
+        $reference = $data['reference'] ?? ('VPAY-' . strtoupper(bin2hex(random_bytes(3))));
+        $notes    = $data['notes'] ?? '';
+
+        if ($amount <= 0) jsonResponse(['error' => 'Amount must be greater than zero'], 400);
+        $now = date('Y-m-d H:i:s');
+
+        // If linked to a purchase order or stock purchase, update status
+        if ($poId) {
+            $po = pbGet($pdo, $companyId, 'purchase_order', $poId) ?: pbGet($pdo, $companyId, 'stock_purchase', $poId);
+            if ($po) {
+                $po['status'] = 'PAID';
+                $po['paid_amount'] = $amount;
+                pbUpdate($pdo, $companyId, $po['id'], $po);
+            }
+        }
+
+        // Insert double-entry transaction record (Money Out)
+        $pdo->prepare("INSERT INTO transactions (id, user_id, company_id, created_by, direction, category, category_id, amount, occurred_on, counterparty, note, source, created_at)
+                       VALUES (?, ?, ?, ?, 'outflow', 'Vendor Payment', NULL, ?, ?, ?, ?, 'vendor_payment', ?)")
+            ->execute([pbId(), $userId, $companyId, $userId, $amount, $date, $data['vendor_name'] ?? 'Vendor', $reference . ': ' . $notes, $now]);
+
+        // Save in pb_records as vendor_payment
+        $vpId = pbInsert($pdo, $companyId, $userId, 'vendor_payment', [
+            'number'            => $reference,
+            'vendor_id'         => $vendorId,
+            'vendor_name'       => $data['vendor_name'] ?? '',
+            'purchase_order_id' => $poId,
+            'amount'            => $amount,
+            'date'              => $date,
+            'payment_method'    => $method,
+            'notes'             => $notes,
+            'status'            => 'COMPLETED'
+        ]);
+
+        pbAudit($pdo, $companyId, $userId, "Recorded vendor payment $reference for " . number_format($amount, 2));
+        jsonResponse(['ok' => true, 'id' => $vpId, 'reference' => $reference]);
+        break;
+
+    // ── simple double-entry accounting entry ───────────────────────────────
+    case 'postSimpleEntry':
+        $data = $body['data'] ?? $body;
+        $debitAccId  = $data['debit_account_id'] ?? '';
+        $creditAccId = $data['credit_account_id'] ?? '';
+        $amount      = (float)($data['amount'] ?? 0);
+        $date        = $data['date'] ?? date('Y-m-d');
+        $desc        = $data['description'] ?? 'Simple entry';
+        $ref         = $data['reference'] ?? ('JV-' . strtoupper(bin2hex(random_bytes(3))));
+
+        if ($amount <= 0) jsonResponse(['error' => 'Amount must be greater than zero'], 400);
+        if (!$debitAccId || !$creditAccId) jsonResponse(['error' => 'Both Debit and Credit accounts are required'], 400);
+        if ($debitAccId === $creditAccId) jsonResponse(['error' => 'Debit and Credit accounts must be different'], 400);
+
+        // Verify accounts belong to company
+        $check = $pdo->prepare("SELECT id, name FROM accounts WHERE id IN (?, ?) AND company_id = ?");
+        $check->execute([$debitAccId, $creditAccId, $companyId]);
+        if (count($check->fetchAll()) < 2) jsonResponse(['error' => 'Selected accounts are invalid or not found'], 400);
+
+        $now  = date('Y-m-d H:i:s');
+        $jeId = pbId();
+
+        $pdo->beginTransaction();
+        try {
+            $pdo->prepare("INSERT INTO journal_entries (id, company_id, date, description, reference, status, created_at, updated_at)
+                           VALUES (?, ?, ?, ?, ?, 'POSTED', ?, ?)")
+                ->execute([$jeId, $companyId, $date, $desc, $ref, $now, $now]);
+
+            $lStmt = $pdo->prepare("INSERT INTO journal_lines (id, journal_entry_id, account_id, debit, credit, created_at)
+                                    VALUES (?, ?, ?, ?, ?, ?)");
+            // Line 1: Debit
+            $lStmt->execute([pbId(), $jeId, $debitAccId, $amount, 0, $now]);
+            // Line 2: Credit
+            $lStmt->execute([pbId(), $jeId, $creditAccId, 0, $amount, $now]);
+
+            $pdo->commit();
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            jsonResponse(['error' => 'Failed to post entry: ' . $e->getMessage()], 500);
+        }
+
+        // Save simple_entry record
+        pbInsert($pdo, $companyId, $userId, 'simple_entry', [
+            'journal_entry_id'  => $jeId,
+            'reference'         => $ref,
+            'date'              => $date,
+            'debit_account_id'  => $debitAccId,
+            'credit_account_id' => $creditAccId,
+            'amount'            => $amount,
+            'description'       => $desc,
+        ]);
+
+        pbAudit($pdo, $companyId, $userId, "Posted simple accounting entry $ref for " . number_format($amount, 2));
+        jsonResponse(['ok' => true, 'id' => $jeId, 'reference' => $ref]);
+        break;
+
+    // ── run payroll ────────────────────────────────────────────────────────
+    case 'runPayroll':
+        $data  = $body['data'] ?? $body;
+        $month = $data['month'] ?? date('Y-m');
+        $pDate = $data['payment_date'] ?? date('Y-m-d');
+        $notes = $data['notes'] ?? "Payroll for $month";
+
+        $employees = pbList($pdo, $companyId, 'employee');
+        if (!$employees) jsonResponse(['error' => 'No employees found. Add employees first.'], 400);
+
+        $items = [];
+        $totalBasic = 0; $totalAllowances = 0; $totalDeductions = 0; $totalNet = 0;
+
+        foreach ($employees as $emp) {
+            if (($emp['status'] ?? 'ACTIVE') !== 'ACTIVE') continue;
+            $basic = (float)($emp['basic_salary'] ?? $emp['salary'] ?? 0);
+            $allow = (float)($emp['allowances'] ?? 0);
+            $ded   = (float)($emp['deductions'] ?? 0);
+            $net   = max(0, $basic + $allow - $ded);
+
+            $items[] = [
+                'employee_id'   => $emp['id'],
+                'employee_name' => ($emp['first_name'] ?? '') . ' ' . ($emp['last_name'] ?? $emp['name'] ?? ''),
+                'department'    => $emp['department'] ?? 'General',
+                'bank_name'     => $emp['bank_name'] ?? '',
+                'account_no'    => $emp['account_number'] ?? '',
+                'basic'         => $basic,
+                'allowances'    => $allow,
+                'deductions'    => $ded,
+                'net'           => $net
+            ];
+
+            $totalBasic      += $basic;
+            $totalAllowances += $allow;
+            $totalDeductions += $ded;
+            $totalNet        += $net;
+        }
+
+        if (!$items) jsonResponse(['error' => 'No active employees to process'], 400);
+
+        $ref = 'PAY-' . str_replace('-', '', $month) . '-' . strtoupper(bin2hex(random_bytes(2)));
+        $now = date('Y-m-d H:i:s');
+
+        // Record Salary Expense Transaction (Money Out)
+        if ($totalNet > 0) {
+            $pdo->prepare("INSERT INTO transactions (id, user_id, company_id, created_by, direction, category, category_id, amount, occurred_on, counterparty, note, source, created_at)
+                           VALUES (?, ?, ?, ?, 'outflow', 'Salaries & Wages', NULL, ?, ?, 'Staff Payroll', ?, 'payroll', ?)")
+                ->execute([pbId(), $userId, $companyId, $userId, $totalNet, $pDate, "$notes (Ref: $ref)", $now]);
+        }
+
+        $runId = pbInsert($pdo, $companyId, $userId, 'payroll_run', [
+            'reference'        => $ref,
+            'month'            => $month,
+            'payment_date'     => $pDate,
+            'employee_count'   => count($items),
+            'total_basic'      => $totalBasic,
+            'total_allowances' => $totalAllowances,
+            'total_deductions' => $totalDeductions,
+            'total_net'        => $totalNet,
+            'items'            => $items,
+            'status'           => 'COMPLETED',
+            'notes'            => $notes
+        ]);
+
+        pbAudit($pdo, $companyId, $userId, "Processed payroll $ref for " . count($items) . " employee(s) totaling " . number_format($totalNet, 2));
+        jsonResponse(['ok' => true, 'id' => $runId, 'reference' => $ref, 'total_net' => $totalNet, 'count' => count($items)]);
         break;
 
     // ── recurring invoices ────────────────────────────────────────────────
@@ -286,7 +548,7 @@ switch ($action) {
                     ->execute([pbId(), $companyId, $inv['customer_id'], $line['date'], $line['amount'], $line['match_ref'], 'Reconciled from bank statement', $now, $now]);
             }
         } elseif (($line['match_type'] ?? '') === 'bill') {
-            $po = pbGet($pdo, $companyId, 'purchase_order', $line['match_id']);
+            $po = pbGet($pdo, $companyId, 'purchase_order', $line['match_id']) ?: pbGet($pdo, $companyId, 'stock_purchase', $line['match_id']);
             if ($po) { $po['status'] = 'PAID'; pbUpdate($pdo, $companyId, $po['id'], $po); }
         } else {
             $category = trim($body['category'] ?? '') ?: ($line['category'] ?? '');
@@ -407,6 +669,66 @@ switch ($action) {
             ->execute([$body['id'] ?? '', $companyId]);
         pbAudit($pdo, $companyId, $userId, "Removed a team member");
         jsonResponse(['ok' => true]);
+        break;
+
+    // ── comprehensive reports data endpoint ───────────────────────────────
+    case 'getReportsData':
+        // 1. Sales Register & Invoices
+        $invStmt = $pdo->prepare("SELECT i.*, c.name as customer_name, c.email as customer_email
+                                  FROM sales_invoices i
+                                  LEFT JOIN customers c ON c.id = i.customer_id
+                                  WHERE i.company_id = ?
+                                  ORDER BY i.issue_date DESC");
+        $invStmt->execute([$companyId]);
+        $invoices = $invStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // 2. Customer Payments / Receipts
+        $payStmt = $pdo->prepare("SELECT cp.*, c.name as customer_name
+                                  FROM customer_payments cp
+                                  LEFT JOIN customers c ON c.id = cp.customer_id
+                                  WHERE cp.company_id = ?
+                                  ORDER BY cp.date DESC");
+        $payStmt->execute([$companyId]);
+        $payments = $payStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // 3. Purchase Orders & Stock Purchases
+        $pos = pbList($pdo, $companyId, 'purchase_order');
+        $bills = pbList($pdo, $companyId, 'stock_purchase');
+        $vendorPayments = pbList($pdo, $companyId, 'vendor_payment');
+
+        // 4. Products & Inventory Moves
+        $products = pbList($pdo, $companyId, 'product');
+        $warehouses = pbList($pdo, $companyId, 'warehouse');
+        $stockMoves = pbList($pdo, $companyId, 'stock_move');
+
+        // 5. Payroll runs
+        $payrollRuns = pbList($pdo, $companyId, 'payroll_run');
+        $employees = pbList($pdo, $companyId, 'employee');
+
+        // 6. Expenses
+        $expStmt = $pdo->prepare("SELECT * FROM expenses WHERE company_id = ? ORDER BY date DESC");
+        $expStmt->execute([$companyId]);
+        $expenses = $expStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // 7. General Transactions (Cash & Bank)
+        $txStmt = $pdo->prepare("SELECT * FROM transactions WHERE company_id = ? ORDER BY occurred_on DESC");
+        $txStmt->execute([$companyId]);
+        $transactions = $txStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        jsonResponse([
+            'invoices'       => $invoices,
+            'payments'       => $payments,
+            'purchaseOrders' => $pos,
+            'bills'          => $bills,
+            'vendorPayments' => $vendorPayments,
+            'products'       => $products,
+            'warehouses'     => $warehouses,
+            'stockMoves'     => $stockMoves,
+            'payrollRuns'    => $payrollRuns,
+            'employees'      => $employees,
+            'expenses'       => $expenses,
+            'transactions'   => $transactions,
+        ]);
         break;
 
     default:

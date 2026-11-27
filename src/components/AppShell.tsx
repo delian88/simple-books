@@ -24,6 +24,8 @@ import {
   Boxes,
   Warehouse,
   Landmark,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { logout, getSession } from "@/lib/auth.functions";
@@ -38,37 +40,94 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { useNotifications, relativeTime } from "@/contexts/NotificationContext";
 
-const MAIN_NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/customers", label: "Customers", icon: Users },
-  { to: "/estimates", label: "Estimates & Quotes", icon: FileText },
-  { to: "/sales/invoices", label: "Sales Invoices", icon: FileText },
-  { to: "/recurring-invoices", label: "Recurring Invoices", icon: FileText },
-  { to: "/credit-notes", label: "Credit & Debit Notes", icon: FileText },
-  { to: "/vendors", label: "Vendors", icon: Users },
-  { to: "/purchase-orders", label: "Purchase Orders", icon: FileText },
-  { to: "/products", label: "Products", icon: Package },
-  { to: "/inventory", label: "Inventory & Stock", icon: Boxes },
-  { to: "/warehouses", label: "Warehouses", icon: Warehouse },
-  { to: "/bank-reconciliation", label: "Bank Reconciliation", icon: Landmark },
-  { to: "/bank-rules", label: "Bank Rules", icon: Landmark },
-  { to: "/team", label: "Team & Accountant", icon: Users },
-  { to: "/expenses", label: "Expenses (AI)", icon: ArrowUpRight },
-  { to: "/money-in", label: "Money In", icon: ArrowDownLeft },
-  { to: "/money-out", label: "Money Out", icon: ArrowUpRight },
-  { to: "/chart-of-accounts", label: "Chart of Accounts", icon: BookOpenText },
-  { to: "/ledger", label: "General Journal", icon: FileText },
-  { to: "/account-statement", label: "General Ledger", icon: FileText },
-  { to: "/trial-balance", label: "Trial Balance", icon: Scale },
-  { to: "/income-statement", label: "Income Statement", icon: Scale },
-  { to: "/balance-sheet", label: "Balance Sheet", icon: Scale },
-  { to: "/reports/cash-flow", label: "Cash Flow", icon: Scale },
-  { to: "/reports/day-book", label: "Day Book", icon: FileText },
-  { to: "/reports/tax", label: "Tax Summary", icon: Scale },
-  { to: "/audit-trail", label: "Audit Trail", icon: FileText },
-  { to: "/reports", label: "Reports Hub", icon: BarChart3 },
-  { to: "/journal-templates", label: "Journal Templates", icon: FileText },
-] as const;
+export type NavItem = {
+  to: string;
+  label: string;
+  icon: any;
+};
+
+export type NavGroup = {
+  title?: string;
+  icon?: any;
+  items: NavItem[];
+};
+
+const PROFIT_BOOKS_NAV: NavGroup[] = [
+  {
+    items: [
+      { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
+    title: "Income",
+    icon: ArrowDownLeft,
+    items: [
+      { to: "/sales/invoices", label: "Invoices", icon: FileText },
+      { to: "/recurring-invoices", label: "Recurring Invoices", icon: FileText },
+      { to: "/receipts", label: "Receipts", icon: CreditCard },
+      { to: "/estimates", label: "Estimate", icon: FileText },
+      { to: "/sales-orders", label: "Sales Orders", icon: FileText },
+      { to: "/credit-notes", label: "Credit Notes", icon: FileText },
+      { to: "/customers", label: "Customers", icon: Users },
+    ],
+  },
+  {
+    title: "Expenses",
+    icon: ArrowUpRight,
+    items: [
+      { to: "/expenses", label: "Business Expenses", icon: ArrowUpRight },
+      { to: "/stock-purchases", label: "Stock Purchases", icon: Boxes },
+      { to: "/purchase-orders", label: "Purchase Orders", icon: FileText },
+      { to: "/vendor-payments", label: "Vendor Payments", icon: CreditCard },
+      { to: "/vendors", label: "Vendors", icon: Users },
+    ],
+  },
+  {
+    title: "Banking",
+    icon: Landmark,
+    items: [
+      { to: "/banking", label: "Banks", icon: Landmark },
+      { to: "/bank-reconciliation", label: "Bank Reconciliation", icon: Landmark },
+      { to: "/bank-rules", label: "Bank Rules", icon: Landmark },
+    ],
+  },
+  {
+    title: "Accounting",
+    icon: BookOpenText,
+    items: [
+      { to: "/chart-of-accounts", label: "Chart of Accounts", icon: BookOpenText },
+      { to: "/taxes", label: "Taxes", icon: FileText },
+      { to: "/ledger", label: "Journal Entries", icon: FileText },
+      { to: "/simple-accounting", label: "Simple Accounting Entries", icon: Scale },
+      { to: "/reimbursements", label: "Reimbursements", icon: CreditCard },
+      { to: "/projects", label: "Projects", icon: BarChart3 },
+      { to: "/team", label: "Auditors & Team", icon: Users },
+    ],
+  },
+  {
+    title: "Items",
+    icon: Package,
+    items: [
+      { to: "/products", label: "Products/Services", icon: Package },
+      { to: "/inventory", label: "Stock Adjustments", icon: Boxes },
+      { to: "/warehouses", label: "Warehouses", icon: Warehouse },
+    ],
+  },
+  {
+    title: "Employees",
+    icon: Users,
+    items: [
+      { to: "/employees", label: "Employees", icon: Users },
+      { to: "/payroll", label: "Manage Payroll", icon: CreditCard },
+      { to: "/leave-requests", label: "Leave Requests", icon: FileText },
+    ],
+  },
+  {
+    items: [
+      { to: "/reports", label: "Reports Hub", icon: BarChart3 },
+    ],
+  },
+];
 
 const ADMIN_NAV = [
   { to: "/admin/cms", label: "CMS Management", icon: FileText },
@@ -144,6 +203,29 @@ export function AppShell({
   // Real notifications from context
   const { notifications, unreadCount, markAllAsRead } = useNotifications();
 
+  // ProfitBooks nav group accordion state
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => ({
+    Income: true,
+    Expenses: true,
+    Banking: false,
+    Accounting: false,
+    Items: false,
+    Employees: false,
+  }));
+
+  // Automatically expand group containing active pathname
+  useEffect(() => {
+    PROFIT_BOOKS_NAV.forEach((g) => {
+      if (g.title && g.items.some((i) => i.to === pathname)) {
+        setOpenGroups((prev) => ({ ...prev, [g.title!]: true }));
+      }
+    });
+  }, [pathname]);
+
+  const toggleGroup = (groupTitle: string) => {
+    setOpenGroups((prev) => ({ ...prev, [groupTitle]: !prev[groupTitle] }));
+  };
+
   // Derive displayName from user details
   const displayName =
     user?.businessName ||
@@ -187,39 +269,95 @@ export function AppShell({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-4">
-          <nav className="space-y-1.5 px-3">
-            {MAIN_NAV.map((item) => (
-              <Link
-                key={item.to}
-                href={item.to}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  pathname === item.to 
-                    ? "bg-[#145C42] text-white font-semibold" 
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <item.icon className="h-5 w-5" />
-                {item.label}
-              </Link>
-            ))}
+        <div className="flex-1 overflow-y-auto py-3">
+          <nav className="space-y-1 px-3">
+            {PROFIT_BOOKS_NAV.map((group, gIdx) => {
+              if (!group.title) {
+                // Direct items (e.g. Dashboard, Reports Hub)
+                return group.items.map((item) => (
+                  <Link
+                    key={item.to}
+                    href={item.to}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      pathname === item.to
+                        ? "bg-[#145C42] text-white font-semibold"
+                        : "text-white/80 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    <span>{item.label}</span>
+                  </Link>
+                ));
+              }
+
+              const isOpen = openGroups[group.title] ?? false;
+              const hasActiveChild = group.items.some((i) => i.to === pathname);
+
+              return (
+                <div key={group.title} className="pt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => toggleGroup(group.title!)}
+                    className={`w-full flex items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
+                      hasActiveChild
+                        ? "text-emerald-300 font-bold bg-white/5"
+                        : "text-white/60 hover:text-white hover:bg-white/5"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      {group.icon && <group.icon className="h-3.5 w-3.5 text-[#D4AF37]" />}
+                      <span>{group.title}</span>
+                    </div>
+                    {isOpen ? (
+                      <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+                    ) : (
+                      <ChevronRight className="h-3.5 w-3.5 opacity-60" />
+                    )}
+                  </button>
+
+                  {isOpen && (
+                    <div className="mt-0.5 space-y-0.5 pl-2 border-l border-white/15 ml-3">
+                      {group.items.map((item) => {
+                        const active = pathname === item.to;
+                        return (
+                          <Link
+                            key={item.to}
+                            href={item.to}
+                            onClick={() => setIsMobileMenuOpen(false)}
+                            className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                              active
+                                ? "bg-[#145C42] text-white font-semibold shadow-sm"
+                                : "text-white/70 hover:bg-white/10 hover:text-white"
+                            }`}
+                          >
+                            <item.icon className="h-3.5 w-3.5 shrink-0 opacity-80" />
+                            <span className="truncate">{item.label}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
             {user?.role === "Admin" && (
               <>
-                <div className="mx-3 my-4 border-t border-white/10"></div>
+                <div className="mx-3 my-3 border-t border-white/10"></div>
+                <div className="px-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-white/40">Super Admin</div>
                 {ADMIN_NAV.map((item) => (
                   <Link
                     key={item.to}
                     href={item.to}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 text-xs font-medium transition-colors ${
                       pathname === item.to 
                         ? "bg-[#145C42] text-white font-semibold" 
                         : "text-white/70 hover:bg-white/10 hover:text-white"
                     }`}
                   >
-                    <item.icon className="h-5 w-5" />
+                    <item.icon className="h-4 w-4" />
                     {item.label}
                   </Link>
                 ))}
@@ -400,43 +538,25 @@ export function AppShell({
           </div>
 
           <CommandDialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
-            <CommandInput placeholder="Type a command or search..." />
+            <CommandInput placeholder="Type a command or search any ProfitBooks module..." />
             <CommandList>
               <CommandEmpty>No results found.</CommandEmpty>
-              <CommandGroup heading="Suggestions">
-                <CommandItem onSelect={() => { router.push('/dashboard'); setIsSearchOpen(false); }}>
-                  <LayoutDashboard className="mr-2 h-4 w-4" />
-                  <span>Dashboard</span>
-                </CommandItem>
-                <CommandItem onSelect={() => { router.push('/money-in'); setIsSearchOpen(false); }}>
-                  <ArrowDownLeft className="mr-2 h-4 w-4" />
-                  <span>Record Inflows</span>
-                </CommandItem>
-                <CommandItem onSelect={() => { router.push('/expenses'); setIsSearchOpen(false); }}>
-                  <ArrowUpRight className="mr-2 h-4 w-4" />
-                  <span>Scan Receipts</span>
-                </CommandItem>
-              </CommandGroup>
-              <CommandGroup heading="Reports">
-                <CommandItem onSelect={() => { router.push('/reports'); setIsSearchOpen(false); }}>
-                  <BarChart3 className="mr-2 h-4 w-4" />
-                  <span>Reports Hub</span>
-                </CommandItem>
-                <CommandItem onSelect={() => { router.push('/income-statement'); setIsSearchOpen(false); }}>
-                  <Scale className="mr-2 h-4 w-4" />
-                  <span>Income Statement</span>
-                </CommandItem>
-                <CommandItem onSelect={() => { router.push('/trial-balance'); setIsSearchOpen(false); }}>
-                  <Scale className="mr-2 h-4 w-4" />
-                  <span>Trial Balance</span>
-                </CommandItem>
-              </CommandGroup>
-              <CommandGroup heading="Settings">
-                <CommandItem onSelect={() => { router.push('/admin/settings'); setIsSearchOpen(false); }}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Account Settings</span>
-                </CommandItem>
-              </CommandGroup>
+              {PROFIT_BOOKS_NAV.map((g, idx) => (
+                <CommandGroup key={g.title || idx} heading={g.title || "Quick Links"}>
+                  {g.items.map((item) => (
+                    <CommandItem
+                      key={item.to}
+                      onSelect={() => {
+                        router.push(item.to);
+                        setIsSearchOpen(false);
+                      }}
+                    >
+                      <item.icon className="mr-2 h-4 w-4" />
+                      <span>{item.label}</span>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              ))}
             </CommandList>
           </CommandDialog>
         </header>
