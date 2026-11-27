@@ -177,31 +177,51 @@ switch ($action) {
         break;
 
     case 'getTrialBalance':
-        $bals = $pdo->prepare("SELECT l.account_id as id, SUM(l.debit) as debit, SUM(l.credit) as credit, a.name, a.type, a.sub_type 
-                               FROM journal_lines l 
-                               JOIN journal_entries e ON l.journal_entry_id = e.id 
-                               JOIN accounts a ON l.account_id = a.id
-                               WHERE e.company_id = ? 
-                               GROUP BY l.account_id, a.name, a.type, a.sub_type");
-        $bals->execute([$companyId]);
-        $balances = $bals->fetchAll(PDO::FETCH_ASSOC);
+        $accountMap = [];
+        $addBal = function($id, $name, $type, $subType, $debit, $credit) use (&$accountMap) {
+            $name = trim($name);
+            if ($name === '') return;
+            $k = strtolower($name);
+            if (!isset($accountMap[$k])) {
+                $accountMap[$k] = [
+                    'id' => $id,
+                    'name' => $name,
+                    'type' => $type,
+                    'sub_type' => $subType,
+                    'debit' => 0.0,
+                    'credit' => 0.0,
+                ];
+            }
+            $accountMap[$k]['debit'] += (float)$debit;
+            $accountMap[$k]['credit'] += (float)$credit;
+        };
 
-        // Virtualize Sales Invoices
-        $salesInvoicesTotal = 0;
+        // 1. Journal entries
+        try {
+            $bals = $pdo->prepare("SELECT l.account_id as id, SUM(l.debit) as debit, SUM(l.credit) as credit, a.name, a.type, a.sub_type 
+                                   FROM journal_lines l 
+                                   JOIN journal_entries e ON l.journal_entry_id = e.id 
+                                   JOIN accounts a ON l.account_id = a.id
+                                   WHERE e.company_id = ? 
+                                   GROUP BY l.account_id, a.name, a.type, a.sub_type");
+            $bals->execute([$companyId]);
+            foreach ($bals->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                $addBal($r['id'], $r['name'], $r['type'], $r['sub_type'], $r['debit'], $r['credit']);
+            }
+        } catch (Exception $e) {}
+
+        // 2. Sales Invoices
         try {
             $siSum = $pdo->prepare("SELECT SUM(total_amount) as sum FROM sales_invoices WHERE company_id = ? AND status != 'DRAFT'");
             $siSum->execute([$companyId]);
-            $salesInvoicesTotal = (float)($siSum->fetchColumn() ?: 0);
-        } catch (Exception $e) {
-            // Table might not exist yet
-        }
-        
-        if ($salesInvoicesTotal > 0) {
-            $balances[] = ['id' => 'v-ar', 'name' => 'Accounts Receivable', 'type' => 'ASSET', 'sub_type' => 'Current Asset', 'debit' => $salesInvoicesTotal, 'credit' => 0];
-            $balances[] = ['id' => 'v-sales', 'name' => 'Sales Revenue', 'type' => 'REVENUE', 'sub_type' => 'Operating Revenue', 'debit' => 0, 'credit' => $salesInvoicesTotal];
-        }
+            $salesTotal = (float)($siSum->fetchColumn() ?: 0);
+            if ($salesTotal > 0) {
+                $addBal('v-ar', 'Accounts Receivable', 'ASSET', 'Current Asset', $salesTotal, 0);
+                $addBal('v-sales', 'Sales Revenue', 'REVENUE', 'Operating Revenue', 0, $salesTotal);
+            }
+        } catch (Exception $e) {}
 
-        // Virtualize AI Expenses
+        // 3. AI & Business Expenses
         try {
             $aiExpSum = $pdo->prepare("SELECT e.category, e.bank_account_id, a.name as bank_name, SUM(e.amount) as sum 
                                        FROM expenses e 
@@ -214,16 +234,13 @@ switch ($action) {
                 if ($amt <= 0) continue;
                 $cat = ucfirst($exp['category']);
                 $bankName = $exp['bank_name'] ?: 'Cash/Bank (Uncategorized)';
-                $bankId = $exp['bank_account_id'] ?: ('v-ai-cash-' . md5($cat));
-                
-                $balances[] = ['id' => 'v-ai-exp-' . md5($cat), 'name' => $cat, 'type' => 'EXPENSE', 'sub_type' => 'Operating Expense', 'debit' => $amt, 'credit' => 0];
-                $balances[] = ['id' => $bankId, 'name' => $bankName, 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => 0, 'credit' => $amt];
+                $bankId = $exp['bank_account_id'] ?: ('v-cash-' . md5($bankName));
+                $addBal('v-exp-' . md5($cat), $cat, 'EXPENSE', 'Operating Expense', $amt, 0);
+                $addBal($bankId, $bankName, 'ASSET', 'Cash', 0, $amt);
             }
-        } catch (Exception $e) {
-            // Table might not exist yet
-        }
+        } catch (Exception $e) {}
 
-        // Virtualize Manual Transactions
+        // 4. Manual Transactions
         try {
             $txSum = $pdo->prepare("SELECT t.direction, t.category, t.category_id as bank_account_id, a.name as bank_name, SUM(t.amount) as sum 
                                     FROM transactions t 
@@ -236,29 +253,101 @@ switch ($action) {
                 if ($amt <= 0) continue;
                 $cat = ucfirst($tx['category']);
                 $bankName = $tx['bank_name'] ?: 'Cash/Bank (Uncategorized)';
-                $bankId = $tx['bank_account_id'] ?: ('v-tx-cash-' . md5($tx['direction'] . $cat));
-                $catId = 'v-tx-cat-' . md5($tx['direction'] . $cat);
-
+                $bankId = $tx['bank_account_id'] ?: ('v-tx-' . md5($bankName));
                 if ($tx['direction'] === 'inflow') {
-                    $balances[] = ['id' => $bankId, 'name' => $bankName, 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => $amt, 'credit' => 0];
-                    $type = (stripos($cat, 'sale') !== false) ? 'REVENUE' : 'EQUITY'; 
-                    $balances[] = ['id' => $catId, 'name' => $cat, 'type' => $type, 'sub_type' => '', 'debit' => 0, 'credit' => $amt];
+                    $addBal($bankId, $bankName, 'ASSET', 'Cash', $amt, 0);
+                    $type = (stripos($cat, 'sale') !== false) ? 'REVENUE' : 'EQUITY';
+                    $addBal('v-cat-' . md5($cat), $cat, $type, '', 0, $amt);
                 } else {
-                    $type = 'EXPENSE';
-                    $balances[] = ['id' => $catId, 'name' => $cat, 'type' => $type, 'sub_type' => '', 'debit' => $amt, 'credit' => 0];
-                    $balances[] = ['id' => $bankId, 'name' => $bankName, 'type' => 'ASSET', 'sub_type' => 'Cash', 'debit' => 0, 'credit' => $amt];
+                    $addBal('v-cat-' . md5($cat), $cat, 'EXPENSE', '', $amt, 0);
+                    $addBal($bankId, $bankName, 'ASSET', 'Cash', 0, $amt);
                 }
             }
-        } catch (Exception $e) {
-            // Table might not exist yet
+        } catch (Exception $e) {}
+
+        // 5. ProfitBooks modules records (pb_records)
+        try {
+            $pbStmt = $pdo->prepare("SELECT type, data FROM pb_records WHERE company_id = ? AND type IN ('stock_purchase', 'vendor_payment', 'receipt', 'simple_entry')");
+            $pbStmt->execute([$companyId]);
+            foreach ($pbStmt->fetchAll(PDO::FETCH_ASSOC) as $pbr) {
+                $d = json_decode($pbr['data'] ?? '{}', true) ?: [];
+                $t = $pbr['type'];
+                if ($t === 'stock_purchase') {
+                    $amt = (float)($d['total_amount'] ?? 0);
+                    if ($amt > 0) {
+                        $addBal('v-inv', 'Inventory / Stock Purchases', 'ASSET', 'Current Asset', $amt, 0);
+                        $addBal('v-ap', 'Accounts Payable', 'LIABILITY', 'Current Liability', 0, $amt);
+                    }
+                } elseif ($t === 'vendor_payment') {
+                    $amt = (float)($d['amount'] ?? 0);
+                    if ($amt > 0) {
+                        $addBal('v-ap', 'Accounts Payable', 'LIABILITY', 'Current Liability', $amt, 0);
+                        $addBal('v-bank-vp', $d['payment_method'] ? ucfirst($d['payment_method']) : 'Cash/Bank', 'ASSET', 'Cash', 0, $amt);
+                    }
+                } elseif ($t === 'receipt') {
+                    $amt = (float)($d['amount'] ?? 0);
+                    if ($amt > 0) {
+                        $addBal('v-bank-rc', $d['payment_method'] ? ucfirst($d['payment_method']) : 'Cash/Bank', 'ASSET', 'Cash', $amt, 0);
+                        $addBal('v-ar', 'Accounts Receivable', 'ASSET', 'Current Asset', 0, $amt);
+                    }
+                } elseif ($t === 'simple_entry') {
+                    $amt = (float)($d['amount'] ?? 0);
+                    $debitName = $d['debit_account_name'] ?? 'General Account';
+                    $creditName = $d['credit_account_name'] ?? 'General Account';
+                    if ($amt > 0) {
+                        $addBal($d['debit_account_id'] ?? 'v-se-dr', $debitName, 'ASSET', '', $amt, 0);
+                        $addBal($d['credit_account_id'] ?? 'v-se-cr', $creditName, 'LIABILITY', '', 0, $amt);
+                    }
+                }
+            }
+        } catch (Exception $e) {}
+
+        // Net Balances consolidation
+        $finalBalances = [];
+        $totDebit = 0.0;
+        $totCredit = 0.0;
+        foreach ($accountMap as $acc) {
+            $dr = (float)$acc['debit'];
+            $cr = (float)$acc['credit'];
+            $netDr = 0.0;
+            $netCr = 0.0;
+            if ($dr > $cr) {
+                $netDr = $dr - $cr;
+            } elseif ($cr > $dr) {
+                $netCr = $cr - $dr;
+            }
+            if ($netDr > 0 || $netCr > 0 || $dr > 0 || $cr > 0) {
+                $finalBalances[] = [
+                    'id' => $acc['id'],
+                    'name' => $acc['name'],
+                    'type' => $acc['type'] ?: 'GENERAL',
+                    'sub_type' => $acc['sub_type'] ?: '',
+                    'debit' => round($netDr, 2),
+                    'credit' => round($netCr, 2),
+                    'grossDebit' => round($dr, 2),
+                    'grossCredit' => round($cr, 2),
+                ];
+                $totDebit += $netDr;
+                $totCredit += $netCr;
+            }
         }
 
-        $totDebit = 0; $totCredit = 0;
-        foreach ($balances as $b) {
-            $totDebit += $b['debit'];
-            $totCredit += $b['credit'];
-        }
-        jsonResponse(['balances' => $balances, 'totalDebit' => $totDebit, 'totalCredit' => $totCredit]);
+        // Sort by standard accounting order: ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE
+        usort($finalBalances, function($a, $b) {
+            $order = ['ASSET' => 1, 'LIABILITY' => 2, 'EQUITY' => 3, 'REVENUE' => 4, 'EXPENSE' => 5];
+            $oa = $order[$a['type']] ?? 9;
+            $ob = $order[$b['type']] ?? 9;
+            if ($oa !== $ob) return $oa - $ob;
+            return strcasecmp($a['name'], $b['name']);
+        });
+
+        jsonResponse([
+            'balances' => $finalBalances,
+            'totalDebit' => round($totDebit, 2),
+            'totalCredit' => round($totCredit, 2),
+            'isBalanced' => abs($totDebit - $totCredit) < 0.01,
+            'difference' => round(abs($totDebit - $totCredit), 2)
+        ]);
         break;
 
     case 'getFinancialStatements':

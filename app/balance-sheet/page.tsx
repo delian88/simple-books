@@ -85,7 +85,7 @@ export default function BalanceSheetPage() {
             </CardTitle>
             <p className="text-xs text-muted-foreground mt-1">Assets = Liabilities + Owner&apos;s Equity</p>
           </div>
-          <div className="text-sm text-muted-foreground font-medium">
+          <div className="text-sm text-muted-foreground font-medium" suppressHydrationWarning>
             {startDate || endDate 
               ? `${startDate || 'Beginning'} - ${endDate || 'Present'}`
               : `As of ${new Date().toLocaleDateString()}`}
