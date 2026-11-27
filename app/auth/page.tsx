@@ -95,11 +95,7 @@ function AuthContent() {
 
         {/* App Logo */}
         <Link href="/" className="mb-6 flex items-center justify-center gap-2 font-display text-2xl">
-          {appSettings?.appLogo ? (
-            <img src={appSettings.appLogo} alt="App Logo" className="h-8 w-8 object-contain" />
-          ) : (
-            <BookOpenText className="h-6 w-6 text-accent" />
-          )}
+          <img src={appSettings?.appLogo || "/logo.png"} alt="App Logo" className="h-8 w-8 object-contain rounded" />
           {appSettings?.appName || "KoboBooks"}
         </Link>
 

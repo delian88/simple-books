@@ -15,6 +15,15 @@ export const metadata: Metadata = {
   description: "Capture inflows from your bank statement and outflows from scanned receipts, see your profit, and keep a live balance sheet with our simple accounting platform.",
   keywords: "accounting, small business, bookkeeping, ledger, financial statements, trial balance, receipt scanner",
   robots: "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/favicon.png", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png" },
+    ],
+  },
   openGraph: {
     title: "KoboBooks — Simple Accounting for Small Businesses",
     description: "Capture inflows from your bank statement and outflows from scanned receipts, see your profit, and keep a live balance sheet.",
@@ -34,6 +43,9 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <head>
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" type="image/png" href="/favicon.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

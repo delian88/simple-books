@@ -13,7 +13,7 @@ switch ($action) {
         }
         jsonResponse([
             'appName'    => $map['app_name']    ?? 'KoboBooks',
-            'appLogo'    => $map['app_logo']    ?? null,
+            'appLogo'    => $map['app_logo']    ?? '/logo.png',
             'appTagline' => $map['app_tagline'] ?? 'Simple Accounting for Small Businesses',
         ]);
         break;

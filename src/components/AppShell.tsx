@@ -247,13 +247,11 @@ export function AppShell({
       <aside className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#0B3D2B] text-white transition-transform duration-200 ease-in-out lg:translate-x-0 print:hidden ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="flex h-14 lg:h-20 items-center justify-between px-6">
           <Link href="/dashboard" className="flex items-center gap-3 font-display text-xl font-bold">
-            {appSettings?.appLogo ? (
-              <img src={appSettings.appLogo} alt="App Logo" className="h-8 w-8 object-contain" />
-            ) : (
-              <div className="rounded border-2 border-[#D4AF37] p-1">
-                <BookOpenText className="h-5 w-5 text-[#D4AF37]" />
-              </div>
-            )}
+            <img
+              src={appSettings?.appLogo || "/logo.png"}
+              alt="KoboBooks Logo"
+              className="h-8 w-8 object-contain rounded"
+            />
             <div>
               <div className="leading-none">{appSettings?.appName || "KoboBooks"}</div>
               {user?.role === "Admin" && (

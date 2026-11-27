@@ -560,7 +560,7 @@ export default function Landing() {
               <img src={appLogo} width="193" height="39" alt={appName} />
             ) : (
               <>
-                <span className="mark">{brandInitial}</span>
+                <img src="/logo.png" alt={appName} className="h-8 w-8 object-contain rounded inline-block mr-2" />
                 <span>
                   {appName === "KoboBooks" ? (
                     <>
@@ -3449,7 +3449,7 @@ export default function Landing() {
                   <img src={appLogo} width="193" height="39" alt={appName} />
                 ) : (
                   <>
-                    <span className="mark">{brandInitial}</span>
+                    <img src="/logo.png" alt={appName} className="h-8 w-8 object-contain rounded inline-block mr-2" />
                     <span>
                       {appName === "KoboBooks" ? (
                         <>
